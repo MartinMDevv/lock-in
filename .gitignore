@@ -1,0 +1,34 @@
+# --- Secretos: NUNCA se commitean -------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- Dependencias y build ---------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# --- Herramientas -----------------------------------------------------------
+.vercel/
+coverage/
+.supabase/
+supabase/.temp/
+supabase/.branches/
+
+# --- Sistema operativo / editores -------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# --- Documentos personales: no entran al repo, ni por error ------------------
+# Cualquier archivo que empiece con "personal" o "privado" queda fuera.
+personal*
+privado*
+*.private.*
+
+.private-patterns

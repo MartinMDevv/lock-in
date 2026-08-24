@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Sin permisos de escritura: el CI solo lee y verifica.
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Verificar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # El escáner corre PRIMERO. Si se filtró un secreto, no tiene sentido
+      # gastar minutos compilando: hay que sacarlo antes de que se mergee.
+      - name: Escanear secretos y datos personales
+        run: ./scripts/check-secrets.sh --all
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build

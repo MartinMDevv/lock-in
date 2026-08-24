@@ -1,0 +1,47 @@
+{
+  "name": "lock-in",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "oxlint",
+    "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "check:secrets": "./scripts/check-secrets.sh --all",
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript --linked > src/types/database.ts",
+    "check": "npm run check:secrets && npm run lint && npm run typecheck && npm run test"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3",
+    "@tanstack/react-query": "^5.102.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^8.3.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.6",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "@vitest/coverage-v8": "^4.1.11",
+    "jsdom": "^30.0.1",
+    "oxlint": "^1.75.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.11"
+  },
+  "description": "Un solo lugar para horario, tareas, gimnasio y finanzas personales.",
+  "license": "MIT"
+}
