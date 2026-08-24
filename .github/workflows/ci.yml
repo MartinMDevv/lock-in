@@ -1,9 +1,13 @@
 name: CI
 
+# Solo dispara con pushes a este repositorio, nunca con pull_request.
+# El runner es propio (corre en la máquina del autor) y el repo es público:
+# un `pull_request` desde un fork ajeno ejecutaría código de un desconocido
+# acá adentro. Trabajando solo no se pierde nada — las ramas `feat/…` se
+# verifican igual antes de mergear. Ver docs/DECISIONES.md D15.
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches: ['**']
 
 # Sin permisos de escritura: el CI solo lee y verifica.
 permissions:
@@ -12,7 +16,9 @@ permissions:
 jobs:
   verificar:
     name: Verificar
-    runs-on: ubuntu-latest
+    # Runner propio: la cuenta está bloqueada por facturación y los runners
+    # de GitHub no arrancan. Ver docs/DECISIONES.md D15.
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v5
 

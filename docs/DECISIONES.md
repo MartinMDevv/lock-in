@@ -72,3 +72,47 @@ pudra.
 ### D14 · oxlint en vez de ESLint
 Viene en el andamiaje de Vite 9, es un binario en Rust y corre en milisegundos.
 Una herramienta menos que configurar.
+
+### D15 · CI en un runner propio, y sin disparador `pull_request`
+La cuenta de GitHub está bloqueada por facturación: los runners alojados no
+arrancan (`The job was not started because your account is locked due to a
+billing issue`), así que el CI corre en un runner self-hosted en la máquina del
+autor.
+
+Eso obliga a una segunda decisión: **el flujo dispara solo con `push`**, nunca
+con `pull_request`. En un repositorio público, un `pull_request` desde un fork
+ejecuta el flujo del PR en el runner — es decir, código de un desconocido
+corriendo con el usuario del autor, en su equipo. Con un solo desarrollador no
+hay nada que perder: las ramas `feat/…` se verifican igual al pushearlas.
+
+El runner se levanta a mano cuando se necesita, no como servicio al arranque.
+Si está apagado, el job espera en cola.
+
+### D16 · Las migraciones las aplica GitHub, no el `db:push` del autor
+El proyecto de Supabase está conectado al repositorio, así que cada push a
+`main` aplica solo las migraciones nuevas de `supabase/migrations/` a la base
+de **producción**.
+
+**Consecuencia práctica:** un push a `main` ya no es solo código, toca la base
+real. Una migración aplicada no se edita — se corrige con una migración nueva.
+
+Para quien forkee no cambia nada: sin esa integración configurada, el camino
+sigue siendo `npm run db:push` como dice `docs/INSTALACION.md`. Esa integración
+va por la app de Supabase y no por Actions, así que el bloqueo de facturación
+no la afecta.
+
+### D17 · Sin ramas: se commitea directo a `main`
+Con un solo desarrollador, abrir un PR contra uno mismo es una ceremonia sin
+revisor: nadie va a rechazar nada. El gancho de pre-commit y el CI corren igual
+sobre cada push, que es lo que de verdad atrapa errores.
+
+**El riesgo que esto acepta** es el de D16: sin rama intermedia, una migración
+llega a la base de producción en el mismo push que la crea, sin ensayo previo.
+Se compensa con dos hábitos, no con más ceremonia:
+
+1. **Una migración va sola en su commit.** Si algo falla, no hay que adivinar
+   cuál de cinco cambios fue.
+2. **Se lee el SQL antes de pushear.** Es la única revisión que va a existir.
+
+Se reevalúa el día que alguien más escriba código acá. Mientras tanto, el
+criterio del proyecto manda: gana el uso real, se recorta.
