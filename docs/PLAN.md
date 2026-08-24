@@ -30,6 +30,10 @@ Detalle del área de Plata en [`MODELO_ECONOMICO.md`](MODELO_ECONOMICO.md).
 
 ## Hitos
 
+Acá está el **qué y el por qué** de cada hito. El detalle tarea por tarea, con
+prioridades, bloqueos y el avance real, vive en
+[`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md).
+
 El orden es **a lo ancho primero, en profundidad después**. Construir un módulo
 perfecto durante tres semanas deja una app que todavía no es lo prometido, y a
 esa altura ya se abandonó.

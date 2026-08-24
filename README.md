@@ -131,7 +131,9 @@ Guía paso a paso, incluida la configuración de Supabase:
 
 | Documento | Contenido |
 |---|---|
+| [`docs/HOJA_DE_RUTA.md`](docs/HOJA_DE_RUTA.md) | El avance real, tarea por tarea, con prioridades y bloqueos |
 | [`docs/PLAN.md`](docs/PLAN.md) | Alcance, hitos y lo que quedó fuera a propósito |
+| [`docs/CORRER.md`](docs/CORRER.md) | El día a día: levantar, verificar, migrar y subir cambios |
 | [`docs/MODELO_ECONOMICO.md`](docs/MODELO_ECONOMICO.md) | Cómo funcionan los sobres |
 | [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md) | Las tablas, columna por columna, y por qué |
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Cómo está organizado el código |
