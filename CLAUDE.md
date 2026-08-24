@@ -30,6 +30,14 @@ Si bloquea algo, la respuesta es sacar el dato — nunca `--no-verify`.
    se calculan. Ver `docs/DECISIONES.md` D6.
 5. **`src/types/database.ts` no se edita a mano.** Se regenera con
    `npm run db:types`.
+6. **Un push a `main` aplica migraciones a la base de producción.** El proyecto
+   de Supabase está conectado al repositorio: lo que entre a
+   `supabase/migrations/` se ejecuta solo contra la base real. Se prueba en
+   rama antes de mergear y una migración aplicada no se edita — se corrige con
+   otra. Ver `docs/DECISIONES.md` D16.
+7. **El CI corre en un runner propio y solo con `push`.** Nunca agregar el
+   disparador `pull_request` al flujo: el repo es público y ejecutaría código
+   de forks ajenos en la máquina del autor. Ver `docs/DECISIONES.md` D15.
 
 ## Antes de proponer un commit
 
@@ -42,7 +50,9 @@ npm run check    # secretos + lint + tipos + pruebas
 - Conventional Commits, descripción en español.
 - **Sin firma ni `Co-Authored-By` de asistentes.**
 - **Ningún commit ni push sin aprobación explícita del autor.**
-- Se trabaja en ramas `feat/…`, `fix/…`, `docs/…`. `main` se mantiene limpia.
+- **Se commitea directo a `main`, sin ramas** (ver `docs/DECISIONES.md` D17).
+  Como cada push a `main` aplica migraciones a producción, una migración va
+  sola en su commit, nunca mezclada con código.
 
 ## Alcance
 

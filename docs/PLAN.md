@@ -74,6 +74,6 @@ README con capturas, `seed.sql` genérico, fork limpio verificado desde cero.
 | **Nada personal se filtra** | `scripts/check-secrets.sh` como gancho de pre-commit **y** como paso de CI |
 | **RLS nunca es opcional** | Se activa en la misma migración que crea la tabla. Prueba automatizada con dos usuarios |
 | **Nada de nadie hardcodeado** | El `seed.sql` es genérico. Sobres, ramos y rutinas se cargan desde la interfaz |
-| **Ramas** | `main` limpia. Se trabaja en `feat/…` y se mergea por PR, aunque se esté solo |
+| **Ramas** | No se usan: un solo desarrollador, se commitea a `main`. Ver `DECISIONES.md` D17 |
 | **Commits** | Conventional Commits en español. Ninguno sin aprobación explícita |
 | **CI** | Secretos → lint → tipos → pruebas → build, en cada PR |
