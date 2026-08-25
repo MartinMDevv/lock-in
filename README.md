@@ -96,7 +96,12 @@ y sin costo. Abre y muestra tus datos aunque no haya señal.
 ## Estado
 
 🚧 **En construcción.** Cimientos listos: andamiaje, verificaciones automáticas,
-CI y la lógica del reparto con pruebas. Todavía no hay interfaz utilizable.
+CI, deploy y la lógica del reparto con pruebas.
+
+Ahora está armado el esqueleto: se entra con correo y contraseña, y las cinco
+áreas se navegan con la barra inferior en el teléfono y el menú lateral en el
+escritorio. Todavía **no guarda nada**: cada área muestra su estado vacío
+mientras se crean las tablas.
 
 El plan y los hitos están en [`docs/PLAN.md`](docs/PLAN.md).
 

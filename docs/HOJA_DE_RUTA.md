@@ -22,7 +22,7 @@ código compila.
 | Hito | Qué deja listo | Avance |
 |---|---|---|
 | **0 · Cimientos** | El proyecto arranca, se verifica solo, tiene base de datos y está publicado | `▓▓▓▓▓▓▓▓▓▓` **completo** |
-| **1 · Esqueleto** | Las cinco áreas navegables y con sesión iniciada | `░░░░░░░░░░` 0 de 8 |
+| **1 · Esqueleto** | Las cinco áreas navegables y con sesión iniciada | `▓▓▓▓▓░░░░░` 5 de 8 escritas, **0 verificadas en el teléfono** |
 | **2 · Una cosa útil por área** | Se puede vivir un día entero dentro de la app | `░░░░░░░░░░` 0 de 10 |
 | **3 · Profundidad** | Lo que el uso real pida, en ese orden | `░░░░░░░░░░` 0 de 7 |
 | **4 · Publicación** | Que otra persona pueda forkearlo y usarlo | `░░░░░░░░░░` 0 de 3 |
@@ -31,10 +31,14 @@ código compila.
 
 ```
 Vercel ──> Login ──> Esqueleto navegable ──> Datos reales por área ──> Profundidad
-  ✅          🔴             🔴                       🔴                    🟢
+  ✅          🚧             🚧                       🔴                    🟢
 
 Cada migración ──> `npm run db:types` ──> recién ahí se escribe la consulta
 ```
+
+**El bloqueo de hoy es la migración de `profiles`.** Está escrita y sin
+aplicar: se aplica sola al pushear (D16), y hasta que se aplique no se pueden
+regenerar los tipos ni escribir una sola consulta.
 
 ---
 
@@ -57,14 +61,14 @@ Cada migración ──> `npm run db:types` ──> recién ahí se escribe la co
 
 | | Tarea | Qué es | Prio | Depende de |
 |:---:|---|---|:---:|---|
-| ⬜ | Migración `profiles` | Primera tabla: moneda, zona horaria, RLS y `grant` | 🔴 | — |
-| ⬜ | Regenerar tipos | `npm run db:types` tras cada migración | 🔴 | `profiles` |
-| ⬜ | Login | Correo y contraseña, sesión persistente (D3). **Es la primera pantalla que toca Supabase: acá se confirma que las variables de Vercel están bien** | 🔴 | `profiles` |
-| ⬜ | Rutas | Las seis rutas de `PLAN.md` en el router | 🔴 | Login |
-| ⬜ | Cáscara de navegación | Barra inferior en teléfono, lateral en escritorio | 🔴 | Rutas |
-| ⬜ | Pantalla por área | Cada una con su estado vacío honesto ("todavía no hay nada") | 🟡 | Cáscara |
-| ⬜ | Pantalla "Hoy" | Sus secciones armadas, aunque lleguen vacías | 🟡 | Cáscara |
-| ⬜ | Ajustes | Perfil, moneda y zona horaria editables | 🟡 | Login |
+| 🚧 | Migración `profiles` | Primera tabla: moneda, zona horaria, RLS y `grant`. **Escrita y revisada; no aplicada:** se aplica sola al pushear | 🔴 | — |
+| ⬜ | Regenerar tipos | `npm run db:types` tras cada migración. Bloqueado hasta que `profiles` esté aplicada | 🔴 | `profiles` |
+| 🚧 | Login | Correo y contraseña, sesión persistente (D3). Escrito; falta entrar de verdad una vez | 🔴 | — |
+| 🚧 | Rutas | Las seis rutas de `PLAN.md` en el router | 🔴 | Login |
+| 🚧 | Cáscara de navegación | Barra inferior en teléfono, lateral en escritorio | 🔴 | Rutas |
+| 🚧 | Pantalla por área | Cada una con su estado vacío honesto ("todavía no hay nada") | 🟡 | Cáscara |
+| 🚧 | Pantalla "Hoy" | Sus cuatro secciones armadas, todavía vacías | 🟡 | Cáscara |
+| 🚧 | Ajustes | Cerrar sesión ya funciona. Moneda y zona horaria esperan a `profiles` | 🟡 | Regenerar tipos |
 
 ## Hito 2 · Una cosa útil por área
 

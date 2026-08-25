@@ -9,6 +9,8 @@
   --color-ink-muted: oklch(52% 0.02 265);
   --color-line: oklch(92% 0.008 265);
   --color-accent: oklch(58% 0.16 155);
+  /* Texto sobre el color de acento: contraste suficiente para botones. */
+  --color-accent-ink: oklch(100% 0 0);
 }
 
 @layer base {
