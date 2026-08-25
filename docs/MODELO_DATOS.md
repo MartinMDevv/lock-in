@@ -19,11 +19,23 @@ Y RLS se activa **en la misma migración que crea la tabla**, nunca después:
 ```sql
 alter table public.<tabla> enable row level security;
 
-create policy "dueño lee"     on public.<tabla> for select using (auth.uid() = user_id);
-create policy "dueño inserta" on public.<tabla> for insert with check (auth.uid() = user_id);
-create policy "dueño edita"   on public.<tabla> for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "dueño borra"   on public.<tabla> for delete using (auth.uid() = user_id);
+create policy "<tabla>_select" on public.<tabla>
+  for select to authenticated using ((select auth.uid()) = user_id);
+create policy "<tabla>_insert" on public.<tabla>
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+create policy "<tabla>_update" on public.<tabla>
+  for update to authenticated using ((select auth.uid()) = user_id)
+                              with check ((select auth.uid()) = user_id);
+create policy "<tabla>_delete" on public.<tabla>
+  for delete to authenticated using ((select auth.uid()) = user_id);
 ```
+
+Dos detalles de esa plantilla, los dos a propósito (D19):
+
+- **`(select auth.uid())`** y no `auth.uid()` a secas: envuelta en un select,
+  Postgres la evalúa una vez por consulta en lugar de una vez por fila.
+- **`to authenticated`** y no el `to public` que se pone por defecto: `anon`
+  no tiene nada que buscar en ninguna tabla de este proyecto.
 
 Sin esto la aplicación no se puede publicar: la clave anónima es pública por
 diseño y lo único que separa los datos de una persona de los de otra es RLS.
@@ -84,7 +96,7 @@ Extiende `auth.users` con las preferencias que hacen genérica a la aplicación.
 | Columna | Tipo | Para qué |
 |---|---|---|
 | `id` | uuid PK → `auth.users` | Es el usuario |
-| `display_name` | text | Nombre visible |
+| `display_name` | text (≤ 60) | Nombre visible. Lo manda el cliente al registrarse, así que el largo se limita en la base |
 | `currency` | text (`'CLP'`) | Código ISO 4217 |
 | `currency_decimals` | smallint (`0`) | CLP usa 0, USD usa 2 |
 | `timezone` | text (`'America/Santiago'`) | Define qué es "hoy" y cuándo cierra el mes |

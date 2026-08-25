@@ -116,3 +116,42 @@ Se compensa con dos hábitos, no con más ceremonia:
 
 Se reevalúa el día que alguien más escriba código acá. Mientras tanto, el
 criterio del proyecto manda: gana el uso real, se recorta.
+
+### D18 · El perfil se crea con un trigger, no desde la aplicación
+Un trigger sobre `auth.users` inserta la fila de `profiles` en el mismo
+instante en que nace la cuenta.
+
+La alternativa era que la app la creara después del registro, y deja una
+ventana en la que el usuario existe y su perfil no: se cortó la red, se cerró
+la pestaña, el registro pide confirmar el correo. Cada pantalla tendría que
+manejar ese caso para siempre. Con el trigger, tener cuenta y tener perfil son
+el mismo hecho.
+
+La función va `security definer` con `set search_path = ''` y todo nombre
+calificado (`public.profiles`, no `profiles`): sin eso, quien controle el
+`search_path` de su sesión puede hacer que resuelva otro objeto y ejecute su
+código con los privilegios del dueño de la función.
+
+`security definer` se usa **solo donde hace falta**. El trigger de
+`updated_at`, por ejemplo, no lo lleva: únicamente modifica el registro que va
+de entrada, no lee tablas, y darle privilegios ajenos sería ampliar la
+superficie de ataque a cambio de nada.
+
+### D19 · Las políticas envuelven `auth.uid()` en un `select`
+`using ((select auth.uid()) = user_id)` en vez de `using (auth.uid() = user_id)`.
+
+Sin el `select`, Postgres llama a la función **una vez por fila**. Con él,
+la evalúa una vez por consulta y reutiliza el resultado. En `profiles`, que
+tiene una fila, da exactamente lo mismo — pero es la forma que se va a copiar
+en `movements` y en las series del gimnasio, donde sí son miles de filas y la
+diferencia se mide en veces, no en porcentajes.
+
+Las políticas también llevan **`to authenticated`** en vez del `to public` que
+Postgres asume por defecto. No cambia la seguridad —`anon` no tiene `grant` y
+su `auth.uid()` es null— pero deja escrito a quién aplica cada regla y ahorra
+evaluarla para un rol que nunca va a pasarla.
+
+**`profiles` no lleva política de delete.** Un usuario con sesión iniciada y
+sin fila de perfil es un estado roto: la app no sabría su moneda ni su zona
+horaria. El perfil se borra solo, en cascada, al borrarse la cuenta. Las demás
+tablas sí llevan las cuatro.

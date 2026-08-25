@@ -21,7 +21,7 @@ Cada documento tiene un trabajo. No duplicar contenido entre ellos: enlazar.
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Estructura de `src/`, flujo de datos, offline | Al crear un archivo: dice dónde va |
 | [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md) | Las tablas, columna por columna, y por qué | Al escribir una migración o una consulta |
 | [`docs/MODELO_ECONOMICO.md`](docs/MODELO_ECONOMICO.md) | Sobres, reparto, topes y metas | Al tocar `core/money/` o el área Plata |
-| [`docs/DECISIONES.md`](docs/DECISIONES.md) | D1–D17: cada decisión con su motivo | Cuando algo parezca raro: ya se discutió |
+| [`docs/DECISIONES.md`](docs/DECISIONES.md) | D1–D19: cada decisión con su motivo | Cuando algo parezca raro: ya se discutió |
 | [`docs/INSTALACION.md`](docs/INSTALACION.md) | Instalar desde cero (para quien forkea) | Solo al montar el proyecto de nuevo |
 | [`README.md`](README.md) | La cara pública del proyecto | Al cambiar el estado o el alcance |
 
@@ -35,7 +35,7 @@ Cada documento tiene un trabajo. No duplicar contenido entre ellos: enlazar.
 | # | Regla | Por qué / detalle |
 |---|---|---|
 | 1 | **`src/core/` es puro** | Si necesita `import React` o `import supabase`, no va ahí. Toda regla de negocio vive en `core/` y tiene pruebas |
-| 2 | **RLS y `grant` en la migración que crea la tabla** | Las cuatro políticas sobre `auth.uid() = user_id`. Este proyecto **no** expone tablas nuevas solo: sin `grant … to authenticated`, la API no la ve |
+| 2 | **RLS y `grant` en la migración que crea la tabla** | Las cuatro políticas `to authenticated` sobre `(select auth.uid()) = user_id` (D19). Este proyecto **no** expone tablas nuevas solo: sin `grant … to authenticated`, la API no la ve |
 | 3 | **Montos enteros en unidad mínima** | Nunca `float`. También el peso del gimnasio (gramos) y los porcentajes (puntos base) |
 | 4 | **Nada acumulado en columnas** | Saldos, rachas y topes se calculan (D6) |
 | 5 | **`src/types/database.ts` no se edita a mano** | Se regenera con `npm run db:types` |

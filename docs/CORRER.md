@@ -86,10 +86,14 @@ create table public.tasks (
 alter table public.tasks enable row level security;
 
 -- 2. Las cuatro políticas, siempre sobre el dueño de la fila
-create policy "tasks_select" on public.tasks for select using (auth.uid() = user_id);
-create policy "tasks_insert" on public.tasks for insert with check (auth.uid() = user_id);
-create policy "tasks_update" on public.tasks for update using (auth.uid() = user_id);
-create policy "tasks_delete" on public.tasks for delete using (auth.uid() = user_id);
+create policy "tasks_select" on public.tasks
+  for select to authenticated using ((select auth.uid()) = user_id);
+create policy "tasks_insert" on public.tasks
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+create policy "tasks_update" on public.tasks
+  for update to authenticated using ((select auth.uid()) = user_id);
+create policy "tasks_delete" on public.tasks
+  for delete to authenticated using ((select auth.uid()) = user_id);
 
 -- 3. Permisos: este proyecto NO expone las tablas nuevas solo
 grant select, insert, update, delete on public.tasks to authenticated;
