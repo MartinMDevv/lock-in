@@ -21,7 +21,7 @@ código compila.
 
 | Hito | Qué deja listo | Avance |
 |---|---|---|
-| **0 · Cimientos** | El proyecto arranca, se verifica solo y tiene base de datos | `▓▓▓▓▓▓▓▓▓░` 5 de 6 |
+| **0 · Cimientos** | El proyecto arranca, se verifica solo, tiene base de datos y está publicado | `▓▓▓▓▓▓▓▓▓▓` **completo** |
 | **1 · Esqueleto** | Las cinco áreas navegables y con sesión iniciada | `░░░░░░░░░░` 0 de 8 |
 | **2 · Una cosa útil por área** | Se puede vivir un día entero dentro de la app | `░░░░░░░░░░` 0 de 10 |
 | **3 · Profundidad** | Lo que el uso real pida, en ese orden | `░░░░░░░░░░` 0 de 7 |
@@ -31,7 +31,7 @@ código compila.
 
 ```
 Vercel ──> Login ──> Esqueleto navegable ──> Datos reales por área ──> Profundidad
-  🔴          🔴             🔴                       🔴                    🟢
+  ✅          🔴             🔴                       🔴                    🟢
 
 Cada migración ──> `npm run db:types` ──> recién ahí se escribe la consulta
 ```
@@ -40,7 +40,7 @@ Cada migración ──> `npm run db:types` ──> recién ahí se escribe la co
 
 ## Hito 0 · Cimientos
 
-*Termina cuando la app está publicada y se puede entrar desde el teléfono.*
+*Termina cuando la app está publicada y se puede entrar desde el teléfono.* **Listo.**
 
 | | Tarea | Qué es | Prio | Depende de |
 |:---:|---|---|:---:|---|
@@ -49,7 +49,7 @@ Cada migración ──> `npm run db:types` ──> recién ahí se escribe la co
 | ✅ | CI en runner propio | Los runners alojados no arrancan (D15) | 🟡 | — |
 | ✅ | Lógica del reparto | `core/money/allocate.ts` con 7 pruebas | 🟡 | — |
 | ✅ | Base de datos | Proyecto de Supabase creado, CLI enlazado, `.env` cargado | 🔴 | — |
-| ⬜ | **Deploy en Vercel** | Subir el sitio y abrirlo en el teléfono | 🔴 | Base de datos |
+| ✅ | **Deploy en Vercel** | Publicado y abierto desde el teléfono. Cada push a `main` redespliega | 🔴 | Base de datos |
 
 ## Hito 1 · El esqueleto completo
 
@@ -59,7 +59,7 @@ Cada migración ──> `npm run db:types` ──> recién ahí se escribe la co
 |:---:|---|---|:---:|---|
 | ⬜ | Migración `profiles` | Primera tabla: moneda, zona horaria, RLS y `grant` | 🔴 | — |
 | ⬜ | Regenerar tipos | `npm run db:types` tras cada migración | 🔴 | `profiles` |
-| ⬜ | Login | Correo y contraseña, sesión persistente (D3) | 🔴 | `profiles` |
+| ⬜ | Login | Correo y contraseña, sesión persistente (D3). **Es la primera pantalla que toca Supabase: acá se confirma que las variables de Vercel están bien** | 🔴 | `profiles` |
 | ⬜ | Rutas | Las seis rutas de `PLAN.md` en el router | 🔴 | Login |
 | ⬜ | Cáscara de navegación | Barra inferior en teléfono, lateral en escritorio | 🔴 | Rutas |
 | ⬜ | Pantalla por área | Cada una con su estado vacío honesto ("todavía no hay nada") | 🟡 | Cáscara |
