@@ -11,7 +11,8 @@ const BASIS_POINTS = 10_000
  *
  * Orden de servicio:
  *   1. Los 'fixed', por sortOrder. Cobran primero porque son intocables.
- *   2. Los 'percent', por sortOrder, calculados sobre el ingreso BRUTO.
+ *   2. Los 'percent', por sortOrder, calculados sobre LO QUE QUEDA después
+ *      de los fijos (D20). Todos usan esa misma base, no se encadenan.
  *   3. Los 'residual' se reparten lo que quede, en partes iguales.
  *
  * Garantía: la suma de allocations + unallocatedMinor es exactamente
@@ -46,10 +47,14 @@ export function allocateIncome(
     serve(e, Math.max(0, Math.trunc(e.fillValue)))
   }
 
-  // 2. Porcentajes, siempre sobre el ingreso bruto (no sobre el remanente),
-  //    para que "10% de gustos" signifique lo mismo entre un mes y otro.
+  // 2. Porcentajes, sobre lo que dejaron los fijos (D20). Así un porcentaje
+  //    nunca pide plata que no existe: si el ingreso no alcanza, el faltante
+  //    es siempre de un fijo, que es el único que importa avisar.
+  //    La base se congela antes del bucle: 60% y 15% son de la MISMA base,
+  //    no el 15% de lo que dejó el 60%.
+  const afterFixed = remaining
   for (const e of byOrder.filter((e) => e.fillRule === 'percent')) {
-    serve(e, Math.trunc((incomeMinor * Math.max(0, e.fillValue)) / BASIS_POINTS))
+    serve(e, Math.trunc((afterFixed * Math.max(0, e.fillValue)) / BASIS_POINTS))
   }
 
   // 3. Residuales: se llevan lo que quede, en partes iguales. El resto de la

@@ -11,7 +11,7 @@
 export type FillRule =
   /** Monto fijo. Se sirve primero. Ej: las cuentas que sí o sí hay que pagar. */
   | 'fixed'
-  /** Porcentaje del ingreso bruto, en puntos base (10% = 1000). */
+  /** Porcentaje de lo que queda tras los fijos, en puntos base (10% = 1000). */
   | 'percent'
   /** Se lleva todo lo que sobró después de los anteriores. */
   | 'residual'

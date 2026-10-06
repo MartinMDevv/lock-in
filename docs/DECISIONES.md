@@ -159,3 +159,17 @@ evaluarla para un rol que nunca va a pasarla.
 sin fila de perfil es un estado roto: la app no sabría su moneda ni su zona
 horaria. El perfil se borra solo, en cascada, al borrarse la cuenta. Las demás
 tablas sí llevan las cuatro.
+
+### D20 · Los porcentajes se calculan sobre lo que dejan los fijos
+Antes eran sobre el ingreso bruto. Se cambió porque, con ingresos variables,
+un porcentaje sobre el bruto pide plata que no existe: con 320.000 de ingreso
+y 210.000 de fijos, un 60% pediría 192.000 cuando quedan 110.000, y la app
+avisaría un faltante que no es real. Sobre lo que queda, el único faltante
+posible es el de un fijo, que es el que vale la pena avisar.
+
+Todos los porcentajes usan la **misma** base (lo que dejaron los fijos), no se
+encadenan: 60% y 15% son de la misma cifra. Lo que se pierde es que "10% de
+gustos" ya no sea el 10% de lo que ganaste; se acepta, porque la app es para
+armar cualquier modelo económico y este es el que nunca se contradice solo.
+
+Implementación y pruebas: `src/core/money/allocate.ts`.
