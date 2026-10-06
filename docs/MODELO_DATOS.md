@@ -1,6 +1,6 @@
 # Modelo de datos
 
-Postgres, sobre Supabase. 14 tablas repartidas en cinco áreas.
+Postgres, sobre Supabase. 13 tablas repartidas en cinco áreas.
 
 ---
 
@@ -118,13 +118,21 @@ o para cualquier cosa que alguien invente.
 |---|---|---|
 | `name` | text | "Cuentas fijas", "Vida diaria" |
 | `fill_rule` | enum `fixed` \| `percent` \| `residual` | **Perilla 1:** cómo se llena cuando entra plata |
-| `fill_value` | bigint | `fixed`: unidad mínima · `percent`: puntos base · `residual`: se ignora |
+| `fill_value` | bigint | `fixed`: unidad mínima · `percent`: puntos base sobre lo que dejan los fijos (D20) · `residual`: se ignora |
 | `cap_amount` | bigint null | **Perilla 2:** tope de gasto. Null = sin tope |
 | `cap_period` | enum `month` \| `none` | Cada cuánto se reinicia el contador del tope |
 | `rollover` | boolean | **Perilla 3:** el sobrante ¿se queda o se barre al ahorro? |
 | `sweep_to_envelope_id` | uuid null → `envelopes` | A dónde barrer cuando `rollover = false` |
 | `sort_order` | int | Define el orden de servicio en el reparto |
+| `target_minor` | bigint null | **Meta** (D21). Null = sobre normal; con valor, el sobre es una meta |
+| `target_date` | date null | Para cuándo, opcional. Con esto se calcula el ritmo |
+| `achieved_at` | timestamptz null | Cuándo se cumplió la meta |
+| `group_id` | uuid null → `envelopes` | Agrupa visualmente bajo otro sobre ("Ahorro"). No afecta el reparto |
 | `archived_at` | timestamptz null | Borrado suave |
+
+`group_id` tiene una sola profundidad: un sobre que agrupa no puede estar
+agrupado a su vez. Se valida en la interfaz; un `check` no puede mirar otra
+fila.
 
 ### `movements` — todo el dinero, en una sola tabla
 
@@ -164,7 +172,7 @@ saldo del sobre X   = Σ(amount donde envelope_to = X) − Σ(amount donde envel
 consumo del tope    = Σ(amount donde envelope_from = X y kind='expense'
                         y occurred_at dentro del período, según la zona del perfil)
 barrido de sobrante = un movimiento 'transfer' al cerrar el período
-avance de una meta  = saldo del sobre asociado a la meta
+avance de una meta  = saldo del sobre (la meta ES el sobre, D21)
 ```
 
 `batch_id` existe por una razón práctica: cuando entra un ingreso de $200.000 y
@@ -175,15 +183,11 @@ monto se tipeó mal, se deshace el lote completo de una vez.
 anterior dejó sobrante en un sobre con `rollover = false`, se pregunta antes de
 mover nada. Sin tareas programadas y sin sorpresas.
 
-### `goals` — metas
+### Metas: no tienen tabla
 
-| Columna | Tipo | Para qué |
-|---|---|---|
-| `name` | text | "Moto" |
-| `target_minor` | bigint | Monto objetivo |
-| `envelope_id` | uuid → `envelopes` | De qué sobre sale el avance |
-| `target_date` | date null | Opcional |
-| `achieved_at` | timestamptz null | Cuándo se cumplió |
+Hasta el 06-oct existía una tabla `goals` que apuntaba a un sobre. Se eliminó
+(D21): con varias metas sobre un mismo sobre, la app no tenía cómo saber cuánto
+del saldo era de cada una. Ahora la meta son las columnas `target_*` del sobre.
 
 ---
 
@@ -206,6 +210,7 @@ Dos tablas, y la separación es deliberada.
 | `block_id` | uuid → `schedule_blocks` | A qué materia pertenece |
 | `weekday` | smallint (0–6) | 0 = domingo |
 | `starts_at` / `ends_at` | time | Hora local |
+| `routine_id` | uuid null → `routines` | **Qué rutina toca en este horario** (D22). Null en clases y trabajo |
 
 **Por qué separadas:** una clase se dicta martes *y* jueves. En una sola tabla
 serían dos filas repitiendo nombre, color y sala; al renombrar el ramo habría
@@ -242,6 +247,16 @@ La semilla trae un catálogo genérico; cada persona agrega los suyos.
 
 ### `routines` y `routine_exercises` — el plan
 `routines`: `name` ("Upper A"), `sort_order`, `archived_at`.
+
+Los días y la hora de una rutina **no viven acá**: viven en el Horario, en los
+`schedule_slots` que la apuntan con `routine_id` (D22). Para la persona es
+"elijo los días de mi rutina"; por debajo, la app crea esos horarios dentro de
+un bloque de gimnasio. Así la hora existe en un solo lugar y el Horario y Hoy
+la muestran sin copiarla.
+
+Las rutinas recomendadas (full body, upper/lower, push/pull/legs) son
+**plantillas que insertan filas**, igual que los presets de sobres: quien las
+usa las edita o las borra. Ninguna rutina vive en el código.
 `routine_exercises`: `routine_id`, `exercise_id`, `sort_order`,
 `target_sets`, `target_reps`, `rest_seconds`.
 
@@ -265,7 +280,9 @@ La semilla trae un catálogo genérico; cada persona agrega los suyos.
 **Lo que no necesita tabla:**
 - *Carga automática de la sesión anterior*: son los últimos `workout_sets` de
   ese ejercicio, ordenados por fecha.
-- *Racha*: fechas distintas en `workouts`, contadas hacia atrás desde hoy.
+- *Racha*: de los días en que tocaba entrenar (los `schedule_slots` con
+  `routine_id`), cuántos tienen un `workout`. Faltar un día que no tocaba no
+  la rompe (D22).
 - *Récords*: el máximo `weight_grams` por ejercicio, ignorando calentamiento.
 
 ---
@@ -281,7 +298,7 @@ create index on public.movements (user_id, envelope_from) where envelope_from is
 create index on public.movements (user_id, envelope_to)   where envelope_to   is not null;
 create index on public.tasks     (user_id, due_on) where completed_at is null;
 create index on public.workouts  (user_id, started_at desc);
-create index on public.workout_sets (user_id, exercise_id, completed_at desc);
+create index on public.workout_sets (user_id, exercise_id, created_at desc);
 ```
 
 ---

@@ -23,7 +23,7 @@ sesión en el lugar equivocado. Con sesión persistente, la contraseña se escri
 una sola vez.
 
 ### D4 · TypeScript en modo estricto
-Con 14 tablas y cinco áreas, los tipos generados desde el esquema real avisan de
+Con 13 tablas y cinco áreas, los tipos generados desde el esquema real avisan de
 un campo mal escrito al momento de escribirlo. `strict` y
 `noUncheckedIndexedAccess` activados: en un repo público el costo de un error
 silencioso es mayor que la molestia de tipar.
@@ -101,6 +101,12 @@ sigue siendo `npm run db:push` como dice `docs/INSTALACION.md`. Esa integración
 va por la app de Supabase y no por Actions, así que el bloqueo de facturación
 no la afecta.
 
+**Ojo al configurarla (06-oct):** conectar el repositorio no basta. En
+*Project Settings → Integrations → GitHub* hay que prender **«Deploy to
+production»** y poner la rama (`main`). Estuvo apagado desde el 24-ago, así
+que hasta el 06-oct ninguna migración se aplicó sola: `profiles` recién entró
+ese día.
+
 ### D17 · Sin ramas: se commitea directo a `main`
 Con un solo desarrollador, abrir un PR contra uno mismo es una ceremonia sin
 revisor: nadie va a rechazar nada. El gancho de pre-commit y el CI corren igual
@@ -173,3 +179,38 @@ gustos" ya no sea el 10% de lo que ganaste; se acepta, porque la app es para
 armar cualquier modelo económico y este es el que nunca se contradice solo.
 
 Implementación y pruebas: `src/core/money/allocate.ts`.
+
+### D21 · Una meta es un sobre con objetivo, no una tabla aparte
+La tabla `goals` apuntaba a un sobre y tomaba su saldo como avance. Se rompía
+con varias metas sobre el mismo sobre (tres metas "dentro" de Ahorro): la app
+no podía saber cuánto del saldo era de cada una.
+
+Ahora `envelopes` tiene `target_minor`, `target_date` y `achieved_at`: un sobre
+con objetivo **es** una meta, y se llena con cualquiera de las tres reglas. Para
+verlas juntas bajo "Ahorro", cada una apunta a su grupo con `group_id`, que es
+solo visual. Se descartó etiquetar cada movimiento con un `goal_id`: obligaba a
+llevar dos cuentas a la vez y a acordarse de etiquetar.
+
+El modelo pasa de 14 a 13 tablas.
+
+### D22 · Los días de una rutina viven en el Horario
+`schedule_slots` gana un `routine_id` opcional: el horario "lunes 19:30" del
+bloque de gimnasio dice qué rutina toca. Con eso Hoy muestra "toca Upper A a
+las 19:30" y la racha cuenta **los días en que tocaba**, así que faltar un
+día libre no la rompe.
+
+Para la persona el flujo es "armo mi rutina y elijo sus días"; por debajo la
+app crea esos horarios. Se descartó guardar los días en `routines`: la hora
+quedaría en dos lugares y tarde o temprano no coincidirían.
+
+Ninguna rutina vive en el código: las recomendadas (full body, upper/lower,
+push/pull/legs) son plantillas que insertan filas, igual que los presets de
+sobres. Quien forkea arma la suya.
+
+### D23 · Importar desde CSV: aceptada, para después del Hito 2
+Poder subir un CSV por área (movimientos, tareas, horario, rutinas) para no
+cargar todo a mano. Se acepta la idea pero **no entra a la hoja de ruta
+todavía**: el formato de cada CSV depende de cómo queden las tablas, y esas
+recién se escriben en el Hito 2. Lo único que se adelanta es que los `id` los
+pueda generar el cliente (`gen_random_uuid()` como default, nunca obligatorio
+desde la base), lo mismo que necesita la cola sin conexión.
