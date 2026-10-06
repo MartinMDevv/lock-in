@@ -174,3 +174,17 @@ comment on function public.handle_new_user() is
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ---------------------------------------------------------------------------
+-- 6 · Las cuentas que ya existían
+-- ---------------------------------------------------------------------------
+-- El trigger de arriba solo actúa sobre cuentas NUEVAS. Quien se haya
+-- registrado antes de esta migración quedaría sin perfil para siempre: con
+-- sesión iniciada y sin moneda ni zona horaria, que es justo el estado que
+-- D18 quiere que no exista.
+--
+-- Corre una sola vez, cuando se aplica la migración. El `on conflict` lo
+-- deja inofensivo aunque no haya nadie o ya tengan perfil.
+insert into public.profiles (id)
+select id from auth.users
+on conflict (id) do nothing;

@@ -132,6 +132,10 @@ calificado (`public.profiles`, no `profiles`): sin eso, quien controle el
 `search_path` de su sesión puede hacer que resuelva otro objeto y ejecute su
 código con los privilegios del dueño de la función.
 
+El trigger solo alcanza a las cuentas nuevas, así que la migración termina
+con un `insert … select` que cubre a quien ya se hubiera registrado antes.
+Sin eso, esas cuentas quedan sin perfil para siempre y a mano.
+
 `security definer` se usa **solo donde hace falta**. El trigger de
 `updated_at`, por ejemplo, no lo lleva: únicamente modifica el registro que va
 de entrada, no lee tablas, y darle privilegios ajenos sería ampliar la
