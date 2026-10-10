@@ -55,6 +55,11 @@ de Row Level Security e índices.
 En el panel: **Authentication → Providers → Email**, activado, con
 *Confirm email* según se prefiera.
 
+Cuando ya tengas tu cuenta creada, **apaga el registro** (*Allow new users to
+sign up*). La URL de tu proyecto queda dentro del código publicado: con el
+registro abierto, cualquiera podría crearse una cuenta en tu instancia y gastar
+tu cuota gratis. Cada persona monta la suya (D29).
+
 ## 6. Correr
 
 ```bash

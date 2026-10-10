@@ -12,8 +12,9 @@ ser legible para quien lo mantiene.
 src/
 ├── core/          ← LÓGICA DE NEGOCIO. Sin React, sin Supabase, sin DOM.
 │   ├── money/       reparto de ingresos, saldos, topes, períodos
-│   ├── gym/         rachas, récords, volumen
-│   └── time/        límites de día/semana/mes según la zona del perfil
+│   ├── gym/         rachas, récords, volumen               (se crea en F3)
+│   ├── time/        límites de día/semana/mes por zona     (se crea en F3)
+│   └── csv/         leer y validar importaciones           (se crea en F6)
 │
 ├── lib/           ← Infraestructura
 │   ├── env.ts       variables de entorno validadas con Zod al arrancar
@@ -25,7 +26,7 @@ src/
 │
 ├── components/
 │   ├── layout/      cáscara: barra inferior en teléfono, lateral en escritorio
-│   └── ui/          piezas reutilizables (shadcn/ui)
+│   └── ui/          piezas reutilizables (shadcn/ui, D13)
 │
 ├── features/      ← UNA CARPETA POR ÁREA, cada una autocontenida
 │   ├── auth/
@@ -66,7 +67,7 @@ Postgres (Supabase)
    ↕  RLS filtra por auth.uid() — la seguridad vive en la base, no en el cliente
 supabase-js
    ↕
-TanStack Query   ← caché, reintentos, actualizaciones optimistas, offline de lectura
+TanStack Query   ← caché, reintentos, actualizaciones optimistas, cola sin conexión
    ↕
 features/*       ← componentes de cada área
    ↕
@@ -100,14 +101,16 @@ avatar en la cabecera, no ocupa pestaña.
 tarea, en Gimnasio anota una serie. Es la traducción literal del principio de
 los 5 segundos.
 
-## Offline
+## Sin conexión (D24)
 
-La v1 hace **lectura sin conexión**: el service worker cachea la cáscara de la
-app y TanStack Query conserva lo último recibido, así que la app abre en el
-metro y muestra el horario y los sobres.
+**Sin señal se lee y se crea, pero no se edita.** El service worker cachea la
+cáscara de la app y TanStack Query guarda lo último recibido en IndexedDB, así
+que la app abre en el metro y muestra el horario y los sobres.
 
-**Escribir requiere conexión.** Si no la hay, se avisa y se reintenta al
-recuperarla. Una cola de escritura en IndexedDB con resolución de conflictos
-entre teléfono y computador es cerca de una semana de trabajo y bugs difíciles
-de reproducir; se evalúa después de un mes de uso real, con evidencia de que
-hizo falta.
+Las **creaciones** (un gasto, una tarea, una serie) quedan en cola con el aviso
+«pendiente de sincronizar» y se envían al volver la señal. Como el `id` lo
+genera el cliente, reenviar una creación nunca la duplica. Editar y borrar sí
+piden conexión: resolver conflictos entre dos ediciones del mismo dato es lo
+que hacía cara la sincronía completa, y crear no tiene ese problema.
+
+Se construye en la fase F5 ([`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md)).

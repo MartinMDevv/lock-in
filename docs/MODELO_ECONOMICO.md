@@ -125,7 +125,7 @@ con cualquiera de las tres reglas:
 
 | Meta | Cómo se llena | Objetivo |
 |---|---|---|
-| Moto | fijo 40.000 cada vez que entra plata | 500.000 |
+| Bicicleta | fijo 25.000 cada vez que entra plata | 350.000 |
 | Viaje | 10% de lo que queda | 300.000 para febrero |
 | Fondo de emergencia | lo que sobre | 900.000 |
 

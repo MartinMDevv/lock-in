@@ -28,43 +28,30 @@ inicio que responda *¿qué tengo que hacer hoy?*.
 
 Detalle del área de Plata en [`MODELO_ECONOMICO.md`](MODELO_ECONOMICO.md).
 
-## Hitos
+## Fases
 
-Acá está el **qué y el por qué** de cada hito. El detalle tarea por tarea, con
-prioridades, bloqueos y el avance real, vive en
-[`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md).
+El plan de trabajo completo, fase por fase y con su avance, vive en
+[`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md). Aquí solo va la idea que lo ordena.
 
 El orden es **a lo ancho primero, en profundidad después**. Construir un módulo
 perfecto durante tres semanas deja una app que todavía no es lo prometido, y a
 esa altura ya se abandonó.
 
-### Hito 0 — Cimientos ✅
-Repo, Vite + TypeScript estricto, Tailwind, escáner de secretos, CI, `core/`
-con pruebas. Deploy en Vercel y sesión iniciada desde el teléfono.
-
-### Hito 1 — El esqueleto completo
-Las cinco áreas navegables con la barra inferior, cada una con su pantalla, y
-"Hoy" armado aunque llegue medio vacío.
-*Termina cuando la app ya se siente como la app, aunque casi no haga nada.*
-
-### Hito 2 — Una cosa útil por área
-Registrar un gasto · crear una tarea · un bloque de horario · anotar una serie.
-Acá entra la PWA: recién ahora hay algo que valga la pena instalar.
-*Termina cuando se puede vivir un día entero dentro de la app.*
-
-### Hito 3 — Profundidad, según uso real
-Sobres con reparto y topes, rutinas configurables, vista semana, racha, metas.
-**El orden lo decide lo que efectivamente se esté abriendo**, no este documento.
-
-### Hito 4 — Publicación
-README con capturas, `seed.sql` genérico, fork limpio verificado desde cero.
+| Antes (hitos) | Ahora (fases) | La idea |
+|---|---|---|
+| Hito 0 · Cimientos ✅ y Hito 1 · Esqueleto | **F0** | La app arranca, se publica y se navega |
+| — | **F1–F2** | La base definitiva y el diseño en el código |
+| Hito 2 · Una cosa útil por área | **F3–F4** | Se puede vivir un día dentro de la app, y se usa dos semanas como PWA |
+| — | **F5–F7** | Sin conexión, importar y exportar, seguridad |
+| Hito 3 · Profundidad, según uso real | **F8–F9** | **El orden lo decide lo que se esté abriendo**, no un documento |
+| Hito 4 · Publicación | **F10–F12** | Revisión, fork limpio y `v1.0.0` |
 
 ## Fuera de alcance — decidido, no se reabre
 
 | Descartado | Motivo |
 |---|---|
 | Integración bancaria automática | No hay API abierta en Chile; scraping frágil |
-| Notificaciones push | Soporte irregular en PWA. Se usan las alarmas del teléfono |
+| Notificaciones push | Soporte irregular en PWA: se usan las alarmas del teléfono. **Reabierta solo como prueba de concepto al final (F9, D26)** |
 | App nativa / React Native | Triplica el esfuerzo |
 | Calendario mensual con arrastrar y soltar | Caro, poco valor real |
 | Pomodoro, temporizadores, IA integrada | Ya existe en el teléfono |
@@ -76,8 +63,9 @@ README con capturas, `seed.sql` genérico, fork limpio verificado desde cero.
 | Guardarraíl | Cómo |
 |---|---|
 | **Nada personal se filtra** | `scripts/check-secrets.sh` como gancho de pre-commit **y** como paso de CI |
-| **RLS nunca es opcional** | Se activa en la misma migración que crea la tabla. Prueba automatizada con dos usuarios |
+| **RLS nunca es opcional** | Se activa en la misma migración que crea la tabla. Prueba automatizada con dos usuarios (F7) |
+| **Nada de lo anotado se pierde** | Lo que tiene historia se archiva; borrar la cuenta pide doble confirmación (D30) |
 | **Nada de nadie hardcodeado** | El `seed.sql` es genérico. Sobres, ramos y rutinas se cargan desde la interfaz |
 | **Ramas** | No se usan: un solo desarrollador, se commitea a `main`. Ver `DECISIONES.md` D17 |
 | **Commits** | Conventional Commits en español. Ninguno sin aprobación explícita |
-| **CI** | Secretos → lint → tipos → pruebas → build, en cada PR |
+| **CI** | Secretos → lint → tipos → pruebas → build, en cada push (nunca con `pull_request`, D15) |

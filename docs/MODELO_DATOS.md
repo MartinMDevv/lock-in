@@ -1,6 +1,38 @@
 # Modelo de datos
 
-Postgres, sobre Supabase. 13 tablas repartidas en cinco áreas.
+Postgres, sobre Supabase. **15 tablas** repartidas en cinco áreas, más las
+importaciones. Es la **fuente de verdad del esquema**: lo que no está aquí no
+existe, y una migración nueva se escribe primero en este documento.
+
+> **Estado (10-oct-2026):** solo `profiles` está aplicada. El resto es el
+> esquema definitivo, revisado contra el diseño y con las decisiones D24–D30
+> tomadas. Se aplica en la fase F1 ([`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md)),
+> en el orden de [las migraciones](#las-migraciones-en-orden).
+
+## El mapa
+
+```mermaid
+erDiagram
+    profiles ||--o{ envelopes : ""
+    profiles ||--o{ imports : ""
+    envelopes ||--o{ movements : "from / to"
+    envelopes ||--o{ envelopes : "group / sweep"
+    envelopes ||--o{ period_closures : ""
+    schedule_blocks ||--o{ schedule_slots : ""
+    routines ||--o{ schedule_slots : "D22"
+    schedule_blocks ||--o{ tasks : ""
+    task_categories ||--o{ tasks : ""
+    routines ||--o{ routine_exercises : ""
+    exercises ||--o{ routine_exercises : ""
+    routines ||--o{ workouts : ""
+    workouts ||--o{ workout_sets : ""
+    exercises ||--o{ workout_sets : ""
+    imports ||--o{ movements : "import_id"
+    imports ||--o{ tasks : "import_id"
+```
+
+*(Todas las tablas cuelgan también de `profiles` por `user_id`; se omite en el
+dibujo para que se lea.)*
 
 ---
 
@@ -71,11 +103,32 @@ distintas; el consumo del tope es una suma con filtro de fecha.
 Sin esto, a las 21:00 en Chile el servidor en UTC ya cree que es mañana, y un
 gasto de la noche del 31 cae en el mes siguiente.
 
-### 5. Borrado: suave donde hay historia, duro donde no
+### 5. Borrado: lo que tiene historia se archiva (D30)
 
-Un sobre o un ejercicio están referenciados por movimientos y series pasadas:
-se archivan (`archived_at`), no se borran, para no romper el historial.
-Una tarea suelta se borra de verdad.
+**Nada de lo anotado se pierde.** Todo queda con su fecha, y las vistas por mes
+son filtros sobre eso. Sobres, ejercicios y rutinas están referenciados por
+movimientos, series y sesiones pasadas: se archivan (`archived_at`) y la
+interfaz no les ofrece «Borrar». Una tarea suelta o un gasto mal anotado sí se
+borran de verdad.
+
+| Referencia | Al borrar el padre | Por qué |
+|---|---|---|
+| `movements → envelopes` | **no action** | Un sobre con historia se archiva, no se borra |
+| `workout_sets → exercises` | **no action** | Igual: el ejercicio se archiva |
+| `workout_sets → workouts` | cascade | Borrar una sesión borra sus series |
+| `schedule_slots → schedule_blocks` | cascade | Los horarios no existen sin su materia |
+| `schedule_slots → routines` | set null | Si se borra la rutina, el horario queda como bloque normal |
+| `tasks → task_categories` / `schedule_blocks` | set null | La tarea sobrevive sin categoría |
+| `routine_exercises → routines` | cascade | |
+| `workouts → routines` | set null | La sesión queda como «libre» |
+| `* → imports` | cascade | Deshacer una importación (ver [Importaciones](#importaciones)) |
+| `* → auth.users` | cascade | Borrar la cuenta borra todo. Pide doble confirmación (D30) |
+
+> ⚠️ **`no action` y no `restrict`.** Los dos impiden borrar un sobre que tiene
+> movimientos, pero `restrict` revisa **en el instante** y `no action` **al
+> final de la operación**. Al borrar la cuenta, la cascada puede llegar al sobre
+> antes que a sus movimientos: con `restrict` eso da error y «Borrar mi cuenta»
+> falla; con `no action`, al final ya no queda nada huérfano y pasa.
 
 ### 6. Columnas comunes
 
@@ -85,6 +138,23 @@ user_id    uuid not null references auth.users(id) on delete cascade
 created_at timestamptz not null default now()
 updated_at timestamptz not null default now()   -- por trigger
 ```
+
+El `id` tiene valor por defecto, pero **el cliente lo puede mandar** (D23,
+D24). Así una creación que se reintenta sin conexión nunca se inserta dos
+veces: la segunda choca con la primera.
+
+### 7. Los colores son una de las 10 claves de la paleta
+
+```sql
+create domain public.tag_color as text
+  check (value in ('azul','cian','verde','lima','ambar',
+                   'naranja','rojo','rosa','violeta','gris'));
+```
+
+Son exactamente los 10 `--color-tag-*` de los tokens del diseño. Se guarda el
+**nombre** y no un hex porque el tema claro y el oscuro pintan el mismo nombre
+con distinto tono, para que siempre se lea. Si cambia un tono, se cambia solo en
+la paleta.
 
 ---
 
@@ -102,6 +172,7 @@ Extiende `auth.users` con las preferencias que hacen genérica a la aplicación.
 | `timezone` | text (`'America/Santiago'`) | Define qué es "hoy" y cuándo cierra el mes |
 | `weight_unit` | text (`'kg'` \| `'lb'`) | Solo afecta cómo se muestra; se guarda en gramos |
 | `week_starts_on` | smallint (`1`) | 1 = lunes. Cambia la vista semana |
+| `theme` | text `'system'` \| `'dark'` \| `'light'` | Ajustes. En la base, para que el teléfono y el computador muestren lo mismo |
 | `onboarded_at` | timestamptz | Si es null, se ofrecen los presets |
 
 ---
@@ -165,7 +236,7 @@ check (
 )
 ```
 
-**Todo se deriva de acá:**
+**Todo se deriva de aquí:**
 
 ```
 saldo del sobre X   = Σ(amount donde envelope_to = X) − Σ(amount donde envelope_from = X)
@@ -182,6 +253,22 @@ monto se tipeó mal, se deshace el lote completo de una vez.
 **El barrido nunca es automático.** Al abrir la app en un período nuevo, si el
 anterior dejó sobrante en un sobre con `rollover = false`, se pregunta antes de
 mover nada. Sin tareas programadas y sin sorpresas.
+
+### `period_closures` — el barrido recuerda la respuesta
+
+Una fila por **sobre y mes cerrado** que ya se resolvió. Sin ella, quien dice
+«no barrer» recibiría la misma pregunta cada vez que abre la app.
+
+| Columna | Tipo | Para qué |
+|---|---|---|
+| `envelope_id` | uuid → `envelopes` | El sobre que tenía sobrante |
+| `period_start` | date | El primer día del mes que cerró (en la zona del perfil) |
+| `action` | `'swept'` \| `'kept'` | Qué decidió la persona |
+| `batch_id` | uuid null | Si barrió: el lote de `movements` que lo hizo. Permite deshacer |
+
+`unique (user_id, envelope_id, period_start)`. Al abrir la app en un mes nuevo
+se pregunta solo por los sobres sin fila. **No guarda montos**: el sobrante se
+sigue calculando (D6).
 
 ### Metas: no tienen tabla
 
@@ -200,7 +287,7 @@ Dos tablas, y la separación es deliberada.
 |---|---|---|
 | `title` | text | "Cálculo II" |
 | `category` | text null | "clase", "trabajo", "gimnasio" |
-| `color` | text | Para distinguir de un vistazo |
+| `color` | `tag_color` | Una de las 10 claves de la paleta |
 | `location` | text null | Sala, dirección |
 | `valid_from` / `valid_until` | date / date null | El semestre. Fuera de rango no aparece |
 
@@ -222,7 +309,7 @@ una vez y sus horarios cuelgan de ella.
 ## Área: Tareas
 
 ### `task_categories`
-`name`, `color`, `sort_order`. Existe como tabla —y no como texto libre— porque
+`name`, `color` (`tag_color`), `sort_order`. Existe como tabla —y no como texto libre— porque
 la vista "por categoría" necesita colores estables y una lista cerrada.
 
 ### `tasks`
@@ -242,13 +329,22 @@ la vista "por categoría" necesita colores estables y una lista cerrada.
 ## Área: Gimnasio
 
 ### `exercises` — catálogo
-`name`, `muscle_group`, `is_custom`, `archived_at`.
+`name`, `muscle_group`, `is_custom`, `measure`, `archived_at`.
 La semilla trae un catálogo genérico; cada persona agrega los suyos.
+
+`measure` dice **cómo se mide** el ejercicio, y con eso qué campos pide la
+pantalla de la serie:
+
+| `measure` | Ejemplo | La serie pide |
+|---|---|---|
+| `'reps_weight'` | Press banca | Repeticiones y peso |
+| `'reps'` | Dominadas | Repeticiones; el peso es **opcional** (vacío = peso corporal, con valor = lastre) |
+| `'time'` | Plancha | Segundos |
 
 ### `routines` y `routine_exercises` — el plan
 `routines`: `name` ("Upper A"), `sort_order`, `archived_at`.
 
-Los días y la hora de una rutina **no viven acá**: viven en el Horario, en los
+Los días y la hora de una rutina **no viven aquí**: viven en el Horario, en los
 `schedule_slots` que la apuntan con `routine_id` (D22). Para la persona es
 "elijo los días de mi rutina"; por debajo, la app crea esos horarios dentro de
 un bloque de gimnasio. Así la hora existe en un solo lugar y el Horario y Hoy
@@ -258,7 +354,8 @@ Las rutinas recomendadas (full body, upper/lower, push/pull/legs) son
 **plantillas que insertan filas**, igual que los presets de sobres: quien las
 usa las edita o las borra. Ninguna rutina vive en el código.
 `routine_exercises`: `routine_id`, `exercise_id`, `sort_order`,
-`target_sets`, `target_reps`, `rest_seconds`.
+`target_sets`, `target_reps`, `target_seconds` (para los de tiempo),
+`rest_seconds`.
 
 ### `workouts` — una sesión
 `routine_id` (null = sesión libre), `started_at`, `ended_at`, `notes`.
@@ -269,8 +366,9 @@ usa las edita o las borra. Ninguna rutina vive en el código.
 | `workout_id` | uuid → `workouts` | |
 | `exercise_id` | uuid → `exercises` | |
 | `set_index` | smallint | 1ª, 2ª, 3ª serie |
-| `reps` | smallint | |
-| `weight_grams` | int | Entero, por el mismo motivo que la plata |
+| `reps` | smallint null | |
+| `weight_grams` | int null | Entero, por el mismo motivo que la plata. Null = peso corporal |
+| `duration_seconds` | int null | Para los ejercicios por tiempo |
 | `rpe` | smallint null | Esfuerzo percibido, opcional |
 | `is_warmup` | boolean | Las de calentamiento no cuentan para los récords |
 
@@ -283,7 +381,33 @@ usa las edita o las borra. Ninguna rutina vive en el código.
 - *Racha*: de los días en que tocaba entrenar (los `schedule_slots` con
   `routine_id`), cuántos tienen un `workout`. Faltar un día que no tocaba no
   la rompe (D22).
-- *Récords*: el máximo `weight_grams` por ejercicio, ignorando calentamiento.
+- *Récords*: según `measure`: más peso, más repeticiones o más segundos,
+  ignorando calentamiento.
+- *Historial por mes*: todas las series quedan con su fecha; comparar este mes
+  con el pasado es una consulta.
+
+Una serie nunca queda vacía:
+`check (reps is not null or duration_seconds is not null)`.
+
+---
+
+## Importaciones
+
+### `imports` — cada importación es un recibo
+
+Importar un CSV no mezcla lo importado con lo anotado a mano: cada fila
+importada sabe de qué archivo vino.
+
+| Columna | Tipo | Para qué |
+|---|---|---|
+| `area` | `import_area`: `'movements'` \| `'tasks'` \| `'schedule'` \| `'routines'` \| `'workouts'` | Qué se importó |
+| `file_name` | text | Para reconocerla en Ajustes |
+| `row_count` | int | Cuántas filas entraron |
+| `format_version` | smallint | Con qué versión del formato CSV. Si una columna cambia, los archivos viejos siguen entrando |
+
+Las tablas importables ganan `import_id uuid null → imports on delete cascade`.
+**Borrar una importación borra exactamente lo que trajo**, y nada que la
+persona haya registrado a mano.
 
 ---
 
@@ -303,6 +427,48 @@ create index on public.workout_sets (user_id, exercise_id, created_at desc);
 
 ---
 
+## Las migraciones, en orden
+
+Una por commit (D16), cada una con su RLS, `grant`, índices y trigger de
+`updated_at` adentro. Van directo a producción (D27): se revisan dos veces
+antes del push. Las reglas para no perder datos están en
+[`CORRER.md`](CORRER.md#4--hacer-una-migración).
+
+| # | Migración | Contiene |
+|:---:|---|---|
+| ✅ | `crear_profiles` | Aplicada el 06-oct |
+| 1 | `ajustar_profiles` | `theme` + el dominio `tag_color` + el tipo `import_area` |
+| 2 | `crear_imports` | Va antes que las demás porque todas la apuntan |
+| 3 | `crear_plata` | `envelopes`, `movements`, `period_closures` |
+| 4 | `crear_tareas` | `task_categories`, `tasks` |
+| 5 | `crear_horario` | `schedule_blocks`, `schedule_slots` (sin `routine_id` todavía) |
+| 6 | `crear_gimnasio` | `exercises`, `routines`, `routine_exercises`, `workouts`, `workout_sets`, `body_measurements` + `schedule_slots.routine_id` |
+
+Después de cada una: `npm run db:types`. Al final, la prueba de RLS con dos
+cuentas (F7).
+
+---
+
+## Del diseño al modelo
+
+Revisión del 07-oct de las pantallas del diseño contra este esquema. Lo que
+el diseño pedía y el modelo no cubría ya está incorporado arriba:
+
+| Pantalla | Qué pide el diseño | Cómo lo cubre el modelo |
+|---|---|---|
+| Estados · Sin conexión | Seguir registrando, «pendiente de sincronizar» | `id` generado por el cliente (D24) |
+| Ajustes · Preferencias | Tema oscuro / claro / sistema | `profiles.theme` |
+| Horario, Tareas | 10 colores para elegir | Dominio `tag_color` |
+| Gimnasio · Rutinas | Plancha «45 s», dominadas sin peso | `exercises.measure` + series opcionales |
+| Plata · Barrido | Recordar si dijo que no | `period_closures` |
+| Plata · Gasto | El último sobre usado viene elegido | Se calcula: es el último `movement` |
+| Gimnasio · Sesión | «La vez pasada», «Récord nuevo» | Se calculan de `workout_sets` |
+| Tareas | «Deshacer» por 4,5 s | Con el `id` del cliente se re-inserta la misma fila |
+| Ajustes · Datos | Exportar | CSV por área + JSON (D25), con el formato de `imports` |
+| Escritorio · Ctrl K | «uber» asigna Transporte | No se cubre en la v1 (D28) |
+
+---
+
 ## Lo que este modelo NO hace
 
 | No existe | Por qué |
@@ -312,3 +478,5 @@ create index on public.workout_sets (user_id, exercise_id, created_at desc);
 | Presupuesto por categoría de gasto | Los sobres ya cumplen esa función |
 | Historial de cambios / auditoría | Es una herramienta personal, no un sistema contable |
 | Compartir datos entre usuarios | Fuera del propósito, y complicaría RLS sin beneficio |
+| Palabras clave por sobre (Ctrl K) | Fuera de la v1 (D28). Se evalúa con uso real |
+| Suscripciones de notificaciones | Solo si la prueba de la F9 funciona (D26) |

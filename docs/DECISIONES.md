@@ -63,6 +63,8 @@ que un fork corre `npm run db:push` y tiene el esquema completo.
 Ver `docs/ARQUITECTURA.md`. Se reevalúa con evidencia de uso, no por
 anticipado.
 
+> ⚠️ **Reemplazada por D24 (10-oct-2026):** sin conexión también se puede *crear*.
+
 ### D13 · Tailwind v4 y shadcn/ui
 Tailwind v4 no necesita archivo de configuración: los tokens de tema se
 declaran en el CSS. shadcn/ui copia los componentes al repositorio en vez de
@@ -120,7 +122,7 @@ Se compensa con dos hábitos, no con más ceremonia:
    cuál de cinco cambios fue.
 2. **Se lee el SQL antes de pushear.** Es la única revisión que va a existir.
 
-Se reevalúa el día que alguien más escriba código acá. Mientras tanto, el
+Se reevalúa el día que alguien más escriba código aquí. Mientras tanto, el
 criterio del proyecto manda: gana el uso real, se recorta.
 
 ### D18 · El perfil se crea con un trigger, no desde la aplicación
@@ -214,3 +216,57 @@ todavía**: el formato de cada CSV depende de cómo queden las tablas, y esas
 recién se escriben en el Hito 2. Lo único que se adelanta es que los `id` los
 pueda generar el cliente (`gen_random_uuid()` como default, nunca obligatorio
 desde la base), lo mismo que necesita la cola sin conexión.
+
+### D24 · Sin conexión se lee y se crea, pero no se edita
+Decidida el 10-oct-2026. **Reemplaza a D12.** Sin señal, la app muestra los
+últimos datos y deja *crear* gastos, tareas y series: quedan en cola con el
+aviso «pendiente de sincronizar» y se envían al volver la señal. Editar y
+borrar siguen pidiendo conexión.
+
+Por qué alcanza con esto: D12 descartaba el modo sin conexión porque resolver
+conflictos de ediciones costaba una semana. Crear no tiene conflictos, y como
+los `id` los genera el cliente (D23), reenviar una creación nunca la duplica.
+Es justo el caso de uso más común: anotar un gasto en la calle.
+
+### D25 · Exportar en CSV por área y en JSON completo
+Decidida el 10-oct-2026. El CSV usa **el mismo formato que la importación**,
+para que exportar e importar en una cuenta vacía devuelva lo mismo. El JSON es
+el respaldo de todo en un archivo. El PDF queda para después: no se puede
+volver a importar, y un resumen imprimible sale con `window.print()`.
+
+### D26 · Notificaciones: prueba de concepto al final
+Decidida el 10-oct-2026. Es la pieza más cara (claves VAPID, Edge Function,
+`pg_cron`, horarios por zona). Se prueba en la F9 si llega una notificación a
+la PWA instalada, y recién ahí se decide construirla.
+
+### D27 · Sin proyecto de staging
+Decidida el 10-oct-2026. Hay un solo autor, así que las migraciones siguen
+yendo directo a producción (D16). La protección está en las reglas: las
+migraciones solo agregan, nunca se hace un `drop` sin exportar antes, y la
+prueba de RLS corre en producción con dos cuentas de prueba que después se
+borran.
+
+### D28 · Ctrl K sin palabras clave en la v1
+Decidida el 10-oct-2026. Ctrl K entra, pero el sobre se elige a mano (viene
+elegido el último usado). Adivinar el sobre por palabras («uber» →
+Transporte) pide una tabla, un intérprete y una pantalla para editarlas; se
+evalúa en la F8 con uso real.
+
+### D29 · Cada persona monta lo suyo y cierra su registro
+Decidida el 10-oct-2026. Lock In no es un servicio compartido: quien lo use
+hace fork y monta su propio Supabase y su propio Vercel. Después de crear su
+cuenta apaga «Allow new users to sign up». La URL del proyecto va en el código
+público; con el registro abierto, cualquiera podría crearse cuenta en una
+instancia ajena y gastar su cuota (la RLS impide que vea datos, no que ocupe
+espacio).
+
+### D30 · Lo que tiene historia se archiva; borrar la cuenta pide doble confirmación
+Decidida el 10-oct-2026. Todo lo anotado queda guardado con su fecha, y las
+vistas por mes son filtros sobre eso (D6). Sobres, ejercicios y rutinas no
+tienen «Borrar» en la interfaz, solo «Archivar» y «Desarchivar»: salen de la
+vista diaria, pero su historial sigue apareciendo al mirar meses anteriores.
+En la base, esas referencias usan `on delete no action` (no `restrict`, que
+haría fallar el borrado en cascada de la cuenta).
+
+Borrar la cuenta borra todo, así que pide doble confirmación: primero se
+ofrece exportar y se avisa qué se pierde, y después se escribe «BORRAR».

@@ -3,8 +3,20 @@
 El día a día: levantar, verificar, migrar y subir cambios.
 
 - ¿Instalando por primera vez, o en una máquina nueva?
-  → [`INSTALACION.md`](INSTALACION.md), y vuelve acá.
+  → [`INSTALACION.md`](INSTALACION.md), y vuelve aquí.
 - ¿Qué toca hacer? → [`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md).
+
+## 0 · El flujo de trabajo
+
+Para quien mantenga el proyecto o su propia copia:
+
+1. Lee [`CLAUDE.md`](../CLAUDE.md) entero: son las reglas que no se negocian.
+2. Mira en [`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md) qué fase está abierta.
+3. Si tu cambio toca la base: escríbelo primero en
+   [`MODELO_DATOS.md`](MODELO_DATOS.md), después la migración (sección 4).
+4. Si es una regla de negocio: va en `src/core/` con su prueba.
+5. Antes de cada commit: `npm run check`.
+6. Una tarea se marca ✅ **cuando funciona en el teléfono**, no cuando compila.
 
 ---
 
@@ -64,7 +76,16 @@ git push                         # 5. y mira el resultado
 ## 4 · Hacer una migración
 
 Es el paso más delicado del proyecto: **se aplica sola al pushear, y no hay
-vuelta atrás.** Una migración aplicada no se edita; se corrige con otra.
+vuelta atrás.** Una migración aplicada no se edita; se corrige con otra. No hay
+proyecto de pruebas (D27), así que estas reglas son la protección:
+
+| Regla | Qué evita |
+|---|---|
+| **Las migraciones solo agregan** («expandir y contraer»): una columna nueva entra opcional, se llena, y recién en otra migración se vuelve obligatoria. Nunca un `drop` sin exportar antes | Perder una columna con datos por un error de una línea |
+| **Se revisa dos veces antes del push**, y va sola en su commit | Descubrir el error en la base real |
+| **Lo que tiene historia se archiva**: las referencias a sobres y ejercicios usan `on delete no action` (D30) | Borrar un sobre y llevarse dos años de movimientos |
+| **Respaldo propio**: `supabase db dump` semanal + «Exportar todo» desde la app. El plan Free hace respaldos diarios, pero **no deja descargarlos** | Depender de un respaldo al que no se tiene acceso |
+| **La base se pausa a los 7 días sin uso** (plan Free) | Si se pausa, se reanuda desde el panel; los datos no se pierden |
 
 **Paso 1.** Crear el archivo:
 
