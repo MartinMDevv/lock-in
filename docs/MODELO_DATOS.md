@@ -29,6 +29,7 @@ erDiagram
     exercises ||--o{ workout_sets : ""
     imports ||--o{ movements : "import_id"
     imports ||--o{ tasks : "import_id"
+    imports ||--o{ schedule_blocks : "import_id"
 ```
 
 *(Todas las tablas cuelgan también de `profiles` por `user_id`; se omite en el
@@ -455,8 +456,8 @@ antes del push. Las reglas para no perder datos están en
 | ✅ | `ajustar_profiles` | `theme` + el dominio `tag_color` + el tipo `import_area`. Aplicada el 14-oct |
 | ✅ | `crear_imports` | Va antes que las demás porque todas la apuntan. Aplicada el 14-oct |
 | ✅ | `crear_plata` | `envelopes`, `movements`, `period_closures`. Aplicada el 14-oct |
-| 4 | `crear_tareas` | `task_categories`, `tasks` |
-| 5 | `crear_horario` | `schedule_blocks`, `schedule_slots` (sin `routine_id` todavía) |
+| ✅ | `crear_horario` | `schedule_blocks`, `schedule_slots` (sin `routine_id` todavía). Va antes que Tareas porque `tasks.schedule_block_id` la apunta. Aplicada el 14-oct |
+| ✅ | `crear_tareas` | `task_categories`, `tasks`. Aplicada el 14-oct |
 | 6 | `crear_gimnasio` | `exercises`, `routines`, `routine_exercises`, `workouts`, `workout_sets`, `body_measurements` + `schedule_slots.routine_id` |
 
 Después de cada una: `npm run db:types`. Al final, la prueba de RLS con dos

@@ -272,6 +272,197 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_blocks: {
+        Row: {
+          category: string | null
+          color: string
+          created_at: string
+          id: string
+          import_id: string | null
+          location: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          category?: string | null
+          color?: string
+          created_at?: string
+          id?: string
+          import_id?: string | null
+          location?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          category?: string | null
+          color?: string
+          created_at?: string
+          id?: string
+          import_id?: string | null
+          location?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_blocks_import_fkey"
+            columns: ["user_id", "import_id"]
+            isOneToOne: false
+            referencedRelation: "imports"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
+      schedule_slots: {
+        Row: {
+          block_id: string
+          created_at: string
+          ends_at: string
+          id: string
+          starts_at: string
+          updated_at: string
+          user_id: string
+          weekday: number
+        }
+        Insert: {
+          block_id: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          starts_at: string
+          updated_at?: string
+          user_id: string
+          weekday: number
+        }
+        Update: {
+          block_id?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          starts_at?: string
+          updated_at?: string
+          user_id?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_slots_block_fkey"
+            columns: ["user_id", "block_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_blocks"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
+      task_categories: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          category_id: string | null
+          completed_at: string | null
+          created_at: string
+          due_on: string | null
+          due_time: string | null
+          id: string
+          import_id: string | null
+          notes: string | null
+          priority: number
+          schedule_block_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_on?: string | null
+          due_time?: string | null
+          id?: string
+          import_id?: string | null
+          notes?: string | null
+          priority?: number
+          schedule_block_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_on?: string | null
+          due_time?: string | null
+          id?: string
+          import_id?: string | null
+          notes?: string | null
+          priority?: number
+          schedule_block_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_category_fkey"
+            columns: ["user_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "task_categories"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "tasks_import_fkey"
+            columns: ["user_id", "import_id"]
+            isOneToOne: false
+            referencedRelation: "imports"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "tasks_schedule_block_fkey"
+            columns: ["user_id", "schedule_block_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_blocks"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
