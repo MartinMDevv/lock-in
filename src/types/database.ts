@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      envelopes: {
+        Row: {
+          achieved_at: string | null
+          archived_at: string | null
+          cap_amount: number | null
+          cap_period: Database["public"]["Enums"]["cap_period"]
+          created_at: string
+          fill_rule: Database["public"]["Enums"]["fill_rule"]
+          fill_value: number
+          group_id: string | null
+          id: string
+          name: string
+          rollover: boolean
+          sort_order: number
+          sweep_to_envelope_id: string | null
+          target_date: string | null
+          target_minor: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achieved_at?: string | null
+          archived_at?: string | null
+          cap_amount?: number | null
+          cap_period?: Database["public"]["Enums"]["cap_period"]
+          created_at?: string
+          fill_rule: Database["public"]["Enums"]["fill_rule"]
+          fill_value?: number
+          group_id?: string | null
+          id?: string
+          name: string
+          rollover?: boolean
+          sort_order?: number
+          sweep_to_envelope_id?: string | null
+          target_date?: string | null
+          target_minor?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achieved_at?: string | null
+          archived_at?: string | null
+          cap_amount?: number | null
+          cap_period?: Database["public"]["Enums"]["cap_period"]
+          created_at?: string
+          fill_rule?: Database["public"]["Enums"]["fill_rule"]
+          fill_value?: number
+          group_id?: string | null
+          id?: string
+          name?: string
+          rollover?: boolean
+          sort_order?: number
+          sweep_to_envelope_id?: string | null
+          target_date?: string | null
+          target_minor?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelopes_group_fkey"
+            columns: ["user_id", "group_id"]
+            isOneToOne: false
+            referencedRelation: "envelopes"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "envelopes_sweep_to_fkey"
+            columns: ["user_id", "sweep_to_envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelopes"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
       imports: {
         Row: {
           area: Database["public"]["Enums"]["import_area"]
@@ -46,6 +121,114 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      movements: {
+        Row: {
+          amount_minor: number
+          batch_id: string | null
+          created_at: string
+          envelope_from: string | null
+          envelope_to: string | null
+          id: string
+          import_id: string | null
+          kind: Database["public"]["Enums"]["movement_kind"]
+          note: string | null
+          occurred_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_minor: number
+          batch_id?: string | null
+          created_at?: string
+          envelope_from?: string | null
+          envelope_to?: string | null
+          id?: string
+          import_id?: string | null
+          kind: Database["public"]["Enums"]["movement_kind"]
+          note?: string | null
+          occurred_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_minor?: number
+          batch_id?: string | null
+          created_at?: string
+          envelope_from?: string | null
+          envelope_to?: string | null
+          id?: string
+          import_id?: string | null
+          kind?: Database["public"]["Enums"]["movement_kind"]
+          note?: string | null
+          occurred_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movements_envelope_from_fkey"
+            columns: ["user_id", "envelope_from"]
+            isOneToOne: false
+            referencedRelation: "envelopes"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "movements_envelope_to_fkey"
+            columns: ["user_id", "envelope_to"]
+            isOneToOne: false
+            referencedRelation: "envelopes"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "movements_import_fkey"
+            columns: ["user_id", "import_id"]
+            isOneToOne: false
+            referencedRelation: "imports"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
+      period_closures: {
+        Row: {
+          action: string
+          batch_id: string | null
+          created_at: string
+          envelope_id: string
+          id: string
+          period_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          batch_id?: string | null
+          created_at?: string
+          envelope_id: string
+          id?: string
+          period_start: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          batch_id?: string | null
+          created_at?: string
+          envelope_id?: string
+          id?: string
+          period_start?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "period_closures_envelope_fkey"
+            columns: ["user_id", "envelope_id"]
+            isOneToOne: false
+            referencedRelation: "envelopes"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -97,7 +280,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      cap_period: "month" | "none"
+      fill_rule: "fixed" | "percent" | "residual"
       import_area: "movements" | "tasks" | "schedule" | "routines" | "workouts"
+      movement_kind: "income" | "expense" | "transfer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -225,7 +411,10 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cap_period: ["month", "none"],
+      fill_rule: ["fixed", "percent", "residual"],
       import_area: ["movements", "tasks", "schedule", "routines", "workouts"],
+      movement_kind: ["income", "expense", "transfer"],
     },
   },
 } as const

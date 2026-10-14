@@ -270,3 +270,11 @@ haría fallar el borrado en cascada de la cuenta).
 
 Borrar la cuenta borra todo, así que pide doble confirmación: primero se
 ofrece exportar y se avisa qué se pierde, y después se escribe «BORRAR».
+
+### D31 · Las referencias entre tablas de usuario son compuestas
+Decidida el 14-oct-2026, al escribir `crear_plata`. Una llave foránea simple
+no pasa por RLS: con solo conocer el id de un sobre ajeno, otra cuenta podría
+anotarle un gasto en contra o colgarle algo. Toda referencia va como
+`(user_id, x_id) → tabla (user_id, id)`, así la base exige que las dos filas
+sean del mismo dueño. Cuesta un `unique (user_id, id)` por tabla apuntada.
+Detalle en [`MODELO_DATOS.md`](MODELO_DATOS.md#8-las-referencias-no-cruzan-de-una-cuenta-a-otra-d31).

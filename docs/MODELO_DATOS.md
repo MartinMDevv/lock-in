@@ -156,6 +156,21 @@ Son exactamente los 10 `--color-tag-*` de los tokens del diseño. Se guarda el
 con distinto tono, para que siempre se lea. Si cambia un tono, se cambia solo en
 la paleta.
 
+### 8. Las referencias no cruzan de una cuenta a otra (D31)
+
+RLS decide qué filas se **ven**, pero una llave foránea simple solo comprueba
+que el id exista, no de quién es. Por eso toda referencia entre tablas de
+usuario es **compuesta**, y la tabla apuntada lleva `unique (user_id, id)`:
+
+```sql
+constraint movements_envelope_from_fkey
+  foreign key (user_id, envelope_from)
+  references public.envelopes (user_id, id) on delete no action
+```
+
+Con `set null` hay que nombrar la columna, o Postgres también pondría en null
+el `user_id`: `on delete set null (category_id)`.
+
 ---
 
 ## Perfil
@@ -439,7 +454,7 @@ antes del push. Las reglas para no perder datos están en
 | ✅ | `crear_profiles` | Aplicada el 06-oct |
 | ✅ | `ajustar_profiles` | `theme` + el dominio `tag_color` + el tipo `import_area`. Aplicada el 14-oct |
 | ✅ | `crear_imports` | Va antes que las demás porque todas la apuntan. Aplicada el 14-oct |
-| 3 | `crear_plata` | `envelopes`, `movements`, `period_closures` |
+| ✅ | `crear_plata` | `envelopes`, `movements`, `period_closures`. Aplicada el 14-oct |
 | 4 | `crear_tareas` | `task_categories`, `tasks` |
 | 5 | `crear_horario` | `schedule_blocks`, `schedule_slots` (sin `routine_id` todavía) |
 | 6 | `crear_gimnasio` | `exercises`, `routines`, `routine_exercises`, `workouts`, `workout_sets`, `body_measurements` + `schedule_slots.routine_id` |
