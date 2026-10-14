@@ -9,7 +9,30 @@ import type { Session } from '@supabase/supabase-js'
  *
  * Supabase va simulado: la prueba mira el armado de la aplicación, no la red.
  */
-const sesionSimulada = { user: { email: 'persona@ejemplo.com' } } as Session
+const sesionSimulada = {
+  user: { id: 'usuario-1', email: 'persona@ejemplo.com' },
+} as Session
+
+const perfilSimulado = {
+  id: 'usuario-1',
+  display_name: 'Persona',
+  currency: 'CLP',
+  currency_decimals: 0,
+  timezone: 'America/Santiago',
+  weight_unit: 'kg',
+  week_starts_on: 1,
+  onboarded_at: null,
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+}
+
+// Imita la cadena from().select().eq().single() de supabase-js.
+const consultaSimulada = {
+  select: () => consultaSimulada,
+  update: () => consultaSimulada,
+  eq: () => consultaSimulada,
+  single: () => Promise.resolve({ data: perfilSimulado, error: null }),
+}
 
 let sesion: Session | null = null
 
@@ -22,6 +45,7 @@ vi.mock('@/lib/supabase', () => ({
       }),
       signOut: () => Promise.resolve({ error: null }),
     },
+    from: () => consultaSimulada,
   },
 }))
 
@@ -88,6 +112,16 @@ describe('esqueleto de la aplicación', () => {
     expect(
       screen.getByRole('button', { name: 'Cerrar sesión' }),
     ).toBeInTheDocument()
+  })
+
+  it('Ajustes muestra las preferencias guardadas en el perfil', async () => {
+    sesion = sesionSimulada
+    render(<App />)
+
+    await usuarioHaceClicEn('Ajustes')
+    expect(await screen.findByLabelText('Nombre')).toHaveValue('Persona')
+    expect(screen.getByLabelText('Moneda')).toHaveValue('CLP')
+    expect(screen.getByLabelText('Zona horaria')).toHaveValue('America/Santiago')
   })
 })
 

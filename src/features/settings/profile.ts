@@ -1,0 +1,89 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/features/auth/auth-context'
+import type { Database } from '@/types/database'
+
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type ProfileChanges = Pick<
+  Database['public']['Tables']['profiles']['Update'],
+  'display_name' | 'currency' | 'currency_decimals' | 'timezone' | 'weight_unit' | 'week_starts_on'
+>
+
+/**
+ * Monedas ofrecidas en Ajustes, con sus decimales.
+ *
+ * Lista cerrada a propósito: la base solo exige tres mayúsculas, y lo que
+ * evita que alguien elija una moneda con los decimales equivocados es que
+ * moneda y decimales viajen siempre juntos desde acá (D5).
+ */
+export const CURRENCIES = [
+  { code: 'CLP', decimals: 0, label: 'Peso chileno' },
+  { code: 'USD', decimals: 2, label: 'Dólar estadounidense' },
+  { code: 'EUR', decimals: 2, label: 'Euro' },
+  { code: 'ARS', decimals: 2, label: 'Peso argentino' },
+  { code: 'PEN', decimals: 2, label: 'Sol peruano' },
+  { code: 'MXN', decimals: 2, label: 'Peso mexicano' },
+  { code: 'COP', decimals: 2, label: 'Peso colombiano' },
+] as const
+
+/**
+ * Las zonas horarias que conoce el navegador.
+ *
+ * Es la "lista cerrada" que promete la migración de profiles: la base no
+ * puede validar la zona en un CHECK, así que la interfaz nunca deja escribirla
+ * a mano. Si el navegador es viejo y no trae la lista, queda al menos la
+ * zona por defecto.
+ */
+export function timezones(): string[] {
+  try {
+    return Intl.supportedValuesOf('timeZone')
+  } catch {
+    return ['America/Santiago']
+  }
+}
+
+const profileKey = (userId: string) => ['profile', userId] as const
+
+/** El perfil de quien tiene la sesión. RLS garantiza que solo llega el suyo. */
+export function useProfile() {
+  const { session } = useAuth()
+  const userId = session?.user.id ?? ''
+
+  return useQuery({
+    queryKey: profileKey(userId),
+    enabled: userId !== '',
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export function useUpdateProfile() {
+  const { session } = useAuth()
+  const userId = session?.user.id ?? ''
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (changes: ProfileChanges) => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(changes)
+        .eq('id', userId)
+        .select('*')
+        .single()
+      if (error) throw error
+      return data
+    },
+    // La respuesta ya trae la fila nueva: se pone en la caché directo en vez
+    // de pedirla otra vez.
+    onSuccess: (profile) => {
+      queryClient.setQueryData(profileKey(userId), profile)
+    },
+  })
+}
