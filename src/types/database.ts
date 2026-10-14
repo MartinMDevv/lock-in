@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      body_measurements: {
+        Row: {
+          created_at: string
+          id: string
+          measured_on: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+          weight_grams: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          measured_on?: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+          weight_grams?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          measured_on?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+          weight_grams?: number | null
+        }
+        Relationships: []
+      }
       envelopes: {
         Row: {
           achieved_at: string | null
@@ -88,6 +118,42 @@ export type Database = {
             referencedColumns: ["user_id", "id"]
           },
         ]
+      }
+      exercises: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          is_custom: boolean
+          measure: Database["public"]["Enums"]["exercise_measure"]
+          muscle_group: string | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          is_custom?: boolean
+          measure?: Database["public"]["Enums"]["exercise_measure"]
+          muscle_group?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          is_custom?: boolean
+          measure?: Database["public"]["Enums"]["exercise_measure"]
+          muscle_group?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       imports: {
         Row: {
@@ -272,6 +338,104 @@ export type Database = {
         }
         Relationships: []
       }
+      routine_exercises: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          rest_seconds: number | null
+          routine_id: string
+          sort_order: number
+          target_reps: number | null
+          target_seconds: number | null
+          target_sets: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          rest_seconds?: number | null
+          routine_id: string
+          sort_order?: number
+          target_reps?: number | null
+          target_seconds?: number | null
+          target_sets?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          rest_seconds?: number | null
+          routine_id?: string
+          sort_order?: number
+          target_reps?: number | null
+          target_seconds?: number | null
+          target_sets?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_exercises_exercise_fkey"
+            columns: ["user_id", "exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "routine_exercises_routine_fkey"
+            columns: ["user_id", "routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
+      routines: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          import_id: string | null
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          import_id?: string | null
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          import_id?: string | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routines_import_fkey"
+            columns: ["user_id", "import_id"]
+            isOneToOne: false
+            referencedRelation: "imports"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
       schedule_blocks: {
         Row: {
           category: string | null
@@ -328,6 +492,7 @@ export type Database = {
           created_at: string
           ends_at: string
           id: string
+          routine_id: string | null
           starts_at: string
           updated_at: string
           user_id: string
@@ -338,6 +503,7 @@ export type Database = {
           created_at?: string
           ends_at: string
           id?: string
+          routine_id?: string | null
           starts_at: string
           updated_at?: string
           user_id: string
@@ -348,6 +514,7 @@ export type Database = {
           created_at?: string
           ends_at?: string
           id?: string
+          routine_id?: string | null
           starts_at?: string
           updated_at?: string
           user_id?: string
@@ -359,6 +526,13 @@ export type Database = {
             columns: ["user_id", "block_id"]
             isOneToOne: false
             referencedRelation: "schedule_blocks"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_slots_routine_fkey"
+            columns: ["user_id", "routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
             referencedColumns: ["user_id", "id"]
           },
         ]
@@ -463,6 +637,117 @@ export type Database = {
           },
         ]
       }
+      workout_sets: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          exercise_id: string
+          id: string
+          is_warmup: boolean
+          reps: number | null
+          rpe: number | null
+          set_index: number
+          updated_at: string
+          user_id: string
+          weight_grams: number | null
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          exercise_id: string
+          id?: string
+          is_warmup?: boolean
+          reps?: number | null
+          rpe?: number | null
+          set_index: number
+          updated_at?: string
+          user_id: string
+          weight_grams?: number | null
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          exercise_id?: string
+          id?: string
+          is_warmup?: boolean
+          reps?: number | null
+          rpe?: number | null
+          set_index?: number
+          updated_at?: string
+          user_id?: string
+          weight_grams?: number | null
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sets_exercise_fkey"
+            columns: ["user_id", "exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "workout_sets_workout_fkey"
+            columns: ["user_id", "workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
+      workouts: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          import_id: string | null
+          notes: string | null
+          routine_id: string | null
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          import_id?: string | null
+          notes?: string | null
+          routine_id?: string | null
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          import_id?: string | null
+          notes?: string | null
+          routine_id?: string | null
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workouts_import_fkey"
+            columns: ["user_id", "import_id"]
+            isOneToOne: false
+            referencedRelation: "imports"
+            referencedColumns: ["user_id", "id"]
+          },
+          {
+            foreignKeyName: "workouts_routine_fkey"
+            columns: ["user_id", "routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
+            referencedColumns: ["user_id", "id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -472,6 +757,7 @@ export type Database = {
     }
     Enums: {
       cap_period: "month" | "none"
+      exercise_measure: "reps_weight" | "reps" | "time"
       fill_rule: "fixed" | "percent" | "residual"
       import_area: "movements" | "tasks" | "schedule" | "routines" | "workouts"
       movement_kind: "income" | "expense" | "transfer"
@@ -603,6 +889,7 @@ export const Constants = {
   public: {
     Enums: {
       cap_period: ["month", "none"],
+      exercise_measure: ["reps_weight", "reps", "time"],
       fill_rule: ["fixed", "percent", "residual"],
       import_area: ["movements", "tasks", "schedule", "routines", "workouts"],
       movement_kind: ["income", "expense", "transfer"],
