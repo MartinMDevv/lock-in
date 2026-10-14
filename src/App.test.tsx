@@ -21,6 +21,7 @@ const perfilSimulado = {
   timezone: 'America/Santiago',
   weight_unit: 'kg',
   week_starts_on: 1,
+  theme: 'system',
   onboarded_at: null,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',

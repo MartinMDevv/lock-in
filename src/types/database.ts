@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      imports: {
+        Row: {
+          area: Database["public"]["Enums"]["import_area"]
+          created_at: string
+          file_name: string
+          format_version: number
+          id: string
+          row_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          area: Database["public"]["Enums"]["import_area"]
+          created_at?: string
+          file_name: string
+          format_version?: number
+          id?: string
+          row_count: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          area?: Database["public"]["Enums"]["import_area"]
+          created_at?: string
+          file_name?: string
+          format_version?: number
+          id?: string
+          row_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -22,6 +55,7 @@ export type Database = {
           display_name: string | null
           id: string
           onboarded_at: string | null
+          theme: string
           timezone: string
           updated_at: string
           week_starts_on: number
@@ -34,6 +68,7 @@ export type Database = {
           display_name?: string | null
           id: string
           onboarded_at?: string | null
+          theme?: string
           timezone?: string
           updated_at?: string
           week_starts_on?: number
@@ -46,6 +81,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           onboarded_at?: string | null
+          theme?: string
           timezone?: string
           updated_at?: string
           week_starts_on?: number
@@ -61,7 +97,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      import_area: "movements" | "tasks" | "schedule" | "routines" | "workouts"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -188,6 +224,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      import_area: ["movements", "tasks", "schedule", "routines", "workouts"],
+    },
   },
 } as const

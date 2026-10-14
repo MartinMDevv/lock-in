@@ -29,7 +29,7 @@ Dos reglas:
 | Fase | Qué deja lista | Avance |
 |---|---|---|
 | **F0 · Cimientos y esqueleto** | Arranca, se verifica sola, está publicada y se navega | 🚧 casi completa: falta probar en el teléfono |
-| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | ⬜ **siguiente** · decisiones ✅ y esquema escrito ✅ |
+| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | 🚧 migraciones 1 y 2 de 6 aplicadas (14-oct) |
 | **F2 · El diseño en el código** | La app se ve como el prototipo | ⬜ |
 | **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | ⬜ |
 | **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | ⬜ |
@@ -97,7 +97,7 @@ de cargar datos reales**.
 
 - [x] Decidir D24–D30 (10-oct-2026).
 - [x] Pasar el esquema definitivo a `MODELO_DATOS.md` (10-oct-2026).
-- [ ] Escribir las migraciones 1 a 6 de [`MODELO_DATOS.md`](MODELO_DATOS.md#las-migraciones-en-orden), **una por commit**, revisando cada una dos veces antes del push: van directo a producción (D16, D27).
+- [ ] Escribir las migraciones 1 a 6 (✅ 1 y 2 el 14-oct) de [`MODELO_DATOS.md`](MODELO_DATOS.md#las-migraciones-en-orden), **una por commit**, revisando cada una dos veces antes del push: van directo a producción (D16, D27).
 - [ ] `npm run db:types` después de cada una.
 - [ ] **Prueba de RLS con dos cuentas de prueba** en producción (ver F7): la cuenta A no puede leer, editar ni borrar nada de la B. Después se borran las dos.
 - [ ] Revisar los avisos de seguridad y rendimiento de Supabase (*Advisors*) y dejarlos en cero.

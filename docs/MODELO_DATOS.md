@@ -437,8 +437,8 @@ antes del push. Las reglas para no perder datos están en
 | # | Migración | Contiene |
 |:---:|---|---|
 | ✅ | `crear_profiles` | Aplicada el 06-oct |
-| 1 | `ajustar_profiles` | `theme` + el dominio `tag_color` + el tipo `import_area` |
-| 2 | `crear_imports` | Va antes que las demás porque todas la apuntan |
+| ✅ | `ajustar_profiles` | `theme` + el dominio `tag_color` + el tipo `import_area`. Aplicada el 14-oct |
+| ✅ | `crear_imports` | Va antes que las demás porque todas la apuntan. Aplicada el 14-oct |
 | 3 | `crear_plata` | `envelopes`, `movements`, `period_closures` |
 | 4 | `crear_tareas` | `task_categories`, `tasks` |
 | 5 | `crear_horario` | `schedule_blocks`, `schedule_slots` (sin `routine_id` todavía) |
