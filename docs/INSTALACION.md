@@ -45,6 +45,26 @@ supabase link --project-ref <referencia-del-proyecto>
 npm run db:types
 ```
 
+### Con Docker (build de producción)
+
+La imagen compila la app y la sirve con nginx sin privilegios, con las mismas
+reescrituras de rutas que Vercel y cabeceras de seguridad (CSP, anti-iframe).
+No se usa para publicar hoy: sirve para probar el build real y para poder
+moverse de Vercel sin rehacer nada.
+
+```bash
+docker compose up --build      # http://localhost:8080
+```
+
+Lee las variables del mismo `.env`. Para entrar con Google desde ahí, agrega
+`http://localhost:8080` a los orígenes de Google Cloud y a las *Redirect URLs*
+de Supabase.
+
+> 🚫 **No correr `npm run dev` con `--host`** ni dentro de un contenedor
+> expuesto: el servidor de desarrollo de Vite puede leer archivos del disco y
+> es lo que atacan las CVE de Vite de 2025-2026. `vite.config.ts` lo fija a
+> `localhost:5173`.
+
 ## 2 · Cómo llega un cambio a producción
 
 | Qué cambia | Cómo se publica |

@@ -1,0 +1,21 @@
+# Lo que nunca entra a la imagen.
+
+# Secretos: las variables VITE_ llegan como argumentos de build.
+.env
+.env.*
+
+# Se reconstruyen adentro.
+node_modules/
+dist/
+coverage/
+
+# No hacen falta para compilar.
+.git/
+.github/
+.vercel/
+.supabase/
+supabase/
+docs/
+*.md
+Dockerfile
+docker-compose.yml

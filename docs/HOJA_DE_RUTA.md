@@ -273,6 +273,9 @@ falta.
 
 | Idea | Por qué |
 |---|---|
+| **Pipeline en orden** (verificar → migrar → publicar) | Hoy Vercel, Supabase y el CI corren en paralelo al hacer push y el CI no frena nada. Que la migración y el deploy salgan de GitHub Actions solo si pasan las pruebas, más la prueba de RLS contra Supabase local. Pendiente hasta que haya usuarios (28-oct) y resolver el runner |
+| **Dependabot** | Alertas y PR semanales de parches agrupados. Hoy las alertas están apagadas en GitHub |
+| **Supabase local con Docker** (`supabase start`) | Que `npm run dev` no escriba en producción y probar migraciones y RLS antes del push (revisa D27) |
 | **Respaldo semanal automático** con `supabase db dump` | El plan Free no deja bajar sus respaldos. Puede ir en el runner propio con una tarea programada |
 | **Pruebas de punta a punta** (Playwright) del flujo de 5 segundos | Que nadie rompa la regla principal sin enterarse. Requiere instalar el navegador de pruebas |
 | **Cuotas del plan Free** a la vista | 500 MB de base y 50.000 usuarios activos al mes sobran, pero conviene saber dónde mirarlo |

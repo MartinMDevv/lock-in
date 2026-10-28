@@ -1,0 +1,25 @@
+# Levanta el build de producción de Lock In en local.
+#
+#   docker compose up --build      → http://localhost:8080
+#
+# Lee VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY del .env (el mismo de
+# `npm run dev`). Ojo: ese .env hoy apunta a la base de producción.
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:?Falta VITE_SUPABASE_URL en .env}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:?Falta VITE_SUPABASE_ANON_KEY en .env}
+    image: lock-in:local
+    # 127.0.0.1: el puerto solo se abre en esta máquina, no en la red. Para
+    # entrar con Google desde acá, agregar http://localhost:8080 a los
+    # orígenes de Google Cloud y a las Redirect URLs de Supabase.
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
