@@ -29,7 +29,7 @@ Dos reglas:
 | Fase | Qué deja lista | Avance |
 |---|---|---|
 | **F0 · Cimientos y esqueleto** | Arranca, se verifica sola, está publicada y se navega | ✅ cerrada el 28-oct-2026 |
-| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | 🚧 las 7 migraciones aplicadas y *Advisors* limpio (28-oct); faltan la prueba de RLS con dos cuentas y el respaldo |
+| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | 🚧 7 migraciones, *Advisors* limpio y RLS probada: 127/127 (28-oct); falta el respaldo |
 | **F2 · El diseño en el código** | La app se ve como el prototipo | ⬜ |
 | **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | ⬜ |
 | **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | ⬜ |
@@ -102,7 +102,7 @@ de cargar datos reales**.
 - [x] Pasar el esquema definitivo a `MODELO_DATOS.md` (10-oct-2026).
 - [x] Escribir las migraciones 1 a 6 de [`MODELO_DATOS.md`](MODELO_DATOS.md#las-migraciones-en-orden) (14-oct-2026; horario quedó antes que tareas), **una por commit**, revisando cada una dos veces antes del push: van directo a producción (D16, D27).
 - [x] `npm run db:types` después de cada una.
-- [ ] **Prueba de RLS con dos cuentas de prueba** en producción (ver F7): la cuenta A no puede leer, editar ni borrar nada de la B. Después se borran las dos.
+- [x] **Prueba de RLS con dos cuentas** en producción (28-oct-2026): [`scripts/rls-check.sql`](../scripts/rls-check.sql) en el SQL Editor → **127 pruebas sobre 15 tablas, 0 fallas**. Crea dos cuentas ficticias y deshace todo al terminar. Comprueba también que la migración 7 no rompió el registro.
 - [x] Revisar los avisos de seguridad y rendimiento de Supabase (*Advisors*) y dejarlos en cero. **28-oct: 0 errores, 0 sugerencias y 1 WARN aceptado** (abajo).
   - Revisión del 14-oct: **5 WARN de seguridad y 25 INFO**. Rendimiento sin
     avisos: ninguna llave foránea sin índice y ninguna política lenta.
@@ -196,12 +196,12 @@ minuto, y exportar e importar devuelve lo mismo.*
 *Termina cuando la prueba de RLS corre en CI y pasa, y una persona con dos
 cuentas no logra ver nada de la otra.*
 
-- [ ] **Prueba automatizada de RLS** con dos cuentas de prueba, para **cada tabla**: leer, insertar con un `user_id` ajeno, editar y borrar lo de otro → todo debe fallar.
-- [ ] Ninguna tabla sin RLS ni sin `grant` explícito (consulta a `pg_tables`).
+- [ ] 🚧 **Prueba automatizada de RLS** con dos cuentas de prueba, para **cada tabla**: leer, insertar con un `user_id` ajeno, editar y borrar lo de otro → todo debe fallar. 28-oct: escrita (`scripts/rls-check.sql`) y pasada a mano en producción; falta que corra en el CI contra un Supabase local.
+- [x] Ninguna tabla sin RLS ni sin `grant` explícito: lo revisa el bloque 1 de `scripts/rls-check.sql`, que además falla si aparece una tabla nueva sin cubrir.
 - [ ] *Advisors* de Supabase en cero.
 - [x] *Site URL* fijado al dominio de Vercel y registro abierto solo por Google (D32, 28-oct-2026).
 - [ ] **Topes por cuenta**: con el registro abierto, que una sola cuenta no pueda llenar los 500 MB del plan.
-- [ ] 🚧 Cabeceras de seguridad en `vercel.json`: CSP, `X-Content-Type-Options`, `Referrer-Policy` (28-oct: escritas, iguales a las de `docker/security-headers.conf`; falta confirmar en producción que el login con Google sigue funcionando).
+- [x] Cabeceras de seguridad en `vercel.json`: CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` y anti-iframe (28-oct-2026, iguales a las de `docker/security-headers.conf`). Probado en producción: login con Google, Ajustes y guardar funcionan. Vercel agrega HSTS solo.
 - [x] La caché de una cuenta se borra al cerrar sesión o al entrar otra (28-oct, `AuthProvider` + 3 pruebas).
 - [ ] `npm audit` sin vulnerabilidades altas.
 - [ ] **Borrar mi cuenta** desde Ajustes, con **doble confirmación** (D30): primero se ofrece exportar y se avisa qué se pierde, después se escribe «BORRAR».
