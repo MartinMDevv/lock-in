@@ -461,7 +461,7 @@ de todos (D32): se revisan dos veces antes del push. Las reglas para no perder d
 | ✅ | `crear_horario` | `schedule_blocks`, `schedule_slots` (sin `routine_id` todavía). Va antes que Tareas porque `tasks.schedule_block_id` la apunta. Aplicada el 14-oct |
 | ✅ | `crear_tareas` | `task_categories`, `tasks`. Aplicada el 14-oct |
 | ✅ | `crear_gimnasio` | `exercises`, `routines`, `routine_exercises`, `workouts`, `workout_sets`, `body_measurements` + `schedule_slots.routine_id`. Aplicada el 14-oct |
-| 🚧 | `revocar_execute_funciones` | Quita EXECUTE a la API sobre `handle_new_user` y `rls_auto_enable`, y hace que las funciones futuras nazcan sin él (mínimo privilegio, D32). Escrita el 28-oct, se aplica con el push
+| ✅ | `revocar_execute_funciones` | Quita EXECUTE a la API sobre `handle_new_user` y `rls_auto_enable`, y hace que las funciones futuras nazcan sin él (mínimo privilegio, D32). Aplicada el 28-oct
 
 Después de cada una: `npm run db:types`. Al final, la prueba de RLS con dos
 cuentas (F7).

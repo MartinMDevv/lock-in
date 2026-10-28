@@ -29,7 +29,7 @@ Dos reglas:
 | Fase | Qué deja lista | Avance |
 |---|---|---|
 | **F0 · Cimientos y esqueleto** | Arranca, se verifica sola, está publicada y se navega | ✅ cerrada el 28-oct-2026 |
-| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | 🚧 las 6 migraciones aplicadas (14-oct) y la 7 lista (28-oct); faltan RLS con dos cuentas, Advisors y respaldo |
+| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | 🚧 las 7 migraciones aplicadas y *Advisors* limpio (28-oct); faltan la prueba de RLS con dos cuentas y el respaldo |
 | **F2 · El diseño en el código** | La app se ve como el prototipo | ⬜ |
 | **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | ⬜ |
 | **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | ⬜ |
@@ -103,7 +103,7 @@ de cargar datos reales**.
 - [x] Escribir las migraciones 1 a 6 de [`MODELO_DATOS.md`](MODELO_DATOS.md#las-migraciones-en-orden) (14-oct-2026; horario quedó antes que tareas), **una por commit**, revisando cada una dos veces antes del push: van directo a producción (D16, D27).
 - [x] `npm run db:types` después de cada una.
 - [ ] **Prueba de RLS con dos cuentas de prueba** en producción (ver F7): la cuenta A no puede leer, editar ni borrar nada de la B. Después se borran las dos.
-- [ ] Revisar los avisos de seguridad y rendimiento de Supabase (*Advisors*) y dejarlos en cero.
+- [x] Revisar los avisos de seguridad y rendimiento de Supabase (*Advisors*) y dejarlos en cero. **28-oct: 0 errores, 0 sugerencias y 1 WARN aceptado** (abajo).
   - Revisión del 14-oct: **5 WARN de seguridad y 25 INFO**. Rendimiento sin
     avisos: ninguna llave foránea sin índice y ninguna política lenta.
   - 25 INFO `unused_index`: esperables con la base vacía. Se miran de nuevo
@@ -115,9 +115,10 @@ de cargar datos reales**.
     pero se cierra con una migración 7 que haga `revoke execute … from
     public, anon, authenticated`; la de `rls_auto_enable` con `if exists`,
     porque en otra instancia puede no estar.
-  - 1 WARN `auth_leaked_password_protection`: revisar en Authentication si el
-    plan Free lo permite; si no, queda anotado como aceptado.
-- [ ] 🚧 **Migración 7** `revocar_execute_funciones` (28-oct-2026): cierra los 4 WARN de `security_definer_function_executable`. Escrita y commiteada; se aplica con el push. Después, confirmar en *Advisors* que los avisos desaparecieron.
+  - 1 WARN `auth_leaked_password_protection`: **aceptado** (28-oct). Es solo
+    para el plan Pro y no aplica: con el proveedor Email apagado (D32) no hay
+    contraseñas que revisar.
+- [x] **Migración 7** `revocar_execute_funciones` (28-oct-2026, `1f15bc5`): aplicada. *Advisors* confirmó que se fueron los 4 WARN de `security_definer_function_executable`.
 - [ ] Primer `supabase db dump` y decidir dónde se guarda (fuera del repo).
 
 ## F2 · El diseño en el código
