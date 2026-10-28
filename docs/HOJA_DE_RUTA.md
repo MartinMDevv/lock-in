@@ -201,7 +201,8 @@ cuentas no logra ver nada de la otra.*
 - [ ] *Advisors* de Supabase en cero.
 - [x] *Site URL* fijado al dominio de Vercel y registro abierto solo por Google (D32, 28-oct-2026).
 - [ ] **Topes por cuenta**: con el registro abierto, que una sola cuenta no pueda llenar los 500 MB del plan.
-- [ ] Cabeceras de seguridad en `vercel.json`: CSP, `X-Content-Type-Options`, `Referrer-Policy`.
+- [ ] 🚧 Cabeceras de seguridad en `vercel.json`: CSP, `X-Content-Type-Options`, `Referrer-Policy` (28-oct: escritas, iguales a las de `docker/security-headers.conf`; falta confirmar en producción que el login con Google sigue funcionando).
+- [x] La caché de una cuenta se borra al cerrar sesión o al entrar otra (28-oct, `AuthProvider` + 3 pruebas).
 - [ ] `npm audit` sin vulnerabilidades altas.
 - [ ] **Borrar mi cuenta** desde Ajustes, con **doble confirmación** (D30): primero se ofrece exportar y se avisa qué se pierde, después se escribe «BORRAR».
 - [ ] Que un CSV importado no pueda colar fórmulas al exportarlo (`=`, `+`, `-`, `@` al inicio de una celda).
