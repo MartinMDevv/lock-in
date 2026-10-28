@@ -309,12 +309,12 @@ SMTP propio. El enlace mágico sigue descartado (D3).
 
 | Tema | Qué falta |
 |---|---|
-| Login en el teléfono | Probar la vuelta desde Google en Android, primero en el navegador y después con la PWA instalada (F4) |
-| Proveedor Email | Apagarlo cuando Google funcione en el teléfono. **No** apagar «Allow new users to sign up»: también bloquea a Google |
+| Login en el teléfono | ✅ 28-oct: funciona en Chrome de Android. Falta repetirlo con la PWA instalada (F4) |
+| ~~Proveedor Email~~ | ✅ 28-oct: apagado. «Allow new users to sign up» queda prendido: apagarlo bloquearía también a Google |
 | Secreto de Google | Rotarlo antes de publicar la app: el del 28-oct quedó a la vista fuera de Supabase |
 | Publicar la app en Google | Hoy está en modo Prueba (solo entran los usuarios de la lista). Para abrirla, Google pide una **política de privacidad**, que además exige la Ley 21.719 |
 | Límites del plan Free | 500 MB de base, 5 GB de transferencia al mes, pausa tras 7 días sin actividad y **sin respaldos automáticos**: el `db dump` deja de ser opcional |
 | D27 (sin staging) | Con datos ajenos, una migración mala rompe cuentas de otros. Por decidir: probar cada migración en un Supabase local antes del push |
 | Seguridad (F7) | La prueba de RLS con dos cuentas pasa a ser lo más crítico del proyecto |
-| Protección de Vercel | Quitar el login de Vercel que hoy pide la URL a quien no es del equipo |
+| ~~Protección de Vercel~~ | ✅ 28-oct: no hacía falta. Producción ya era pública y la protección solo cubre las vistas previas |
 

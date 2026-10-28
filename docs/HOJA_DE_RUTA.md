@@ -24,11 +24,11 @@ Dos reglas:
 2. **Cada fase tiene un «Termina cuando».** Si eso no se cumple, la fase no
    está cerrada, aunque todas sus casillas estén marcadas.
 
-## Estado general (10-oct-2026)
+## Estado general (28-oct-2026)
 
 | Fase | Qué deja lista | Avance |
 |---|---|---|
-| **F0 · Cimientos y esqueleto** | Arranca, se verifica sola, está publicada y se navega | 🚧 casi completa: falta la revisión en el teléfono, desde el PC |
+| **F0 · Cimientos y esqueleto** | Arranca, se verifica sola, está publicada y se navega | ✅ cerrada el 28-oct-2026 |
 | **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | 🚧 las 6 migraciones aplicadas (14-oct); faltan RLS con dos cuentas, Advisors y respaldo |
 | **F2 · El diseño en el código** | La app se ve como el prototipo | ⬜ |
 | **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | ⬜ |
@@ -79,15 +79,15 @@ Antes eran los Hitos 0 y 1.
 | ✅ | Deploy en Vercel | Cada push a `main` redespliega | 🔴 |
 | ✅ | Migración `profiles` | Aplicada el 06-oct, al prender «Deploy to production» (D16) | 🔴 |
 | ✅ | Regenerar tipos | `src/types/database.ts` ya trae `profiles` (14-oct) | 🔴 |
-| 🚧 | Login | Solo Google (D32). 28-oct: entra y vuelve bien en el escritorio (`localhost`); falta el teléfono | 🔴 |
-| 🚧 | Rutas y cáscara | Las seis rutas, barra inferior y menú lateral. Escritas | 🔴 |
-| 🚧 | Pantalla por área y «Hoy» | Cada una con su estado vacío. Escritas | 🟡 |
+| ✅ | Login | Solo Google (D32). 28-oct: entra y vuelve bien en el escritorio y en el teléfono (Android, Chrome) | 🔴 |
+| ✅ | Rutas y cáscara | Las seis rutas, barra inferior y menú lateral. Recorridas en el teléfono el 28-oct | 🔴 |
+| ✅ | Pantalla por área y «Hoy» | Cada una con su estado vacío. Vistas en el teléfono el 28-oct | 🟡 |
 | ✅ | Ajustes | Lee y guarda nombre, moneda, zona horaria, unidad de peso e inicio de semana (14-oct). El tema entra con la F1 | 🟡 |
 | ✅ | Diseño | Exportado de Claude Design el 06-oct: grafito + acento lima, fuente Geist. El paquete vive fuera del repo | 🟡 |
 | ✅ | Decisiones D24–D30 | Revisadas con el autor el 10-oct | 🔴 |
-| ⬜ | **Revisión en el teléfono** (desde el PC) | 14-oct: la app abre en el teléfono. Falta confirmar el correo de la cuenta, entrar, recorrer las 5 áreas y guardar algo en Ajustes | 🔴 |
-| ⬜ | **Apagar el proveedor Email** (D32) | El registro queda abierto a propósito, pero solo por Google. Apagar Email recién cuando Google funcione en el teléfono. **No** tocar «Allow new users to sign up»: también bloquea a Google | 🔴 |
-| ⬜ | Protección de Vercel | La URL pide login de Vercel a quien no lo tiene. Revisar en Settings → Deployment Protection antes de la F4 (PWA) | 🟡 |
+| ✅ | **Revisión en el teléfono** | 28-oct: entra con Google, recorre las 5 áreas y guarda en Ajustes | 🔴 |
+| ✅ | **Apagar el proveedor Email** (D32) | 28-oct: apagado. El registro sigue abierto, solo por Google. «Allow new users to sign up» queda prendido a propósito | 🔴 |
+| ✅ | Protección de Vercel | 28-oct: en incógnito, el dominio de producción abre directo el login de Lock In. La protección solo cubre las vistas previas, y así se queda | 🟡 |
 
 ## F1 · Base de datos definitiva
 
