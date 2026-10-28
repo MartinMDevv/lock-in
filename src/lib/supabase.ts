@@ -6,9 +6,12 @@ import type { Database } from '@/types/database'
  * Cliente único de Supabase.
  *
  * La sesión se guarda en localStorage y se refresca sola, así que el usuario
- * entra una vez y no vuelve a ver el login (que es justamente por lo que se
- * eligió correo + contraseña en vez de enlace mágico: el enlace abriría el
- * navegador en vez de la PWA instalada y dejaría la sesión en otro lugar).
+ * entra una vez y no vuelve a ver el login.
+ *
+ * El login es con Google (D32): Google devuelve a la app con un `?code=` en
+ * la URL, y `detectSessionInUrl` lo canjea por la sesión al cargar. PKCE
+ * porque el código solo sirve junto a un secreto que quedó guardado en ESTE
+ * navegador: si alguien intercepta la URL de vuelta, no le alcanza.
  */
 export const supabase = createClient<Database>(
   env.VITE_SUPABASE_URL,
@@ -17,7 +20,8 @@ export const supabase = createClient<Database>(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
     },
   },
 )

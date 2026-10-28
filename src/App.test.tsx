@@ -36,6 +36,7 @@ const consultaSimulada = {
 }
 
 let sesion: Session | null = null
+const signInWithOAuth = vi.fn(() => Promise.resolve({ error: null }))
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
@@ -45,6 +46,7 @@ vi.mock('@/lib/supabase', () => ({
         data: { subscription: { unsubscribe: () => {} } },
       }),
       signOut: () => Promise.resolve({ error: null }),
+      signInWithOAuth,
     },
     from: () => consultaSimulada,
   },
@@ -58,24 +60,33 @@ describe('esqueleto de la aplicación', () => {
     window.history.pushState({}, '', '/')
   })
 
-  it('sin sesión muestra el login', async () => {
+  it('sin sesión muestra el login con Google', async () => {
     render(<App />)
-    expect(await screen.findByLabelText('Correo')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: /Continuar con Google/ }),
+    ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Contraseña')).not.toBeInTheDocument()
   })
 
-  it('el ojo muestra y vuelve a ocultar la contraseña', async () => {
+  it('el botón pide el login a Google y vuelve al mismo origen', async () => {
     render(<App />)
     const usuario = userEvent.setup()
 
-    const campo = await screen.findByLabelText('Contraseña')
-    expect(campo).toHaveAttribute('type', 'password')
+    await usuario.click(
+      await screen.findByRole('button', { name: /Continuar con Google/ }),
+    )
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
+  })
 
-    await usuario.click(screen.getByRole('button', { name: 'Mostrar contraseña' }))
-    expect(campo).toHaveAttribute('type', 'text')
+  it('si Google rechaza el login, lo dice y limpia la URL', async () => {
+    window.history.pushState({}, '', '/?error=access_denied&error_description=Acceso%20denegado')
+    render(<App />)
 
-    await usuario.click(screen.getByRole('button', { name: 'Ocultar contraseña' }))
-    expect(campo).toHaveAttribute('type', 'password')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Acceso denegado')
+    expect(window.location.search).toBe('')
   })
 
   it('con sesión muestra las cinco áreas y parte en Hoy', async () => {

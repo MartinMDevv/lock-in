@@ -22,6 +22,9 @@ El enlace mágico abre en el navegador y no en la PWA instalada, dejando la
 sesión en el lugar equivocado. Con sesión persistente, la contraseña se escribe
 una sola vez.
 
+> ⚠️ **Reemplazada por D32 (28-oct-2026):** el login pasa a ser solo con Google.
+> El enlace mágico sigue descartado por el mismo motivo.
+
 ### D4 · TypeScript en modo estricto
 Con 13 tablas y cinco áreas, los tipos generados desde el esquema real avisan de
 un campo mal escrito al momento de escribirlo. `strict` y
@@ -260,6 +263,9 @@ público; con el registro abierto, cualquiera podría crearse cuenta en una
 instancia ajena y gastar su cuota (la RLS impide que vea datos, no que ocupe
 espacio).
 
+> ⚠️ **Reemplazada por D32 (28-oct-2026):** Lock In pasa a ser un servicio
+> compartido con el registro abierto.
+
 ### D30 · Lo que tiene historia se archiva; borrar la cuenta pide doble confirmación
 Decidida el 10-oct-2026. Todo lo anotado queda guardado con su fecha, y las
 vistas por mes son filtros sobre eso (D6). Sobres, ejercicios y rutinas no
@@ -278,3 +284,37 @@ anotarle un gasto en contra o colgarle algo. Toda referencia va como
 `(user_id, x_id) → tabla (user_id, id)`, así la base exige que las dos filas
 sean del mismo dueño. Cuesta un `unique (user_id, id)` por tabla apuntada.
 Detalle en [`MODELO_DATOS.md`](MODELO_DATOS.md#8-las-referencias-no-cruzan-de-una-cuenta-a-otra-d31).
+
+### D32 · Un servicio compartido, con entrada solo por Google
+Decidida el 28-oct-2026. Reemplaza a D29 y a D3. En vez de que cada persona
+monte su copia, hay **una sola instancia** (este Supabase y este Vercel) y
+cualquiera se registra en ella. El plan Free de Supabase admite 50.000
+usuarios activos al mes, y la RLS ya separa las cuentas fila por fila (D19,
+D31).
+
+La entrada es **solo con Google**:
+
+- No se guardan contraseñas ni hay que mandar correos. El SMTP que trae
+  Supabase es solo para pruebas (muy pocos correos por hora), así que un
+  registro abierto por correo exigía un SMTP propio desde el primer día.
+- Google ya verificó el correo, y crear cuentas basura cuesta más que con un
+  formulario.
+- Se usa el flujo **PKCE**: el código que vuelve de Google solo se canjea en
+  el navegador donde empezó el login. Probado en el escritorio el 28-oct-2026.
+
+Correo y contraseña pueden volver más adelante como alternativa, junto con un
+SMTP propio. El enlace mágico sigue descartado (D3).
+
+**Lo que este cambio deja abierto:**
+
+| Tema | Qué falta |
+|---|---|
+| Login en el teléfono | Probar la vuelta desde Google en Android, primero en el navegador y después con la PWA instalada (F4) |
+| Proveedor Email | Apagarlo cuando Google funcione en el teléfono. **No** apagar «Allow new users to sign up»: también bloquea a Google |
+| Secreto de Google | Rotarlo antes de publicar la app: el del 28-oct quedó a la vista fuera de Supabase |
+| Publicar la app en Google | Hoy está en modo Prueba (solo entran los usuarios de la lista). Para abrirla, Google pide una **política de privacidad**, que además exige la Ley 21.719 |
+| Límites del plan Free | 500 MB de base, 5 GB de transferencia al mes, pausa tras 7 días sin actividad y **sin respaldos automáticos**: el `db dump` deja de ser opcional |
+| D27 (sin staging) | Con datos ajenos, una migración mala rompe cuentas de otros. Por decidir: probar cada migración en un Supabase local antes del push |
+| Seguridad (F7) | La prueba de RLS con dos cuentas pasa a ser lo más crítico del proyecto |
+| Protección de Vercel | Quitar el login de Vercel que hoy pide la URL a quien no es del equipo |
+
