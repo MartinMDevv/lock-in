@@ -10,6 +10,17 @@ export default defineConfig({
     // Alias "@/..." apuntando a src/, para no encadenar "../../.."
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
+  server: {
+    // Solo esta máquina. El servidor de desarrollo puede leer archivos del
+    // disco (.env incluido): las CVE de Vite de 2025-2026 se explotan contra
+    // servidores expuestos con --host. Para probar en el teléfono se usa el
+    // deploy de Vercel o la imagen de Docker, no esto.
+    host: 'localhost',
+    // 5173 exacto: es el origen autorizado en Google y en Supabase. Si Vite
+    // saltara solo al 5174, el login con Google fallaría sin explicar por qué.
+    port: 5173,
+    strictPort: true,
+  },
   test: {
     // Las pruebas de src/core/ son puras y no necesitan DOM;
     // las de componentes sí, por eso jsdom es el entorno por defecto.
