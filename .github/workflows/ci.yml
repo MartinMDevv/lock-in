@@ -3,8 +3,8 @@ name: CI
 # Solo dispara con pushes a este repositorio, nunca con pull_request.
 # El runner es propio (corre en la máquina del autor) y el repo es público:
 # un `pull_request` desde un fork ajeno ejecutaría código de un desconocido
-# acá adentro. Trabajando solo no se pierde nada — las ramas `feat/…` se
-# verifican igual antes de mergear. Ver docs/DECISIONES.md D15.
+# acá adentro. Sin ramas (D17), todo cambio llega por push a main y pasa
+# por aquí igual. Ver docs/DECISIONES.md D15.
 on:
   push:
     branches: ['**']

@@ -3,8 +3,8 @@
 ## Convención de idioma
 
 **Identificadores, archivos y carpetas en inglés. Comentarios y textos de
-interfaz en español.** El código queda forkeable por cualquiera sin dejar de
-ser legible para quien lo mantiene.
+interfaz en español.** El código se lee desde cualquier parte del mundo en
+GitHub, sin dejar de ser cercano para quien lo mantiene.
 
 ## Estructura
 
@@ -53,7 +53,7 @@ Eso permite tres cosas:
 
 1. **Se prueban de verdad**, sin montar un navegador ni una base de datos.
    Las pruebas corren en milisegundos y no son frágiles.
-2. **Se leen sin contexto.** Alguien que forkea el repo entiende el modelo
+2. **Se leen sin contexto.** Alguien que llega al repo entiende el modelo
    económico leyendo `core/money/`, sin desenredarlo de la interfaz.
 3. **La interfaz se puede rehacer entera** sin tocar una sola regla.
 

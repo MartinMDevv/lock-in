@@ -29,7 +29,7 @@ Dos reglas:
 | Fase | Qué deja lista | Avance |
 |---|---|---|
 | **F0 · Cimientos y esqueleto** | Arranca, se verifica sola, está publicada y se navega | ✅ cerrada el 28-oct-2026 |
-| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | 🚧 las 6 migraciones aplicadas (14-oct); faltan RLS con dos cuentas, Advisors y respaldo |
+| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | 🚧 las 6 migraciones aplicadas (14-oct) y la 7 lista (28-oct); faltan RLS con dos cuentas, Advisors y respaldo |
 | **F2 · El diseño en el código** | La app se ve como el prototipo | ⬜ |
 | **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | ⬜ |
 | **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | ⬜ |
@@ -39,7 +39,7 @@ Dos reglas:
 | **F8 · Profundidad** | Lo que pida el uso real | ⬜ |
 | **F9 · Notificaciones** | Prueba de concepto | ⬜ opcional |
 | **F10 · Revisión** | Arquitectura y buenas prácticas revisadas | ⬜ |
-| **F11 · Publicación forkeable** | Otra persona monta su copia sin preguntar | ⬜ |
+| **F11 · Publicación del servicio** | Cualquiera entra con Google y la usa sin preguntar | ⬜ |
 | **F12 · Prueba final** | `v1.0.0` | ⬜ |
 
 ### El orden, y por qué
@@ -114,9 +114,10 @@ de cargar datos reales**.
     trigger, que no se pueden llamar por RPC, así que el riesgo real es nulo,
     pero se cierra con una migración 7 que haga `revoke execute … from
     public, anon, authenticated`; la de `rls_auto_enable` con `if exists`,
-    porque en un fork puede no estar.
+    porque en otra instancia puede no estar.
   - 1 WARN `auth_leaked_password_protection`: revisar en Authentication si el
     plan Free lo permite; si no, queda anotado como aceptado.
+- [ ] 🚧 **Migración 7** `revocar_execute_funciones` (28-oct-2026): cierra los 4 WARN de `security_definer_function_executable`. Escrita y commiteada; se aplica con el push. Después, confirmar en *Advisors* que los avisos desaparecieron.
 - [ ] Primer `supabase db dump` y decidir dónde se guarda (fuera del repo).
 
 ## F2 · El diseño en el código
@@ -197,7 +198,8 @@ cuentas no logra ver nada de la otra.*
 - [ ] **Prueba automatizada de RLS** con dos cuentas de prueba, para **cada tabla**: leer, insertar con un `user_id` ajeno, editar y borrar lo de otro → todo debe fallar.
 - [ ] Ninguna tabla sin RLS ni sin `grant` explícito (consulta a `pg_tables`).
 - [ ] *Advisors* de Supabase en cero.
-- [ ] Apagar el registro público (D29) y fijar el *Site URL* al dominio de Vercel.
+- [x] *Site URL* fijado al dominio de Vercel y registro abierto solo por Google (D32, 28-oct-2026).
+- [ ] **Topes por cuenta**: con el registro abierto, que una sola cuenta no pueda llenar los 500 MB del plan.
 - [ ] Cabeceras de seguridad en `vercel.json`: CSP, `X-Content-Type-Options`, `Referrer-Policy`.
 - [ ] `npm audit` sin vulnerabilidades altas.
 - [ ] **Borrar mi cuenta** desde Ajustes, con **doble confirmación** (D30): primero se ofrece exportar y se avisa qué se pierde, después se escribe «BORRAR».
@@ -239,16 +241,19 @@ teléfono no alcanzan.
 - [ ] Accesibilidad: contraste AA (ya viene en los tokens), foco visible, navegación con teclado en el escritorio.
 - [ ] Lighthouse en el teléfono: rendimiento, PWA y accesibilidad sobre 90.
 
-## F11 · Publicación forkeable
+## F11 · Publicación del servicio
 
-Antes era el Hito 4.
-*Termina cuando otra persona monta su propia copia siguiendo solo la guía, sin
-preguntar nada.*
+Antes era «Publicación forkeable»: cambió con D32. Lock In ya no se monta por
+copia; hay una sola instancia y se abre a todos.
+*Termina cuando una persona que no conoce el proyecto entra con Google, instala
+la PWA y la usa sin preguntar nada, y el servicio cumple la ley de datos
+personales.*
 
+- [ ] **Política de privacidad y términos de uso**, en la app y enlazados en la pantalla de consentimiento de Google. Exigidos por la Ley 21.719 y por Google para publicar.
+- [ ] **Rotar el secreto de Google** (el del 28-oct quedó expuesto) y **publicar la app** en Google Cloud: sale del modo Prueba y entra cualquier cuenta.
+- [ ] Repetir el login con la **PWA instalada** en Android.
 - [ ] `README.md` con capturas y un GIF de registrar un gasto.
-- [ ] [`INSTALACION.md`](INSTALACION.md) reescrita como **tutorial de montaje** completo: Supabase (incluido el interruptor **«Deploy to production»**, D16), Vercel, variables, apagar el registro (D29) e instalar la PWA. Una versión simple para usuarios y otra para developers.
-- [ ] Videos cortos: montar el proyecto desde cero y usar la app un día.
-- [ ] `seed.sql` genérico para una cuenta de demostración.
+- [ ] Guía corta de uso: entrar, instalar la PWA y armar el primer día.
 - [ ] Revisión de secretos sobre todo el historial (`npm run check:secrets`).
 - [ ] Plantillas de issue (bug, idea) y `CONTRIBUTING.md` con el flujo de [`CORRER.md`](CORRER.md).
 

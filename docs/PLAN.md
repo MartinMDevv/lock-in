@@ -15,6 +15,10 @@ inicio que responda *¿qué tengo que hacer hoy?*.
 **Criterio de éxito:** si al mes no se abre a diario, el diseño falló →
 **se recorta, nunca se agrega.**
 
+**Cómo se entrega:** un solo servicio (D32). Se abre la URL, se entra con
+Google y cada persona arma su sistema dentro de su cuenta. Nadie instala ni
+configura infraestructura.
+
 ## Áreas
 
 | Ruta | Área | Contenido |
@@ -44,7 +48,7 @@ esa altura ya se abandonó.
 | Hito 2 · Una cosa útil por área | **F3–F4** | Se puede vivir un día dentro de la app, y se usa dos semanas como PWA |
 | — | **F5–F7** | Sin conexión, importar y exportar, seguridad |
 | Hito 3 · Profundidad, según uso real | **F8–F9** | **El orden lo decide lo que se esté abriendo**, no un documento |
-| Hito 4 · Publicación | **F10–F12** | Revisión, fork limpio y `v1.0.0` |
+| Hito 4 · Publicación | **F10–F12** | Revisión, publicación del servicio y `v1.0.0` |
 
 ## Fuera de alcance — decidido, no se reabre
 

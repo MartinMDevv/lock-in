@@ -8,7 +8,7 @@ El día a día: levantar, verificar, migrar y subir cambios.
 
 ## 0 · El flujo de trabajo
 
-Para quien mantenga el proyecto o su propia copia:
+Para quien mantenga el proyecto:
 
 1. Lee [`CLAUDE.md`](../CLAUDE.md) entero: son las reglas que no se negocian.
 2. Mira en [`HOJA_DE_RUTA.md`](HOJA_DE_RUTA.md) qué fase está abierta.

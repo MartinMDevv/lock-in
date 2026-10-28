@@ -1,25 +1,15 @@
 # Instalación
 
-Cada persona levanta su propia base de datos. Nadie comparte datos con nadie.
+Lock In es **un solo servicio** (D32): una instancia de Supabase y una de
+Vercel, que opera el equipo, y todas las personas usan esas mismas. Quien usa
+la app no instala nada: abre la URL y entra con Google.
 
-## 1. Requisitos
+Este documento es para el equipo: montar el entorno de desarrollo y saber cómo
+está configurada producción.
 
-- Node.js 22 o superior
-- Una cuenta en [supabase.com](https://supabase.com) (plan gratuito)
-- [Supabase CLI](https://supabase.com/docs/guides/cli) para aplicar las migraciones
+## 1 · Entorno de desarrollo
 
-## 2. Crear el proyecto de Supabase
-
-1. En supabase.com → **New project**. Plan **Free**.
-2. Elegir una región cercana y guardar la contraseña de la base en un lugar
-   seguro (se pide para aplicar migraciones).
-3. Esperar a que termine de aprovisionarse.
-
-> El plan gratuito **pausa el proyecto tras 7 días sin actividad**. Con uso
-> diario no molesta; después de unas vacaciones hay que reactivarlo a mano
-> desde el panel.
-
-## 3. Configurar el proyecto local
+Requisitos: Node.js 22 o superior y acceso al proyecto de Supabase del equipo.
 
 ```bash
 git clone https://github.com/MartinMDevv/lock-in.git
@@ -28,48 +18,85 @@ npm install
 cp .env.example .env
 ```
 
-En el panel de Supabase, **Settings → API**, copiar al `.env`:
+En el panel de Supabase, **Settings → API**, copia al `.env`:
 
 | Del panel | Al `.env` |
 |---|---|
 | Project URL | `VITE_SUPABASE_URL` |
 | `anon` `public` key | `VITE_SUPABASE_ANON_KEY` |
 
-> **Nunca** copiar la clave `service_role`. Esa clave se salta Row Level
-> Security y en un archivo `VITE_` terminaría dentro del bundle público.
-> La clave `anon` está diseñada para exponerse: lo que protege los datos es RLS.
+> 🚫 **Nunca** copiar la clave `service_role`. Se salta Row Level Security y, en
+> una variable `VITE_`, terminaría dentro del bundle público. La clave `anon`
+> está diseñada para exponerse: lo que protege los datos es RLS.
 
-## 4. Crear las tablas
+```bash
+npm run dev      # http://localhost:5173
+```
+
+> ⚠️ **Hoy el entorno local apunta a la base de producción**, la misma de todas
+> las cuentas. Mientras no exista un Supabase local (D32, revisión de D27),
+> probar con tu propia cuenta y no tocar datos ajenos.
+
+Para generar tipos o aplicar migraciones a mano hace falta la CLI de Supabase:
 
 ```bash
 supabase login
-supabase link --project-ref <la-referencia-de-tu-proyecto>
-npm run db:push
+supabase link --project-ref <referencia-del-proyecto>
+npm run db:types
 ```
 
-Esto aplica todas las migraciones de `supabase/migrations/`: tablas, políticas
-de Row Level Security e índices.
+## 2 · Cómo llega un cambio a producción
 
-## 5. Activar el inicio de sesión
+| Qué cambia | Cómo se publica |
+|---|---|
+| Código de la app | Push a `main` → **Vercel** compila y publica solo |
+| Migración en `supabase/migrations/` | Push a `main` → la integración de Supabase con GitHub la aplica a la base (D16) |
 
-En el panel: **Authentication → Providers → Email**, activado, con
-*Confirm email* según se prefiera.
+Por eso las migraciones van **solas en su commit** y se revisan dos veces: al
+llegar a `main` afectan las cuentas de todos. Detalle en
+[`CORRER.md`](CORRER.md).
 
-Cuando ya tengas tu cuenta creada, **apaga el registro** (*Allow new users to
-sign up*). La URL de tu proyecto queda dentro del código publicado: con el
-registro abierto, cualquiera podría crearse una cuenta en tu instancia y gastar
-tu cuota gratis. Cada persona monta la suya (D29).
+## 3 · Configuración de producción
 
-## 6. Correr
+Referencia de cómo está montado el servicio. **Ningún secreto va en este
+archivo**: los valores sensibles viven solo en los paneles.
 
-```bash
-npm run dev
-```
+### Google Cloud
 
-## 7. Publicar (opcional)
+| Dónde | Valor |
+|---|---|
+| Proyecto | Uno propio, «Lock In», separado de otros proyectos |
+| Pantalla de consentimiento | Público **Externo**. En modo **Prueba** hasta la publicación del servicio (F11): solo entran los usuarios de prueba |
+| Cliente OAuth | Tipo **Aplicación web** |
+| Orígenes de JavaScript | `http://localhost:5173` y el dominio de producción en Vercel |
+| URI de redireccionamiento | `https://<referencia-del-proyecto>.supabase.co/auth/v1/callback` |
 
-1. Importar el repositorio en [vercel.com](https://vercel.com).
-2. Cargar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en
-   **Settings → Environment Variables**.
-3. Desplegar. Cada `push` a `main` actualiza el sitio solo.
-4. En el teléfono, abrir la URL y usar *"Agregar a pantalla de inicio"*.
+El ID de cliente y el secreto se pegan en Supabase. El secreto no se guarda en
+ningún otro lado y se rota si queda expuesto.
+
+### Supabase · Authentication
+
+| Opción | Valor | Por qué |
+|---|---|---|
+| Proveedor **Google** | Prendido | Única entrada (D32) |
+| Proveedor **Email** | **Apagado** | Sin contraseñas ni correos de confirmación (D32) |
+| *Allow new users to sign up* | **Prendido** | El servicio es abierto. Apagarlo bloquea también a Google |
+| *Site URL* | El dominio de producción en Vercel | Destino por defecto al volver del login |
+| *Redirect URLs* | `http://localhost:5173/**` y `https://<dominio-de-producción>/**` | Orígenes a los que Supabase acepta volver |
+
+### Vercel
+
+| Opción | Valor |
+|---|---|
+| Variables de entorno | `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` |
+| *Deployment Protection* | Estándar: protege las vistas previas, el dominio de producción es público |
+| Reescrituras | `vercel.json` manda toda ruta a `index.html` (la app maneja sus rutas) |
+
+### Límites del plan gratuito
+
+| Límite | Qué implica |
+|---|---|
+| 50.000 usuarios activos al mes | Holgado para esta etapa |
+| 500 MB de base y 5 GB de transferencia al mes | Lo primero que se va a topar. Se vigila en el panel |
+| Pausa tras 7 días sin actividad | Con uso diario no pasa. Si pasa, se reactiva desde el panel |
+| Sin respaldos descargables | El respaldo se hace con `supabase db dump` (ver [Ideas sin fase](HOJA_DE_RUTA.md#ideas-sin-fase)) |

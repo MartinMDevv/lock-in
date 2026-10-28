@@ -448,8 +448,8 @@ create index on public.workout_sets (user_id, exercise_id, created_at desc);
 ## Las migraciones, en orden
 
 Una por commit (D16), cada una con su RLS, `grant`, índices y trigger de
-`updated_at` adentro. Van directo a producción (D27): se revisan dos veces
-antes del push. Las reglas para no perder datos están en
+`updated_at` adentro. Van directo a producción (D27) y afectan las cuentas
+de todos (D32): se revisan dos veces antes del push. Las reglas para no perder datos están en
 [`CORRER.md`](CORRER.md#4--hacer-una-migración).
 
 | # | Migración | Contiene |
@@ -461,6 +461,7 @@ antes del push. Las reglas para no perder datos están en
 | ✅ | `crear_horario` | `schedule_blocks`, `schedule_slots` (sin `routine_id` todavía). Va antes que Tareas porque `tasks.schedule_block_id` la apunta. Aplicada el 14-oct |
 | ✅ | `crear_tareas` | `task_categories`, `tasks`. Aplicada el 14-oct |
 | ✅ | `crear_gimnasio` | `exercises`, `routines`, `routine_exercises`, `workouts`, `workout_sets`, `body_measurements` + `schedule_slots.routine_id`. Aplicada el 14-oct |
+| 🚧 | `revocar_execute_funciones` | Quita EXECUTE a la API sobre `handle_new_user` y `rls_auto_enable`, y hace que las funciones futuras nazcan sin él (mínimo privilegio, D32). Escrita el 28-oct, se aplica con el push
 
 Después de cada una: `npm run db:types`. Al final, la prueba de RLS con dos
 cuentas (F7).

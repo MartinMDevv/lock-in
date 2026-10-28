@@ -23,7 +23,7 @@ Cada documento tiene un trabajo. No duplicar contenido entre ellos: enlazar.
 | [`docs/MODELO_ECONOMICO.md`](docs/MODELO_ECONOMICO.md) | Sobres, reparto, topes y metas | Al tocar `core/money/` o el área Plata |
 | [`docs/DECISIONES.md`](docs/DECISIONES.md) | D1–D32: cada decisión con su motivo | Cuando algo parezca raro: ya se discutió |
 | [`docs/BRIEF_DISENO.md`](docs/BRIEF_DISENO.md) | Lo que se le pidió a Claude Design. El resultado (tokens y prototipos) es un paquete aparte, fuera del repo | Al hacer una pantalla, junto con ese paquete |
-| [`docs/INSTALACION.md`](docs/INSTALACION.md) | Instalar desde cero (para quien forkea) | Solo al montar el proyecto de nuevo |
+| [`docs/INSTALACION.md`](docs/INSTALACION.md) | Entorno de desarrollo y configuración de producción (Google, Supabase, Vercel) | Al montar una máquina nueva o tocar la configuración del servicio |
 | [`README.md`](README.md) | La cara pública del proyecto | Al cambiar el estado o el alcance |
 
 ## Idioma
@@ -43,6 +43,41 @@ Cada documento tiene un trabajo. No duplicar contenido entre ellos: enlazar.
 | 6 | **Un push a `main` aplica migraciones a producción** | El repo está conectado a Supabase: la migración va **sola** en su commit (D16) |
 | 7 | **CI en runner propio, solo con `push`** | Nunca agregar `pull_request`: correría código de forks ajenos en la máquina del autor (D15) |
 | 8 | **Lo que tiene historia se archiva, no se borra** | Sobres, ejercicios y rutinas no tienen «Borrar» y sus referencias usan `on delete no action` (D30) |
+
+## Buenas prácticas
+
+Lock In es un **servicio compartido** (D32): cualquiera entra con Google y los
+datos de todas las personas viven en la misma base. Un descuido ya no afecta
+solo al autor.
+
+**Seguridad**
+
+| Práctica | En este repo |
+|---|---|
+| Nunca confiar en el cliente | Toda regla que proteja datos va en la base (RLS, `check`, FK compuestas D31), nunca solo en React |
+| Mínimo privilegio | Cada función nueva lleva `revoke execute … from public, anon, authenticated` salvo que la API deba llamarla. `security definer` siempre con `set search_path = ''` |
+| Secretos fuera del bundle | Solo `VITE_SUPABASE_URL` y la clave anónima son públicas. `service_role`, el secreto de Google y cualquier token van en paneles, jamás en el repo ni en `VITE_*` |
+| Sesión y caché por persona | Lo que se guarda en el navegador (caché, cola sin conexión) lleva el `userId` y se borra al cerrar sesión |
+| Datos personales | No se registran en consola ni en errores. Exportar (D25) y borrar la cuenta (D30) son derechos de la persona (Ley 21.719), no extras |
+
+**Base de datos**
+
+| Práctica | En este repo |
+|---|---|
+| Migraciones que solo agregan | Nada de `drop` ni `rename` sobre datos sin exportar antes. Una migración por commit (D16) |
+| Probar antes de producción | Un push a `main` aplica la migración a las cuentas de todos: se revisa dos veces y, cuando exista, se prueba en el Supabase local |
+| Cada tabla nueva | RLS + las cuatro políticas + `grant` en la misma migración, y una prueba de que otra cuenta no la ve |
+
+**Código**
+
+| Práctica | En este repo |
+|---|---|
+| Reglas de negocio puras y probadas | En `src/core/`, con pruebas. La interfaz solo llama |
+| Acceso a datos en un solo lugar | Un archivo de hooks por área (patrón de `features/settings/profile.ts`): las pantallas no llaman a `supabase` directo |
+| Tipos estrictos | Sin `any` ni `as` para callar al compilador. Los tipos de la base salen de `npm run db:types` |
+| Errores visibles | Toda consulta o mutación muestra su estado de carga y su error al usuario, en español |
+| Accesible | Etiquetas en los campos, `aria-*` en los botones de solo ícono, que funcione con teclado |
+| Cambios chicos | Un cambio por commit, con su prueba. Si algo no se usa, se borra en vez de comentarlo |
 
 ## Commits
 
