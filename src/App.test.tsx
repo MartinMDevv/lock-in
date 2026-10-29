@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Session } from '@supabase/supabase-js'
 
@@ -42,6 +42,11 @@ function consultaSimulada(tabla: string) {
   const consulta = {
     select: () => consulta,
     insert: (fila: unknown) => {
+      leyendo = false
+      inserts.push({ tabla, fila })
+      return consulta
+    },
+    upsert: (fila: unknown) => {
       leyendo = false
       inserts.push({ tabla, fila })
       return consulta
@@ -310,6 +315,23 @@ describe('cáscara', () => {
       },
     ])
     expect(await screen.findByText('Gasto de $4.500 en Vida diaria')).toBeInTheDocument()
+  })
+
+  it('Horario: un bloque nuevo se guarda con su horario', async () => {
+    window.history.pushState({}, '', '/schedule')
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Nuevo bloque' }))
+    await usuario.type(await screen.findByLabelText('Título'), 'Cálculo II')
+    await usuario.click(screen.getByRole('radio', { name: 'Martes' }))
+    await usuario.click(screen.getByRole('button', { name: 'Guardar bloque' }))
+
+    await waitFor(() => expect(inserts.map((i) => i.tabla)).toEqual(['schedule_blocks', 'schedule_slots']))
+    expect(inserts[0]?.fila).toMatchObject({ title: 'Cálculo II', color: 'azul', user_id: 'usuario-1' })
+    expect(inserts[1]?.fila).toEqual([
+      expect.objectContaining({ weekday: 2, starts_at: '08:30', ends_at: '10:00', user_id: 'usuario-1' }),
+    ])
   })
 
   it('en el escritorio, 1–5 cambian de área y N abre Registrar', async () => {
