@@ -11,15 +11,19 @@ GitHub, sin dejar de ser cercano para quien lo mantiene.
 ```
 src/
 ├── core/          ← LÓGICA DE NEGOCIO. Sin React, sin Supabase, sin DOM.
-│   ├── money/       reparto de ingresos, saldos, topes, períodos
-│   ├── gym/         rachas, récords, volumen               (se crea en F3)
-│   ├── time/        límites de día/semana/mes por zona     (se crea en F3)
+│   ├── money/       reparto de ingresos, saldos, topes, montos escritos, presets
+│   ├── gym/         peso en kg/lb, rachas, récords, la vez pasada, presets
+│   ├── schedule/    qué bloques caen en un día, el actual y el siguiente
+│   ├── tasks/       agrupar y ordenar tareas por día o categoría
+│   ├── time/        días 'AAAA-MM-DD' en la zona del perfil
 │   └── csv/         leer y validar importaciones           (se crea en F6)
 │
 ├── lib/           ← Infraestructura
 │   ├── env.ts       variables de entorno validadas con Zod al arrancar
 │   ├── supabase.ts  cliente único
 │   ├── format.ts    montos y fechas a texto, según el perfil
+│   ├── clock.ts     la hora actual, que se renueva sola
+│   ├── optimistic.ts cambios que se ven al instante y vuelven atrás si fallan
 │   └── row-cap.ts   el error de tope de la base (LKCAP) a un mensaje en español
 │
 ├── types/

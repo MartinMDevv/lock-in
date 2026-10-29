@@ -140,8 +140,8 @@ escritorio, todavía sin datos.*
   - [x] Barra de progreso (la regla verde/ámbar/rojo del tope vive en `core/money/cap.ts`), stepper, lista con fila y check, esqueleto y estado vacío con acción (28-oct-2026).
   - [x] Toast con Deshacer (28-oct-2026): `components/ui/Toaster.tsx` + `toast.ts` (estado fuera de React, uno a la vez, 4,5 s).
 - [x] **Aviso de límite alcanzado en toda la app**: un `onError` global en el `MutationCache` muestra el toast con `rowCapMessage` cuando cualquier guardado falla con `LKCAP`. Los formularios de F3 lo heredan sin conectarlo uno por uno. Hecho el 28-oct (`lib/query-client.ts`), probado con una mutación simulada; en pantalla se verá con el primer formulario de crear.
-- [ ] 🚧 La cáscara: barra inferior con pastilla deslizante (< 1024 px) y menú lateral de 224 px (≥ 1024 px). 28-oct-2026: escrita con el botón + (abre «Registrar» en la hoja inferior; por ahora cada opción lleva a su área), los atajos 1–5 y N, el avatar con las iniciales del perfil, el ancho por área y el fundido al cambiar de área. Íconos de las áreas cambiados por los del diseño. Fuera por ahora: «Buscar o registrar… Ctrl K» (llega con la paleta) y esconder la barra en la sesión de gimnasio (F3). Falta verla en el teléfono.
-- [ ] 🚧 Tema oscuro, claro o sistema, leyendo `profiles.theme` (28-oct-2026, `src/lib/theme.ts`): se aplica en `<html data-theme>` y en la barra del navegador, se elige en Ajustes (se guarda al tocarlo) y el navegador recuerda el último para no parpadear al abrir. Falta verlo en el teléfono.
+- [x] La cáscara: barra inferior con pastilla deslizante (< 1024 px) y menú lateral de 224 px (≥ 1024 px), el botón + que abre «Registrar», los atajos 1–5 y N, el avatar con las iniciales y el fundido al cambiar de área (28-oct-2026). Probada en el teléfono el 29-oct: se corrigieron la barra que se corría hacia abajo al cambiar de área (desborde lateral del fundido) y la hoja que temblaba al abrirse (el foco de `showModal()`). Fuera por ahora: «Buscar o registrar… Ctrl K» (llega con la paleta).
+- [x] Tema oscuro, claro o sistema, leyendo `profiles.theme` (28-oct-2026, `src/lib/theme.ts`): se aplica en `<html data-theme>` y en la barra del navegador, se elige en Ajustes (se guarda al tocarlo) y el navegador recuerda el último para no parpadear al abrir. Probado en el teléfono el 29-oct.
 - [ ] **Pulir el tema claro**: hoy está menos trabajado que el oscuro.
 - [ ] `prefers-reduced-motion`.
 
@@ -151,16 +151,21 @@ Antes era el Hito 2.
 *Termina cuando se puede vivir un día entero dentro de la app, y cada registro
 toma menos de 5 segundos (medido con cronómetro, no estimado).*
 
-- [ ] Ajustes: nombre, moneda, zona horaria y tema.
-- [ ] Bienvenida con presets (sobres y rutinas), que **insertan filas**.
-- [ ] Plata: registrar un gasto en **< 5 s** con el teclado propio; viene elegido el último sobre usado.
-- [ ] Tareas: crear con Enter, completar con un toque, Deshacer.
-- [ ] Horario: crear un bloque con sus horarios y uno de los 10 colores; vista día.
-- [ ] Gimnasio: sesión activa y anotar una serie según cómo se mide el ejercicio, con la carga de la vez pasada a la vista.
-- [ ] Archivar y desarchivar sobres, ejercicios y rutinas: **no tienen «Borrar»** (D30).
+Escrita el 29-oct-2026, área por área y con un commit por área. **Falta
+probarla en el teléfono** y medir los 5 segundos con cronómetro.
+
+- [x] Ajustes: nombre, moneda, zona horaria y tema. Se guarda al tocar, sin botón, con un aviso chico de «Guardado»; moneda y zona abren la hoja de la app (la zona con buscador) en vez de la lista nativa de Android.
+- [x] Presets de la primera vez, que **insertan filas**: en Plata (Ahorro agresivo, 50/30/20, Desde cero, `core/money/presets.ts`) y en Gimnasio (Cuerpo completo, Torso/Pierna, Empuje/Tirón/Pierna, `core/gym/presets.ts`). Van dentro de cada área y no en una bienvenida aparte; `profiles.onboarded_at` todavía no se usa.
+- [x] Plata: gasto con el teclado propio y el último sobre ya elegido (4 toques); ingreso que muestra el reparto antes de confirmar y avisa si no alcanza para los fijos; sobres con saldo, regla y barra del tope; meta por sobre; movimientos por día, con el ingreso repartido como una sola fila. Todo con Deshacer.
+- [x] Tareas: crear con Enter (chips Hoy, Categoría y Alta), completar con un toque y Deshacer, editar o borrar tocándola; vistas Hoy, Semana y Por categoría (`core/tasks/group.ts`).
+- [x] Horario: bloque con sus horarios y uno de los 10 colores; vista día con la línea «ahora» y vista semana (`core/schedule/day.ts`).
+- [x] Gimnasio: rutinas con sus días en el Horario (D22), sesión activa a pantalla completa con la vez pasada, la carga anterior precargada, récord nuevo, descanso y calentamiento; racha; sesión libre (`core/gym/gym.ts`).
+- [ ] 🚧 Archivar y desarchivar sobres, ejercicios y rutinas: **no tienen «Borrar»** (D30). Sobres y rutinas ✅; a los ejercicios les falta el botón.
 - [ ] Ctrl K en el escritorio, eligiendo el sobre a mano (D28).
-- [ ] **Hoy con datos reales**, en el teléfono y en el escritorio.
-- [ ] Estados vacío, cargando y error en cada área.
+- [x] **Hoy con datos reales**: tu día, qué vence (se completa ahí), gimnasio y plata. En el escritorio, dos columnas.
+- [x] Estados vacío, cargando y error en cada área.
+- [ ] Transferir entre sobres y el barrido de fin de mes: el modelo los tiene (`kind = 'transfer'`, `period_closures`), la interfaz todavía no.
+- [ ] Los saldos suman todos los movimientos en el navegador, pidiéndolos de a 1.000. Con años de uso conviene una vista que sume en la base (una migración).
 
 ## F4 · PWA y uso de prueba
 
