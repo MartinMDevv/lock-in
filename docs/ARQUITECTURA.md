@@ -19,7 +19,8 @@ src/
 ├── lib/           ← Infraestructura
 │   ├── env.ts       variables de entorno validadas con Zod al arrancar
 │   ├── supabase.ts  cliente único
-│   └── format.ts    montos y fechas a texto, según el perfil
+│   ├── format.ts    montos y fechas a texto, según el perfil
+│   └── row-cap.ts   el error de tope de la base (LKCAP) a un mensaje en español
 │
 ├── types/
 │   └── database.ts  generado con `npm run db:types`. NO se edita a mano

@@ -174,6 +174,28 @@ constraint movements_envelope_from_fkey
 Con `set null` hay que nombrar la columna, o Postgres también pondría en null
 el `user_id`: `on delete set null (category_id)`.
 
+### 9. Cada cuenta tiene un tope de filas por tabla
+
+Con el registro abierto (D32), los 500 MB del plan Free son de todos: si una
+cuenta los llena, Supabase responde 402 a todas las llamadas. Por eso cada
+tabla de usuario lleva un trigger `<tabla>_row_cap` que, después de cada
+insert, cuenta las filas de esa cuenta y deshace la sentencia entera si se
+pasó del tope. El error lleva el código **`LKCAP`** y en `details` el JSON
+`{"table", "cap"}`; la app lo traduce con `src/lib/row-cap.ts`.
+
+| Tope | Tablas | Un usuario intenso lo alcanza en |
+|---:|---|---|
+| 20.000 | `movements`, `tasks`, `workout_sets` | 3,6 años (15 tareas al día) a 11 años (5 gastos al día) |
+| 5.000 | `workouts`, `body_measurements`, `period_closures` | décadas |
+| 2.000 | `schedule_slots`, `routine_exercises` | décadas |
+| 500 | `schedule_blocks`, `imports` | décadas (un semestre son 10–15 bloques) |
+| 200 | `envelopes`, `task_categories`, `exercises`, `routines` | nunca, en uso normal |
+
+Medido en un Postgres de prueba: una tarea pesa unos 190 bytes con sus
+índices, así que una cuenta en todos los topes ocupa unos 15 MB. Cambiar un
+tope es una migración que recrea su trigger con el número nuevo; la app no se
+toca, porque el número viaja en el error.
+
 ---
 
 ## Perfil
@@ -462,6 +484,7 @@ de todos (D32): se revisan dos veces antes del push. Las reglas para no perder d
 | ✅ | `crear_tareas` | `task_categories`, `tasks`. Aplicada el 14-oct |
 | ✅ | `crear_gimnasio` | `exercises`, `routines`, `routine_exercises`, `workouts`, `workout_sets`, `body_measurements` + `schedule_slots.routine_id`. Aplicada el 14-oct |
 | ✅ | `revocar_execute_funciones` | Quita EXECUTE a la API sobre `handle_new_user` y `rls_auto_enable`, y hace que las funciones futuras nazcan sin él (mínimo privilegio, D32). Aplicada el 28-oct
+| 🚧 | `topes_por_cuenta` | La función `enforce_row_cap()` y un trigger por tabla con su tope (regla 9). Escrita y probada en un Postgres temporal el 28-oct, sin aplicar
 
 Después de cada una: `npm run db:types`. Al final, la prueba de RLS con dos
 cuentas (F7).
