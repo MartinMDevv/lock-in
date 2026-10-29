@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { AREAS } from './areas'
 import { RegisterSheet } from './RegisterSheet'
+import { Sidebar } from './Sidebar'
+import { useMediaQuery } from '@/lib/media'
 import { useShortcuts } from './shortcuts'
 import { IconoMas } from '@/components/ui/icons'
 import { useAuth } from '@/features/auth/auth-context'
@@ -63,77 +65,48 @@ export function AppShell() {
   // inferior y el + se esconden hacia abajo (diseño, sección Estructura).
   const enSesion = pathname.startsWith('/gym/session')
 
+  const escritorio = useMediaQuery('(min-width: 1024px)')
+  const [menuCerrado, setMenuCerrado] = useState(leerMenuCerrado)
+  function alternarMenu() {
+    setMenuCerrado(!menuCerrado)
+    guardarMenuCerrado(!menuCerrado)
+  }
+
   useShortcuts({
     ...Object.fromEntries(AREAS.map((a, i) => [String(i + 1), () => void navigate(a.to)])),
     n: () => setRegistrando(true),
+    '[': alternarMenu,
   })
+
+  // Ctrl K (⌘K en Mac) abre Registrar mientras no exista la paleta de comandos.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'k') return
+      if (document.querySelector('dialog[open]')) return
+      e.preventDefault()
+      setRegistrando(true)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   // overflow-x-clip: durante el fundido de entrada el contenido se corre
   // 10 px a la derecha. Sin recortarlo, Chrome en Android agranda la
   // ventana y la barra inferior y el + se van hacia abajo, fuera de vista.
   return (
-    <div className="min-h-dvh overflow-x-clip lg:grid lg:grid-cols-[14rem_1fr]">
-      {/* ── Menú lateral: solo escritorio ── */}
-      <aside className="sticky top-0 hidden h-dvh flex-col gap-4 border-r border-line bg-bg px-3 py-4 lg:flex">
-        <div className="flex h-10 items-center gap-2.5 px-2.5">
-          <Logo />
-          <span className="text-body font-semibold tracking-[-0.02em]">Lock In</span>
-        </div>
-
-        <nav aria-label="Áreas" className="flex flex-col gap-0.5">
-          {AREAS.map(({ to, etiqueta, Icono }, i) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              aria-keyshortcuts={String(i + 1)}
-              className={({ isActive }) =>
-                `group flex h-9 items-center gap-2.5 rounded-sm px-2.5 text-body-sm transition-colors duration-(--duration-fast) ${
-                  isActive
-                    ? 'bg-surface-raised font-semibold text-ink'
-                    : 'font-medium text-ink-muted hover:bg-surface-raised'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icono className={`text-lg ${isActive ? 'text-accent-text' : 'text-ink-faint'}`} />
-                  <span className="flex-1">{etiqueta}</span>
-                  <kbd aria-hidden="true" className="font-mono text-caption font-medium text-ink-faint">
-                    {i + 1}
-                  </kbd>
-                </>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-
-        <button
-          type="button"
-          onClick={() => setRegistrando(true)}
-          aria-keyshortcuts="N"
-          className="flex h-10 items-center justify-center gap-2 rounded-md bg-accent text-body-sm font-semibold text-accent-ink transition-[scale] duration-120 active:scale-(--press-scale)"
-        >
-          <IconoMas className="text-base" />
-          Registrar
-          <kbd aria-hidden="true" className="rounded-xs bg-black/12 px-1.5 py-px font-mono text-caption font-medium">
-            N
-          </kbd>
-        </button>
-
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            `mt-auto flex items-center gap-2.5 border-t border-line p-2.5 ${isActive ? 'rounded-sm bg-surface-raised' : ''}`
-          }
-        >
-          <Avatar iniciales={avatar} className="size-8" />
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate text-body-sm font-medium">{nombre ?? session?.user.email}</span>
-            <span className="text-caption text-ink-faint">Ajustes</span>
-          </span>
-        </NavLink>
-      </aside>
+    <div className="min-h-dvh overflow-x-clip lg:grid lg:grid-cols-[auto_1fr]">
+      {/* ── Menú lateral: solo escritorio. En el teléfono ni se monta: pide
+          datos de las cinco áreas que ahí no se muestran. ── */}
+      {escritorio && (
+        <Sidebar
+          pathname={pathname}
+          closed={menuCerrado}
+          onToggle={alternarMenu}
+          onRegister={() => setRegistrando(true)}
+          avatar={<Avatar iniciales={avatar} className="size-8.5" />}
+          name={nombre ?? session?.user.email ?? ''}
+        />
+      )}
 
       <div className="flex min-h-dvh flex-col">
         {/* Cabecera del teléfono: título del área y el avatar, que abre Ajustes. */}
@@ -233,11 +206,21 @@ function Avatar({ iniciales, className }: { iniciales: string; className: string
   )
 }
 
-/** El logo provisorio del diseño: un cuadrado con borde y el lima en la esquina. */
-function Logo() {
-  return (
-    <span aria-hidden="true" className="relative block size-5 rounded-[6px] border-[1.5px] border-ink">
-      <span className="absolute right-0.5 bottom-0.5 size-1.75 rounded-[2px] bg-accent" />
-    </span>
-  )
+const CLAVE_MENU = 'lock-in:sidebar-closed'
+
+/** Si el menú lateral quedó cerrado la última vez. Es una comodidad de este navegador. */
+function leerMenuCerrado(): boolean {
+  try {
+    return localStorage.getItem(CLAVE_MENU) === '1'
+  } catch {
+    return false
+  }
+}
+
+function guardarMenuCerrado(cerrado: boolean) {
+  try {
+    localStorage.setItem(CLAVE_MENU, cerrado ? '1' : '0')
+  } catch {
+    // Sin almacenamiento (incógnito estricto): el menú abre abierto la próxima vez.
+  }
 }

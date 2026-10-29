@@ -81,3 +81,36 @@ export function visibleHours(occurrences: readonly { start: number; end: number 
   }
   return { from, to }
 }
+
+export type RestItem<T> = { kind: 'block'; occurrence: T; isNow: boolean } | { kind: 'free'; start: number; end: number }
+
+/** Un hueco más corto que esto no se muestra como «Libre»: es solo el cambio de sala. */
+const MIN_FREE_MINUTES = 15
+
+/**
+ * Lo que queda del día: el bloque actual, los siguientes y los huecos libres
+ * entre ellos. Lo que ya pasó no aparece.
+ */
+export function restOfDay<T extends { start: number; end: number }>(
+  occurrences: readonly T[],
+  nowMinutes: number,
+): RestItem<T>[] {
+  const left = occurrences.filter((o) => o.end > nowMinutes)
+  const out: RestItem<T>[] = []
+  // Desde dónde está libre: al principio, desde ahora; después, desde que termina lo anterior.
+  let cursor = nowMinutes
+  for (const o of left) {
+    if (o.start - cursor >= MIN_FREE_MINUTES) out.push({ kind: 'free', start: cursor, end: o.start })
+    out.push({ kind: 'block', occurrence: o, isNow: o.start <= nowMinutes })
+    cursor = Math.max(cursor, o.end)
+  }
+  return out
+}
+
+/** «1 h 30», «45 min». */
+export function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')}`
+}

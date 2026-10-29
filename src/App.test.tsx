@@ -131,12 +131,69 @@ describe('esqueleto de la aplicación', () => {
     sesion = sesionSimulada
     render(<App />)
 
-    // Cada área aparece dos veces: menú lateral y barra inferior. Que estén
-    // las dos es justamente lo que se quiere: la cáscara se adapta por CSS.
+    // En el teléfono, cada área está una vez: en la barra inferior. El menú
+    // lateral ni se monta (pide datos de todo y ahí no se ve).
     for (const area of ['Hoy', 'Horario', 'Tareas', 'Gimnasio', 'Plata']) {
-      expect(await screen.findAllByRole('link', { name: area })).toHaveLength(2)
+      expect(await screen.findAllByRole('link', { name: area })).toHaveLength(1)
     }
+    expect(screen.queryByRole('button', { name: 'Cerrar el menú' })).not.toBeInTheDocument()
     expect(await screen.findByText('Qué vence')).toBeInTheDocument()
+  })
+
+  it('en el escritorio, el menú lateral da contexto de cada área y se cierra con [', async () => {
+    const ancho = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query.includes('min-width: 1024px'),
+          media: query,
+          onchange: null,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          addListener: () => {},
+          removeListener: () => {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    )
+    try {
+      const t = '2026-10-01T00:00:00Z'
+      filas = {
+        tasks: [
+          {
+            id: 't1',
+            user_id: 'usuario-1',
+            title: 'Pagar la luz',
+            notes: null,
+            category_id: null,
+            schedule_block_id: null,
+            due_on: '2026-01-05',
+            due_time: null,
+            priority: 0,
+            completed_at: null,
+            import_id: null,
+            created_at: t,
+            updated_at: t,
+          },
+        ],
+      }
+      sesion = sesionSimulada
+      window.history.pushState({}, '', '/tasks')
+      render(<App />)
+      const usuario = userEvent.setup()
+
+      // La línea de contexto de Tareas avisa la atrasada, y «Vence pronto» la deja completar ahí.
+      const tareas = await screen.findByRole('link', { name: /^Tareas.*1 atrasada/ })
+      expect(tareas).toBeInTheDocument()
+      expect(screen.getByText('Resto del día')).toBeInTheDocument()
+      expect(screen.getAllByRole('checkbox', { name: 'Completar: Pagar la luz' }).length).toBeGreaterThan(0)
+
+      await usuario.keyboard('[[')
+      expect(await screen.findByRole('button', { name: 'Abrir el menú' })).toBeInTheDocument()
+      expect(localStorage.getItem('lock-in:sidebar-closed')).toBe('1')
+      await usuario.keyboard('[[')
+      expect(await screen.findByRole('button', { name: 'Cerrar el menú' })).toBeInTheDocument()
+    } finally {
+      ancho.mockRestore()
+    }
   })
 
   it('cada pestaña lleva a su pantalla', async () => {

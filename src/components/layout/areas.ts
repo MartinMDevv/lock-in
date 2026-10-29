@@ -1,10 +1,4 @@
-import {
-  IconoHoy,
-  IconoHorario,
-  IconoTareas,
-  IconoGimnasio,
-  IconoPlata,
-} from '@/components/ui/icons'
+import { IconoHoy, IconoHorario, IconoTareas, IconoGimnasio, IconoPlata } from '@/components/ui/icons'
 
 /**
  * Las cinco áreas, en el orden en que aparecen en la navegación.

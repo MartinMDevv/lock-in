@@ -134,6 +134,12 @@
 
 /* ── Propio de la app (no viene del paquete de diseño) ── */
 
+/* La sombra de los globos del menú lateral cerrado. Viene del archivo
+   «Menú lateral» del diseño (--tip-shadow), que no la puso en los tokens. */
+@theme {
+  --shadow-tip: 0 8px 24px light-dark(oklch(0.2 0.01 255 / 0.16), oklch(0 0 0 / 0.45));
+}
+
 /* Las fuentes vienen dentro de la app (@fontsource-variable, importadas en
    main.tsx): la CSP solo deja cargar fuentes del propio dominio, así que
    Google Fonts no sirve. El paquete las registra con «Variable» en el nombre;

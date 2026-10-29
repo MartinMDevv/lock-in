@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayStatus, formatIn, occurrencesOn, visibleHours } from './day'
+import { dayStatus, formatDuration, formatIn, occurrencesOn, restOfDay, visibleHours } from './day'
 
 const bloque = (id: string, extra: { valid_from?: string; valid_until?: string | null } = {}) => ({
   id,
@@ -57,5 +57,22 @@ describe('bloques del día', () => {
     expect(formatIn(55)).toBe('En 55 min')
     expect(formatIn(120)).toBe('En 2 h')
     expect(formatIn(130)).toBe('En 2 h 10 min')
+  })
+
+  it('el resto del día: sin lo pasado, con los huecos libres de 15 min o más', () => {
+    const b = (start: number, end: number) => ({ start, end })
+    const dia = [b(480, 570), b(600, 690), b(700, 760), b(850, 900)]
+    // A las 10:15: el de 10:00 es el actual, después dos seguidos y un hueco de 1 h 30.
+    expect(restOfDay(dia, 615)).toEqual([
+      { kind: 'block', occurrence: dia[1], isNow: true },
+      { kind: 'block', occurrence: dia[2], isNow: false },
+      { kind: 'free', start: 760, end: 850 },
+      { kind: 'block', occurrence: dia[3], isNow: false },
+    ])
+    // Entre bloques, el hueco empieza ahora y no cuando terminó el anterior.
+    expect(restOfDay(dia, 800)[0]).toEqual({ kind: 'free', start: 800, end: 850 })
+    expect(restOfDay(dia, 1000)).toEqual([])
+    expect(formatDuration(90)).toBe('1 h 30')
+    expect(formatDuration(45)).toBe('45 min')
   })
 })
