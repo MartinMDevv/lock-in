@@ -19,29 +19,29 @@ export function TodayPage() {
 
       <Seccion titulo="Tu día">
         <EmptyState
-          titulo="No hay bloques para hoy"
-          detalle="Los bloques del horario aparecerán acá cuando exista el área Horario."
+          title="No hay bloques para hoy"
+          detail="Los bloques del horario aparecerán acá cuando exista el área Horario."
         />
       </Seccion>
 
       <Seccion titulo="Qué vence">
         <EmptyState
-          titulo="Nada vence hoy"
-          detalle="Las tareas con fecha de hoy o atrasadas se van a listar acá."
+          title="Nada vence hoy"
+          detail="Las tareas con fecha de hoy o atrasadas se van a listar acá."
         />
       </Seccion>
 
       <Seccion titulo="Gimnasio">
         <EmptyState
-          titulo="Sin rutina configurada"
-          detalle="Acá va a decir si hoy toca entrenar, y la racha."
+          title="Sin rutina configurada"
+          detail="Acá va a decir si hoy toca entrenar, y la racha."
         />
       </Seccion>
 
       <Seccion titulo="Plata">
         <EmptyState
-          titulo="Todavía no hay sobres"
-          detalle="El saldo de cada sobre y cuánto queda del tope del mes."
+          title="Todavía no hay sobres"
+          detail="El saldo de cada sobre y cuánto queda del tope del mes."
         />
       </Seccion>
     </div>

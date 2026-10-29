@@ -134,9 +134,10 @@ escritorio, todavía sin datos.*
 
 - [x] Pegar `tokens/index.css` del paquete de diseño en `src/index.css` (28-oct-2026). Lo propio de la app (zoom, barra de gestos) quedó al final, aparte; `theme-color` pasó al fondo oscuro.
 - [x] Fuentes Geist y Geist Mono (28-oct-2026): empaquetadas con `@fontsource-variable/*` dentro de la app, porque la CSP (`font-src 'self'`) no deja usar Google Fonts.
-- [ ] Los 10 componentes base del diseño: botón, campo, chip, segmentado, hoja inferior, toast con Deshacer, esqueleto de carga…
+- [x] Los 10 componentes base del diseño: botón, campo, chip, segmentado, hoja inferior, toast con Deshacer, esqueleto de carga… (28-oct-2026, en `src/components/ui/`). Las variantes atadas a una pantalla (campo de monto, «Agregar tarea…», chips con punto de color) se hacen con su pantalla en F3.
   - [x] Botón, campo, tarjeta, chip, segmentado e interruptor (28-oct-2026, `components/ui/`). Ajustes y el login ya los usan.
   - [x] Hoja inferior (28-oct-2026, `Sheet.tsx`): sobre el `<dialog>` nativo; se cierra arrastrando más de 110 px, tocando el fondo o con Esc; en escritorio es una ventana centrada de 520 px. El arrastre falta probarlo con el dedo.
+  - [x] Barra de progreso (la regla verde/ámbar/rojo del tope vive en `core/money/cap.ts`), stepper, lista con fila y check, esqueleto y estado vacío con acción (28-oct-2026).
   - [x] Toast con Deshacer (28-oct-2026): `components/ui/Toaster.tsx` + `toast.ts` (estado fuera de React, uno a la vez, 4,5 s).
 - [x] **Aviso de límite alcanzado en toda la app**: un `onError` global en el `MutationCache` muestra el toast con `rowCapMessage` cuando cualquier guardado falla con `LKCAP`. Los formularios de F3 lo heredan sin conectarlo uno por uno. Hecho el 28-oct (`lib/query-client.ts`), probado con una mutación simulada; en pantalla se verá con el primer formulario de crear.
 - [ ] La cáscara: barra inferior con pastilla deslizante (< 1024 px) y menú lateral de 224 px (≥ 1024 px).
