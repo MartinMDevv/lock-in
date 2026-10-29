@@ -1,7 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
 
-/** Lo que tarda en salir: el resorte de la hoja termina antes de 440 ms. */
+/**
+ * Lo que tarda en salir. La entrada usa ease-out y no el resorte del diseño:
+ * en el teléfono el sobrepaso se veía como si la hoja vibrara al abrirse.
+ */
 const EXIT_MS = 300
 /** Cuánto hay que arrastrar hacia abajo para cerrarla, según el diseño. */
 export const DRAG_CLOSE_PX = 110
@@ -107,7 +110,7 @@ export function Sheet({
         className={`relative -bottom-10 max-h-[calc(90dvh+40px)] w-full overflow-y-auto rounded-t-sheet border-t border-line bg-surface-sheet px-4 pb-[calc(56px+env(safe-area-inset-bottom))] shadow-sheet starting:translate-y-full lg:bottom-0 lg:max-h-[85dvh] lg:w-130 lg:rounded-xl lg:border lg:p-6 lg:shadow-popover lg:starting:translate-y-2 lg:starting:scale-97 lg:starting:opacity-0 ${
           dragging
             ? 'transition-none'
-            : 'transition-[translate,scale,opacity] duration-(--duration-sheet) ease-spring lg:duration-220 lg:ease-[cubic-bezier(.2,.9,.3,1.15)]'
+            : 'transition-[translate,scale,opacity] duration-(--duration-sheet) ease-out lg:duration-220 lg:ease-[cubic-bezier(.2,.9,.3,1.15)]'
         } ${closing ? 'translate-y-full lg:translate-y-2 lg:scale-97 lg:opacity-0 lg:duration-160' : ''}`}
         style={drag > 0 ? { translate: `0 ${drag}px` } : undefined}
       >
