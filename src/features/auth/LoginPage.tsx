@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { Button } from '@/components/ui/Button'
 
 /**
  * Si Google o Supabase rechazan el login, vuelven a la app con el motivo en
@@ -54,18 +55,18 @@ export function LoginPage() {
           Tu horario, tus tareas, el gimnasio y la plata en un solo lugar.
         </p>
 
-        <button
-          type="button"
+        <Button
+          size="lg"
           onClick={() => void entrarConGoogle()}
           disabled={enviando}
-          className="mt-8 flex w-full items-center justify-center gap-3 rounded-lg border border-line bg-surface-raised px-3 py-2.5 font-medium disabled:opacity-60"
+          className="mt-8 w-full gap-3"
         >
           <LogoGoogle />
           {enviando ? 'Abriendo Google…' : 'Continuar con Google'}
-        </button>
+        </Button>
 
         {error && (
-          <p role="alert" className="mt-4 text-sm text-red-600">
+          <p role="alert" className="mt-4 text-body-sm text-danger">
             {error}
           </p>
         )}

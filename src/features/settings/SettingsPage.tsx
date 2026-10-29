@@ -11,9 +11,10 @@ import {
 import type { Profile } from './profile'
 import { applyTheme, parseTheme } from '@/lib/theme'
 import type { Theme } from '@/lib/theme'
-
-const campo =
-  'mt-1 w-full rounded-lg border border-line bg-surface-raised px-3 py-2 outline-none focus:border-accent'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Field, Input, Select } from '@/components/ui/Field'
+import { Segmented } from '@/components/ui/Segmented'
 
 /**
  * Ajustes: la cuenta y las preferencias que viven en `profiles`.
@@ -34,18 +35,18 @@ export function SettingsPage() {
   return (
     <div className="space-y-7">
       <section>
-        <h2 className="mb-2 text-sm font-medium text-ink-muted">Cuenta</h2>
-        <div className="rounded-xl border border-line bg-surface-raised px-4 py-3">
-          <p className="text-sm text-ink-muted">Sesión iniciada como</p>
+        <Titulo>Cuenta</Titulo>
+        <Card>
+          <p className="text-body-sm text-ink-muted">Sesión iniciada como</p>
           <p className="font-medium break-all">{session?.user.email}</p>
-        </div>
+        </Card>
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-medium text-ink-muted">Preferencias</h2>
-        {perfil.isPending && <p className="text-sm text-ink-muted">Cargando…</p>}
+        <Titulo>Preferencias</Titulo>
+        {perfil.isPending && <p className="text-body-sm text-ink-muted">Cargando…</p>}
         {perfil.isError && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-body-sm text-danger">
             No se pudo cargar el perfil. Revisa la conexión y vuelve a abrir Ajustes.
           </p>
         )}
@@ -59,39 +60,40 @@ export function SettingsPage() {
 
       {perfil.data && (
         <section>
-          <h2 className="mb-2 text-sm font-medium text-ink-muted">Apariencia</h2>
+          <Titulo>Apariencia</Titulo>
           <SelectorTema actual={parseTheme(perfil.data.theme)} />
         </section>
       )}
 
-      <button
-        type="button"
+      <Button
+        variant="danger"
         onClick={() => void cerrarSesion()}
         disabled={saliendo}
-        className="w-full rounded-lg border border-line px-3 py-2 font-medium text-red-600 disabled:opacity-60"
+        className="w-full"
       >
         {saliendo ? 'Cerrando…' : 'Cerrar sesión'}
-      </button>
+      </Button>
     </div>
   )
+}
+
+function Titulo({ children }: { children: string }) {
+  return <h2 className="mb-2 text-body-sm font-medium text-ink-muted">{children}</h2>
 }
 
 function clavePreferencias(p: Profile): string {
   return [p.display_name, p.currency, p.timezone, p.weight_unit, p.week_starts_on].join('|')
 }
 
-const OPCIONES_TEMA: { valor: Theme; etiqueta: string }[] = [
-  { valor: 'dark', etiqueta: 'Oscuro' },
-  { valor: 'light', etiqueta: 'Claro' },
-  { valor: 'system', etiqueta: 'Sistema' },
-]
+const OPCIONES_TEMA = [
+  { value: 'dark', label: 'Oscuro' },
+  { value: 'light', label: 'Claro' },
+  { value: 'system', label: 'Sistema' },
+] as const satisfies readonly { value: Theme; label: string }[]
 
 /**
  * Tema oscuro, claro o del sistema. Se guarda al tocarlo, sin botón: el
  * cambio se ve al instante, y si el guardado falla vuelve al que estaba.
- *
- * Provisorio: cuando exista el segmentado de los componentes base (F2), este
- * grupo pasa a usarlo.
  */
 function SelectorTema({ actual }: { actual: Theme }) {
   const guardar = useUpdateProfile()
@@ -104,34 +106,25 @@ function SelectorTema({ actual }: { actual: Theme }) {
 
   return (
     <div>
-      <div
-        role="radiogroup"
-        aria-label="Tema"
-        className="grid grid-cols-3 gap-1 rounded-full border border-line bg-surface p-1"
-      >
-        {OPCIONES_TEMA.map(({ valor, etiqueta }) => (
-          <button
-            key={valor}
-            type="button"
-            role="radio"
-            aria-checked={actual === valor}
-            onClick={() => elegir(valor)}
-            className={`rounded-full px-3 py-2 text-body-sm ${
-              actual === valor ? 'bg-surface-raised font-semibold text-ink' : 'text-ink-muted'
-            }`}
-          >
-            {etiqueta}
-          </button>
-        ))}
-      </div>
+      <Segmented label="Tema" options={OPCIONES_TEMA} value={actual} onChange={elegir} />
       {guardar.isError && (
-        <p role="alert" className="mt-2 text-sm text-danger">
+        <p role="alert" className="mt-2 text-body-sm text-danger">
           No se pudo guardar el tema. Inténtalo de nuevo.
         </p>
       )}
     </div>
   )
 }
+
+const UNIDADES = [
+  { value: 'kg', label: 'kg' },
+  { value: 'lb', label: 'lb' },
+] as const
+
+const INICIOS_SEMANA = [
+  { value: 1, label: 'Lunes' },
+  { value: 0, label: 'Domingo' },
+] as const
 
 function Preferencias({ perfil }: { perfil: Profile }) {
   const guardar = useUpdateProfile()
@@ -166,109 +159,75 @@ function Preferencias({ perfil }: { perfil: Profile }) {
   }
 
   return (
-    <form
-      onSubmit={enviar}
-      className="space-y-4 rounded-xl border border-line bg-surface-raised px-4 py-4"
-    >
-      <div>
-        <label htmlFor="nombre" className="block text-sm font-medium">
-          Nombre
-        </label>
-        <input
-          id="nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          maxLength={60}
-          autoComplete="nickname"
-          className={campo}
-        />
-      </div>
-
-      <div>
-        <label htmlFor="moneda" className="block text-sm font-medium">
-          Moneda
-        </label>
-        <select
-          id="moneda"
-          value={moneda}
-          onChange={(e) => setMoneda(e.target.value)}
-          className={campo}
-        >
-          {/* La moneda guardada se muestra aunque no esté en la lista. */}
-          {!CURRENCIES.some((c) => c.code === perfil.currency) && (
-            <option value={perfil.currency}>{perfil.currency}</option>
+    <Card>
+      <form onSubmit={enviar} className="space-y-4">
+        <Field label="Nombre">
+          {(id) => (
+            <Input
+              id={id}
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              maxLength={60}
+              autoComplete="nickname"
+            />
           )}
-          {CURRENCIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.code} · {c.label}
-            </option>
-          ))}
-        </select>
-      </div>
+        </Field>
 
-      <div>
-        <label htmlFor="zona" className="block text-sm font-medium">
-          Zona horaria
-        </label>
-        <select
-          id="zona"
-          value={zona}
-          onChange={(e) => setZona(e.target.value)}
-          className={campo}
-        >
-          {zonas.map((z) => (
-            <option key={z} value={z}>
-              {z.replaceAll('_', ' ')}
-            </option>
-          ))}
-        </select>
-      </div>
+        <Field label="Moneda">
+          {(id) => (
+            <Select id={id} value={moneda} onChange={(e) => setMoneda(e.target.value)}>
+              {/* La moneda guardada se muestra aunque no esté en la lista. */}
+              {!CURRENCIES.some((c) => c.code === perfil.currency) && (
+                <option value={perfil.currency}>{perfil.currency}</option>
+              )}
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} · {c.label}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="unidad" className="block text-sm font-medium">
-            Peso en
-          </label>
-          <select
-            id="unidad"
-            value={unidad}
-            onChange={(e) => setUnidad(e.target.value)}
-            className={campo}
-          >
-            <option value="kg">kg</option>
-            <option value="lb">lb</option>
-          </select>
+        <Field label="Zona horaria">
+          {(id) => (
+            <Select id={id} value={zona} onChange={(e) => setZona(e.target.value)}>
+              {zonas.map((z) => (
+                <option key={z} value={z}>
+                  {z.replaceAll('_', ' ')}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-caption text-ink-muted">Peso en</span>
+            <Segmented label="Peso en" options={UNIDADES} value={unidad} onChange={setUnidad} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-caption text-ink-muted">Semana parte el</span>
+            <Segmented
+              label="Semana parte el"
+              options={INICIOS_SEMANA}
+              value={inicioSemana}
+              onChange={setInicioSemana}
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="semana" className="block text-sm font-medium">
-            Semana parte el
-          </label>
-          <select
-            id="semana"
-            value={inicioSemana}
-            onChange={(e) => setInicioSemana(Number(e.target.value))}
-            className={campo}
-          >
-            <option value={1}>Lunes</option>
-            <option value={0}>Domingo</option>
-          </select>
-        </div>
-      </div>
 
-      {guardar.isError && (
-        <p role="alert" className="text-sm text-red-600">
-          No se pudo guardar. Inténtalo de nuevo.
-        </p>
-      )}
-      {guardado && <p className="text-sm text-ink-muted">Guardado.</p>}
+        {guardar.isError && (
+          <p role="alert" className="text-body-sm text-danger">
+            No se pudo guardar. Inténtalo de nuevo.
+          </p>
+        )}
+        {guardado && <p className="text-body-sm text-ink-muted">Guardado.</p>}
 
-      <button
-        type="submit"
-        disabled={guardar.isPending}
-        className="w-full rounded-lg bg-accent px-3 py-2 font-medium text-accent-ink disabled:opacity-60"
-      >
-        {guardar.isPending ? 'Guardando…' : 'Guardar'}
-      </button>
-    </form>
+        <Button type="submit" variant="primary" size="lg" disabled={guardar.isPending} className="w-full">
+          {guardar.isPending ? 'Guardando…' : 'Guardar'}
+        </Button>
+      </form>
+    </Card>
   )
 }
