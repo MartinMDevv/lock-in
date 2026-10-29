@@ -64,8 +64,11 @@ export function AppShell() {
     n: () => setRegistrando(true),
   })
 
+  // overflow-x-clip: durante el fundido de entrada el contenido se corre
+  // 10 px a la derecha. Sin recortarlo, Chrome en Android agranda la
+  // ventana y la barra inferior y el + se van hacia abajo, fuera de vista.
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[14rem_1fr]">
+    <div className="min-h-dvh overflow-x-clip lg:grid lg:grid-cols-[14rem_1fr]">
       {/* ── Menú lateral: solo escritorio ── */}
       <aside className="sticky top-0 hidden h-dvh flex-col gap-4 border-r border-line bg-bg px-3 py-4 lg:flex">
         <div className="flex h-10 items-center gap-2.5 px-2.5">
