@@ -484,7 +484,7 @@ de todos (D32): se revisan dos veces antes del push. Las reglas para no perder d
 | ✅ | `crear_tareas` | `task_categories`, `tasks`. Aplicada el 14-oct |
 | ✅ | `crear_gimnasio` | `exercises`, `routines`, `routine_exercises`, `workouts`, `workout_sets`, `body_measurements` + `schedule_slots.routine_id`. Aplicada el 14-oct |
 | ✅ | `revocar_execute_funciones` | Quita EXECUTE a la API sobre `handle_new_user` y `rls_auto_enable`, y hace que las funciones futuras nazcan sin él (mínimo privilegio, D32). Aplicada el 28-oct
-| 🚧 | `topes_por_cuenta` | La función `enforce_row_cap()` y un trigger por tabla con su tope (regla 9). Escrita y probada en un Postgres temporal el 28-oct, sin aplicar
+| ✅ | `topes_por_cuenta` | La función `enforce_row_cap()` y un trigger por tabla con su tope (regla 9). Aplicada el 28-oct
 
 Después de cada una: `npm run db:types`. Al final, la prueba de RLS con dos
 cuentas (F7).
