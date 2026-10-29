@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { controlClass } from './control'
-import { Input } from './Field'
 import { IconoAbajo, IconoCheck } from './icons'
 import { Sheet } from './Sheet'
 
@@ -11,9 +10,8 @@ import { Sheet } from './Sheet'
  * sistema que tapa toda la pantalla y no se parece en nada a Lock In. Acá el
  * campo se ve como los demás y la lista sale en la hoja inferior.
  *
- * Con `searchable`, la hoja trae un buscador arriba (para las ~400 zonas
- * horarias). La lista tiene su propio scroll: el título y el buscador no se
- * mueven. Elegir una opción la guarda y cierra la hoja.
+ * Una lista larga tiene su propio scroll: el título de la hoja no se mueve.
+ * Elegir una opción la guarda y cierra la hoja.
  */
 export function Picker<T extends string>({
   id,
@@ -21,7 +19,6 @@ export function Picker<T extends string>({
   value,
   options,
   onChange,
-  searchable = false,
 }: {
   /** El que entrega `Field`, para que la etiqueta apunte al campo. */
   id: string
@@ -29,14 +26,9 @@ export function Picker<T extends string>({
   value: T
   options: readonly { value: T; label: string }[]
   onChange: (value: T) => void
-  searchable?: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
   const current = options.find((o) => o.value === value)?.label ?? value
-
-  const q = query.trim().toLowerCase()
-  const visible = q === '' ? options : options.filter((o) => o.label.toLowerCase().includes(q))
 
   function choose(next: T) {
     setOpen(false)
@@ -50,10 +42,7 @@ export function Picker<T extends string>({
         type="button"
         aria-haspopup="dialog"
         aria-label={`${label}: ${current}`}
-        onClick={() => {
-          setQuery('')
-          setOpen(true)
-        }}
+        onClick={() => setOpen(true)}
         className={`${controlClass(false)} flex items-center justify-between gap-2 text-left`}
       >
         <span className="truncate">{current}</span>
@@ -61,24 +50,12 @@ export function Picker<T extends string>({
       </button>
 
       <Sheet open={open} onClose={() => setOpen(false)} title={label}>
-        {searchable && (
-          <div className="pb-2">
-            <Input
-              type="search"
-              aria-label={`Buscar ${label.toLowerCase()}`}
-              placeholder="Buscar"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              enterKeyHint="search"
-            />
-          </div>
-        )}
         <div
           role="radiogroup"
           aria-label={label}
           className="-mx-1 flex max-h-[min(55dvh,440px)] flex-col overflow-y-auto overscroll-contain px-1"
         >
-          {visible.map((o) => {
+          {options.map((o) => {
             const selected = o.value === value
             return (
               <button
@@ -96,9 +73,6 @@ export function Picker<T extends string>({
               </button>
             )
           })}
-          {visible.length === 0 && (
-            <p className="px-3 py-4 text-body-sm text-ink-muted">No hay resultados para «{query.trim()}».</p>
-          )}
         </div>
       </Sheet>
     </>

@@ -213,7 +213,7 @@ Extiende `auth.users` con las preferencias que hacen genérica a la aplicación.
 | `weight_unit` | text (`'kg'` \| `'lb'`) | Solo afecta cómo se muestra; se guarda en gramos |
 | `week_starts_on` | smallint (`1`) | 1 = lunes. Cambia la vista semana |
 | `theme` | text `'system'` \| `'dark'` \| `'light'` | Ajustes. En la base, para que el teléfono y el computador muestren lo mismo |
-| `onboarded_at` | timestamptz | Si es null, se ofrecen los presets |
+| `onboarded_at` | timestamptz | Cuándo la cuenta abrió la app por primera vez. Si es null, la app toma la zona horaria del dispositivo y lo marca (los presets se ofrecen dentro de cada área, cuando está vacía) |
 
 ---
 

@@ -1,17 +1,25 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/auth-context'
 import { applyTheme, parseTheme } from '@/lib/theme'
 import { useNow } from '@/lib/clock'
 import { dayOf } from '@/core/time/day'
+import { deviceZone } from '@/core/time/zones'
 import type { IsoDate } from '@/core/time/day'
 import type { Database } from '@/types/database'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type ProfileChanges = Pick<
   Database['public']['Tables']['profiles']['Update'],
-  'display_name' | 'currency' | 'currency_decimals' | 'timezone' | 'weight_unit' | 'week_starts_on' | 'theme'
+  | 'display_name'
+  | 'currency'
+  | 'currency_decimals'
+  | 'timezone'
+  | 'weight_unit'
+  | 'week_starts_on'
+  | 'theme'
+  | 'onboarded_at'
 >
 
 /**
@@ -58,11 +66,7 @@ export function useProfile() {
     queryKey: profileKey(userId),
     enabled: userId !== '',
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
       if (error) throw error
       return data
     },
@@ -76,12 +80,7 @@ export function useUpdateProfile() {
 
   return useMutation({
     mutationFn: async (changes: ProfileChanges) => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(changes)
-        .eq('id', userId)
-        .select('*')
-        .single()
+      const { data, error } = await supabase.from('profiles').update(changes).eq('id', userId).select('*').single()
       if (error) throw error
       return data
     },
@@ -143,4 +142,28 @@ export function useToday(): { today: IsoDate; now: Date; timezone: string } {
   const { timezone } = usePrefs()
   const now = useNow()
   return { today: dayOf(now, timezone), now, timezone }
+}
+
+/**
+ * La primera vez que una cuenta abre la app, la zona horaria se toma del
+ * dispositivo: toda cuenta nace con America/Santiago, que para alguien en
+ * Ciudad de México correría «hoy» seis horas. `onboarded_at` marca que eso ya
+ * pasó, así que después se respeta lo que la persona elija, aunque abra la
+ * app desde otro huso (ahí Ajustes ofrece cambiarla, sin hacerlo solo).
+ */
+export function useFirstRunTimezone() {
+  const perfil = useProfile().data
+  const { mutate } = useUpdateProfile()
+  const hecho = useRef(false)
+
+  useEffect(() => {
+    if (!perfil || perfil.onboarded_at !== null || hecho.current) return
+    hecho.current = true
+    const zona = deviceZone()
+    const valida = zona !== null && timezones().includes(zona)
+    mutate({
+      onboarded_at: new Date().toISOString(),
+      ...(valida && zona !== perfil.timezone ? { timezone: zona } : {}),
+    })
+  }, [perfil, mutate])
 }

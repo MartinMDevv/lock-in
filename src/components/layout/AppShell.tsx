@@ -7,7 +7,7 @@ import { useMediaQuery } from '@/lib/media'
 import { useShortcuts } from './shortcuts'
 import { IconoMas } from '@/components/ui/icons'
 import { useAuth } from '@/features/auth/auth-context'
-import { useProfile, useProfileTheme } from '@/features/settings/profile'
+import { useFirstRunTimezone, useProfile, useProfileTheme } from '@/features/settings/profile'
 
 /** Título de la cabecera según dónde estemos parados. */
 function tituloDeRuta(pathname: string): string {
@@ -56,6 +56,7 @@ export function AppShell() {
   const { session } = useAuth()
   const perfil = useProfile()
   useProfileTheme()
+  useFirstRunTimezone()
   const [registrando, setRegistrando] = useState(false)
 
   const nombre = perfil.data?.display_name

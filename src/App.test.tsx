@@ -23,7 +23,7 @@ const perfilSimulado = {
   weight_unit: 'kg',
   week_starts_on: 1,
   theme: 'system',
-  onboarded_at: null,
+  onboarded_at: '2026-01-01T00:00:00Z',
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
 }
@@ -32,6 +32,8 @@ const perfilSimulado = {
 // await o termina en single(). Un update del perfil devuelve el perfil con
 // los cambios, como hace la base; los inserts quedan anotados en `inserts`.
 let cambios: Record<string, unknown> = {}
+// Lo que una prueba cambia del perfil guardado, antes de cualquier update.
+let perfilBase: Record<string, unknown> = {}
 let inserts: { tabla: string; fila: unknown }[] = []
 // Lo que devuelve cada tabla al leerla. Vacío salvo que la prueba lo llene.
 let filas: Record<string, unknown[]> = {}
@@ -68,7 +70,7 @@ function consultaSimulada(tabla: string) {
     range: () => consulta,
     order: () => consulta,
     limit: () => consulta,
-    single: () => Promise.resolve({ data: { ...perfilSimulado, ...cambios }, error: null }),
+    single: () => Promise.resolve({ data: { ...perfilSimulado, ...perfilBase, ...cambios }, error: null }),
     then: (bien: (r: unknown) => unknown, mal: (e: unknown) => unknown) => respuesta().then(bien, mal),
   }
   return consulta
@@ -97,6 +99,7 @@ describe('esqueleto de la aplicación', () => {
   beforeEach(() => {
     sesion = null
     cambios = {}
+    perfilBase = {}
     inserts = []
     filas = {}
     window.history.pushState({}, '', '/')
@@ -226,7 +229,7 @@ describe('esqueleto de la aplicación', () => {
     await usuarioHaceClicEn('Ajustes')
     expect(await screen.findByLabelText('Nombre')).toHaveValue('Persona')
     expect(screen.getByRole('button', { name: 'Moneda: CLP · Peso chileno' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Zona horaria: America/Santiago' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Zona horaria: Santiago · América' })).toBeInTheDocument()
   })
 
   it('Ajustes guarda al elegir, sin botón, y avisa que quedó guardado', async () => {
@@ -246,17 +249,45 @@ describe('esqueleto de la aplicación', () => {
     expect(screen.getByRole('button', { name: 'Moneda: USD · Dólar estadounidense' })).toBeInTheDocument()
   })
 
+  it('la zona horaria se elige en dos pasos: región y ciudad', async () => {
+    sesion = sesionSimulada
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuarioHaceClicEn('Ajustes')
+    await usuario.click(await screen.findByRole('button', { name: 'Zona horaria: Santiago · América' }))
+    await usuario.click(screen.getByRole('button', { name: /^Europa/ }))
+    const ciudades = within(screen.getByRole('radiogroup', { name: 'Ciudades de Europa' }))
+    await usuario.click(ciudades.getByRole('radio', { name: /^Madrid/ }))
+    expect(cambios).toEqual({ timezone: 'Europe/Madrid' })
+  })
+
+  it('la primera vez, la zona se toma del dispositivo', async () => {
+    perfilBase = { onboarded_at: null }
+    const zona = vi
+      .spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions')
+      .mockReturnValue({ timeZone: 'America/Mexico_City' } as Intl.ResolvedDateTimeFormatOptions)
+    try {
+      sesion = sesionSimulada
+      render(<App />)
+      await waitFor(() => expect(cambios).toMatchObject({ timezone: 'America/Mexico_City' }))
+      expect(cambios.onboarded_at).toEqual(expect.any(String))
+    } finally {
+      zona.mockRestore()
+    }
+  })
+
   it('la zona horaria se busca y el nombre se guarda al salir del campo', async () => {
     sesion = sesionSimulada
     render(<App />)
     const usuario = userEvent.setup()
 
     await usuarioHaceClicEn('Ajustes')
-    await usuario.click(await screen.findByRole('button', { name: 'Zona horaria: America/Santiago' }))
-    await usuario.type(screen.getByRole('searchbox', { name: 'Buscar zona horaria' }), 'lima')
+    await usuario.click(await screen.findByRole('button', { name: 'Zona horaria: Santiago · América' }))
+    await usuario.type(screen.getByRole('searchbox', { name: 'Buscar ciudad' }), 'lima')
     const zonas = within(screen.getByRole('radiogroup', { name: 'Zona horaria' }))
-    expect(zonas.getAllByRole('radio').map((r) => r.textContent)).toEqual(['America/Lima'])
-    await usuario.click(screen.getByRole('radio', { name: 'America/Lima' }))
+    expect(zonas.getAllByRole('radio')).toHaveLength(1)
+    await usuario.click(zonas.getByRole('radio', { name: /^Lima/ }))
     expect(cambios).toEqual({ timezone: 'America/Lima' })
 
     const nombre = screen.getByLabelText('Nombre')
@@ -285,6 +316,7 @@ describe('cáscara', () => {
   beforeEach(() => {
     sesion = sesionSimulada
     cambios = {}
+    perfilBase = {}
     inserts = []
     filas = {}
     window.history.pushState({}, '', '/')

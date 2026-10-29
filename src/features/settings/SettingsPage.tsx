@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/auth-context'
-import { CURRENCIES, timezones, useProfile, useUpdateProfile } from './profile'
+import { CURRENCIES, useProfile, useUpdateProfile } from './profile'
+import { TimezoneField } from './TimezoneField'
+import { deviceZone, zoneLabel } from '@/core/time/zones'
 import type { Profile, ProfileChanges } from './profile'
 import { applyTheme, parseTheme } from '@/lib/theme'
 import type { Theme } from '@/lib/theme'
@@ -61,12 +63,7 @@ export function SettingsPage() {
         </section>
       )}
 
-      <Button
-        variant="danger"
-        onClick={() => void cerrarSesion()}
-        disabled={saliendo}
-        className="w-full"
-      >
+      <Button variant="danger" onClick={() => void cerrarSesion()} disabled={saliendo} className="w-full">
         {saliendo ? 'Cerrando…' : 'Cerrar sesión'}
       </Button>
     </div>
@@ -140,19 +137,15 @@ const INICIOS_SEMANA = [
   { value: 0, label: 'Domingo' },
 ] as const
 
-function Preferencias({
-  perfil,
-  guardar,
-}: {
-  perfil: Profile
-  guardar: (cambios: ProfileChanges) => void
-}) {
+function Preferencias({ perfil, guardar }: { perfil: Profile; guardar: (cambios: ProfileChanges) => void }) {
   // Si la moneda o la zona guardadas no están en la lista, se agregan igual:
   // si no, el campo mostraría otra cosa que la guardada.
   const monedas = CURRENCIES.map((c) => ({ value: c.code as string, label: `${c.code} · ${c.label}` }))
   if (!CURRENCIES.some((c) => c.code === perfil.currency)) {
     monedas.unshift({ value: perfil.currency, label: perfil.currency })
   }
+
+  const telefono = deviceZone()
 
   function elegirMoneda(code: string) {
     const elegida = CURRENCIES.find((c) => c.code === code)
@@ -173,18 +166,21 @@ function Preferencias({
         {(id) => <Picker id={id} label="Moneda" value={perfil.currency} options={monedas} onChange={elegirMoneda} />}
       </Field>
 
-      <Field label="Zona horaria">
-        {(id) => (
-          <Picker
-            id={id}
-            label="Zona horaria"
-            value={perfil.timezone}
-            options={opcionesDeZona(perfil.timezone)}
-            onChange={(timezone) => guardar({ timezone })}
-            searchable
-          />
+      <div className="flex flex-col gap-1.5">
+        <Field label="Zona horaria">
+          {(id) => <TimezoneField id={id} value={perfil.timezone} onChange={(timezone) => guardar({ timezone })} />}
+        </Field>
+        {/* De viaje, o en otro computador: se ofrece la del dispositivo sin cambiarla sola. */}
+        {telefono && telefono !== perfil.timezone && (
+          <button
+            type="button"
+            onClick={() => guardar({ timezone: telefono })}
+            className="self-start text-caption text-ink-muted underline underline-offset-2"
+          >
+            Este dispositivo está en {zoneLabel(telefono)}. Usar esa.
+          </button>
         )}
-      </Field>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
@@ -208,17 +204,6 @@ function Preferencias({
       </div>
     </Card>
   )
-}
-
-/**
- * Arriba la zona guardada y la del teléfono, que son las que casi siempre se
- * buscan; después todas las demás en orden.
- */
-function opcionesDeZona(guardada: string) {
-  const delTelefono = Intl.DateTimeFormat().resolvedOptions().timeZone
-  const primeras = [...new Set([guardada, delTelefono])]
-  const zonas = [...primeras, ...timezones().filter((z) => !primeras.includes(z))]
-  return zonas.map((z) => ({ value: z, label: z.replaceAll('_', ' ') }))
 }
 
 /** El nombre se guarda al salir del campo o con Enter, no a cada letra. */

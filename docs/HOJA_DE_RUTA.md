@@ -155,8 +155,8 @@ toma menos de 5 segundos (medido con cronómetro, no estimado).*
 Escrita el 29-oct-2026, área por área y con un commit por área. **Falta
 probarla en el teléfono** y medir los 5 segundos con cronómetro.
 
-- [x] Ajustes: nombre, moneda, zona horaria y tema. Se guarda al tocar, sin botón, con un aviso chico de «Guardado»; moneda y zona abren la hoja de la app (la zona con buscador) en vez de la lista nativa de Android.
-- [x] Presets de la primera vez, que **insertan filas**: en Plata (Ahorro agresivo, 50/30/20, Desde cero, `core/money/presets.ts`) y en Gimnasio (Cuerpo completo, Torso/Pierna, Empuje/Tirón/Pierna, `core/gym/presets.ts`). Van dentro de cada área y no en una bienvenida aparte; `profiles.onboarded_at` todavía no se usa.
+- [x] Ajustes: nombre, moneda, zona horaria y tema. Se guarda al tocar, sin botón, con un aviso chico de «Guardado»; moneda y zona abren la hoja de la app en vez de la lista nativa de Android. La zona se elige en dos pasos (región → ciudad, con su desfase UTC), tiene buscador, ofrece la del teléfono arriba y se detecta sola la primera vez.
+- [x] Presets de la primera vez, que **insertan filas**: en Plata (Ahorro agresivo, 50/30/20, Desde cero, `core/money/presets.ts`) y en Gimnasio (Cuerpo completo, Torso/Pierna, Empuje/Tirón/Pierna, `core/gym/presets.ts`). Van dentro de cada área y no en una bienvenida aparte. `profiles.onboarded_at` marca la primera vez: ahí se toma la zona horaria del dispositivo.
 - [x] Plata: gasto con el teclado propio y el último sobre ya elegido (4 toques); ingreso que muestra el reparto antes de confirmar y avisa si no alcanza para los fijos; sobres con saldo, regla y barra del tope; meta por sobre; movimientos por día, con el ingreso repartido como una sola fila. Todo con Deshacer.
 - [x] Tareas: crear con Enter (chips Hoy, Categoría y Alta), completar con un toque y Deshacer, editar o borrar tocándola; vistas Hoy, Semana y Por categoría (`core/tasks/group.ts`).
 - [x] Horario: bloque con sus horarios y uno de los 10 colores; vista día con la línea «ahora» y vista semana (`core/schedule/day.ts`).
