@@ -133,7 +133,9 @@ export function useAreaSwipe({
     const p = pill.current
     if (p) {
       p.style.transition = ''
-      p.style.translate = ''
+      // No se borra: React no la vuelve a poner si para él no cambió, y la
+      // pastilla caía a la primera pestaña. Se deja en la del área actual.
+      p.style.translate = `${index * 100}% 0`
     }
   }
 
@@ -157,6 +159,8 @@ export function useAreaSwipe({
         p.style.transition = ''
       })
     }
+    // Solo al cambiar de área: release lee el índice nuevo de este render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index])
 
   function onPointerDown(e: PointerEvent<HTMLElement>) {
