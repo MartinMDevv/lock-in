@@ -94,3 +94,27 @@ export const IconoMas = (p: Props) => (
     <path d="M12 5v14M5 12h14" />
   </Base>
 )
+
+export const IconoAbajo = (p: Props) => (
+  <Base {...p}>
+    <path d="m6 9 6 6 6-6" />
+  </Base>
+)
+
+export const IconoCheck = (p: Props) => (
+  <Base {...p}>
+    <path d="M20 6 9 17l-5-5" />
+  </Base>
+)
+
+export const IconoBaja = (p: Props) => (
+  <Base {...p}>
+    <path d="M12 5v14M6 13l6 6 6-6" />
+  </Base>
+)
+
+export const IconoSube = (p: Props) => (
+  <Base {...p}>
+    <path d="M12 19V5M6 11l6-6 6 6" />
+  </Base>
+)

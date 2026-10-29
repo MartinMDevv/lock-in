@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router'
 import { Sheet } from '@/components/ui/Sheet'
-import { IconoGimnasio, IconoPlata, IconoTareas } from '@/components/ui/icons'
+import { IconoBaja, IconoGimnasio, IconoSube, IconoTareas } from '@/components/ui/icons'
 
 /**
  * La hoja «Registrar» que abre el botón + (o la N en el escritorio).
@@ -10,10 +10,10 @@ import { IconoGimnasio, IconoPlata, IconoTareas } from '@/components/ui/icons'
  * cada una abre el suyo acá mismo, sin salir de la pantalla.
  */
 const OPCIONES = [
-  { etiqueta: 'Gasto', to: '/money', Icono: IconoPlata },
-  { etiqueta: 'Tarea', to: '/tasks', Icono: IconoTareas },
-  { etiqueta: 'Serie', to: '/gym', Icono: IconoGimnasio },
-  { etiqueta: 'Ingreso', to: '/money', Icono: IconoPlata },
+  { etiqueta: 'Gasto', detalle: 'Monto y sobre', to: '/money', Icono: IconoBaja },
+  { etiqueta: 'Tarea', detalle: 'Título y Enter', to: '/tasks', Icono: IconoTareas },
+  { etiqueta: 'Serie', detalle: 'Sesión de hoy', to: '/gym', Icono: IconoGimnasio },
+  { etiqueta: 'Ingreso', detalle: 'Con reparto', to: '/money', Icono: IconoSube },
 ] as const
 
 export function RegisterSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -22,7 +22,7 @@ export function RegisterSheet({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <Sheet open={open} onClose={onClose} title="Registrar">
       <div className="grid grid-cols-2 gap-2">
-        {OPCIONES.map(({ etiqueta, to, Icono }) => (
+        {OPCIONES.map(({ etiqueta, detalle, to, Icono }) => (
           <button
             key={etiqueta}
             type="button"
@@ -30,10 +30,11 @@ export function RegisterSheet({ open, onClose }: { open: boolean; onClose: () =>
               onClose()
               void navigate(to)
             }}
-            className="flex h-22 flex-col items-start justify-between rounded-lg border border-line bg-surface p-3.5 text-left text-body-sm font-semibold transition-[scale,border-color] duration-(--duration-fast) hover:border-line-strong active:scale-(--press-scale)"
+            className="flex flex-col items-start rounded-lg border border-line bg-surface p-3.5 text-left transition-[scale,border-color] duration-(--duration-fast) hover:border-line-strong active:scale-(--press-scale)"
           >
-            <Icono className="text-[22px] text-ink-muted" />
-            {etiqueta}
+            <Icono className="mb-2 text-lg text-ink-muted" />
+            <span className="text-body-sm font-semibold">{etiqueta}</span>
+            <span className="text-caption text-ink-faint">{detalle}</span>
           </button>
         ))}
       </div>
