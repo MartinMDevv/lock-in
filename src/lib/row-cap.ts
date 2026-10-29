@@ -60,8 +60,9 @@ function isKnownTable(table: string): table is CappedTable {
 /**
  * El mensaje para un error de tope, o null si el error es de otro tipo.
  *
- * Pensado para usarse en el `onError` de cada mutación que crea filas:
- * `rowCapMessage(error) ?? 'No se pudo guardar.'`
+ * El toast lo muestra solo el QueryClient (`lib/query-client.ts`) para
+ * cualquier mutación. Un formulario lo usa para no repetir el aviso: muestra
+ * su propio error solo si esto devuelve null.
  */
 export function rowCapMessage(error: unknown): string | null {
   const parsed = rowCapError.safeParse(error)

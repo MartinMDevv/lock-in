@@ -1,6 +1,8 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
+import { Toaster } from '@/components/ui/Toaster'
+import { createQueryClient } from '@/lib/query-client'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { useAuth } from '@/features/auth/auth-context'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -11,18 +13,7 @@ import { GymPage } from '@/features/gym/GymPage'
 import { MoneyPage } from '@/features/money/MoneyPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // Un minuto sin volver a pedir lo mismo: son datos de una sola persona
-      // y cambian cuando ella los cambia, no solos.
-      staleTime: 60_000,
-      // La app corre en el teléfono, con conexión intermitente: reintentar
-      // una vez evita el error por un túnel, sin quedarse pegado si no hay red.
-      retry: 1,
-    },
-  },
-})
+const queryClient = createQueryClient()
 
 /**
  * Decide entre login y app.
@@ -70,6 +61,7 @@ export function App() {
         <AuthProvider>
           <Rutas />
         </AuthProvider>
+        <Toaster />
       </BrowserRouter>
     </QueryClientProvider>
   )
