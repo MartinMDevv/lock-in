@@ -34,6 +34,7 @@ export function Sheet({
   children: ReactNode
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const [closing, setClosing] = useState(false)
   // Arrastre en curso: desde dónde partió el dedo y cuánto bajó.
@@ -46,6 +47,11 @@ export function Sheet({
     if (!d) return
     if (open && !d.open) {
       d.showModal()
+      // showModal() enfoca el primer botón de adentro, y el navegador
+      // desplaza la ventana para mostrarlo mientras el panel todavía viene
+      // subiendo: eso hacía temblar la entrada. El foco va al panel, sin
+      // desplazar nada.
+      panel.current?.focus({ preventScroll: true })
       // Lo de atrás no se desplaza mientras la hoja está abierta.
       document.documentElement.style.overflow = 'hidden'
     }
@@ -102,12 +108,14 @@ export function Sheet({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
-      className={`m-0 h-dvh max-h-none w-full max-w-none place-items-end overflow-hidden bg-transparent p-0 text-ink open:grid backdrop:bg-scrim backdrop:transition-opacity backdrop:duration-260 backdrop:starting:opacity-0 lg:place-items-center ${
+      className={`m-0 h-dvh max-h-none w-full max-w-none place-items-end overflow-clip bg-transparent p-0 text-ink open:grid backdrop:bg-scrim backdrop:transition-opacity backdrop:duration-260 backdrop:starting:opacity-0 lg:place-items-center ${
         closing ? 'backdrop:opacity-0' : ''
       }`}
     >
       <div
-        className={`relative -bottom-10 max-h-[calc(90dvh+40px)] w-full overflow-y-auto rounded-t-sheet border-t border-line bg-surface-sheet px-4 pb-[calc(56px+env(safe-area-inset-bottom))] shadow-sheet starting:translate-y-full lg:bottom-0 lg:max-h-[85dvh] lg:w-130 lg:rounded-xl lg:border lg:p-6 lg:shadow-popover lg:starting:translate-y-2 lg:starting:scale-97 lg:starting:opacity-0 ${
+        ref={panel}
+        tabIndex={-1}
+        className={`relative -bottom-10 outline-none max-h-[calc(90dvh+40px)] w-full overflow-y-auto rounded-t-sheet border-t border-line bg-surface-sheet px-4 pb-[calc(56px+env(safe-area-inset-bottom))] shadow-sheet starting:translate-y-full lg:bottom-0 lg:max-h-[85dvh] lg:w-130 lg:rounded-xl lg:border lg:p-6 lg:shadow-popover lg:starting:translate-y-2 lg:starting:scale-97 lg:starting:opacity-0 ${
           dragging
             ? 'transition-none'
             : 'transition-[translate,scale,opacity] duration-(--duration-sheet) ease-out lg:duration-220 lg:ease-[cubic-bezier(.2,.9,.3,1.15)]'
