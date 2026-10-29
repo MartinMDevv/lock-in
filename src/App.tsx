@@ -10,6 +10,7 @@ import { TodayPage } from '@/features/today/TodayPage'
 import { SchedulePage } from '@/features/schedule/SchedulePage'
 import { TasksPage } from '@/features/tasks/TasksPage'
 import { GymPage } from '@/features/gym/GymPage'
+import { WorkoutPage } from '@/features/gym/WorkoutPage'
 import { MoneyPage } from '@/features/money/MoneyPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 
@@ -44,6 +45,7 @@ function Rutas() {
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="gym" element={<GymPage />} />
+        <Route path="gym/session/:workoutId" element={<WorkoutPage />} />
         <Route path="money" element={<MoneyPage />} />
         <Route path="settings" element={<SettingsPage />} />
         {/* Cualquier otra cosa vuelve a Hoy: con seis rutas fijas, una

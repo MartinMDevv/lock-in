@@ -37,8 +37,7 @@ let filas: Record<string, unknown[]> = {}
 
 function consultaSimulada(tabla: string) {
   let leyendo = true
-  const respuesta = () =>
-    Promise.resolve({ data: leyendo ? (filas[tabla] ?? []) : null, error: null })
+  const respuesta = () => Promise.resolve({ data: leyendo ? (filas[tabla] ?? []) : null, error: null })
   const consulta = {
     select: () => consulta,
     insert: (fila: unknown) => {
@@ -104,9 +103,7 @@ describe('esqueleto de la aplicación', () => {
 
   it('sin sesión muestra el login con Google', async () => {
     render(<App />)
-    expect(
-      await screen.findByRole('button', { name: /Continuar con Google/ }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Continuar con Google/ })).toBeInTheDocument()
     expect(screen.queryByLabelText('Contraseña')).not.toBeInTheDocument()
   })
 
@@ -114,9 +111,7 @@ describe('esqueleto de la aplicación', () => {
     render(<App />)
     const usuario = userEvent.setup()
 
-    await usuario.click(
-      await screen.findByRole('button', { name: /Continuar con Google/ }),
-    )
+    await usuario.click(await screen.findByRole('button', { name: /Continuar con Google/ }))
     expect(signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
       options: { redirectTo: window.location.origin },
@@ -163,9 +158,7 @@ describe('esqueleto de la aplicación', () => {
 
     await usuarioHaceClicEn('Ajustes')
     expect(await screen.findByText('Sesión iniciada como')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Cerrar sesión' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument()
   })
 
   it('Ajustes muestra las preferencias guardadas en el perfil', async () => {
@@ -311,7 +304,9 @@ describe('cáscara', () => {
     expect(inserts).toEqual([
       {
         tabla: 'movements',
-        fila: [expect.objectContaining({ kind: 'expense', envelope_from: 'vida', amount_minor: 4500, user_id: 'usuario-1' })],
+        fila: [
+          expect.objectContaining({ kind: 'expense', envelope_from: 'vida', amount_minor: 4500, user_id: 'usuario-1' }),
+        ],
       },
     ])
     expect(await screen.findByText('Gasto de $4.500 en Vida diaria')).toBeInTheDocument()
@@ -332,6 +327,107 @@ describe('cáscara', () => {
     expect(inserts[1]?.fila).toEqual([
       expect.objectContaining({ weekday: 2, starts_at: '08:30', ends_at: '10:00', user_id: 'usuario-1' }),
     ])
+  })
+
+  it('Gimnasio: un preset crea los ejercicios, la rutina y sus ejercicios', async () => {
+    window.history.pushState({}, '', '/gym')
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: /^Cuerpo completo/ }))
+
+    await waitFor(() => expect(inserts.map((i) => i.tabla)).toEqual(['exercises', 'routines', 'routine_exercises']))
+    expect(inserts[0]?.fila).toHaveLength(6)
+    expect(inserts[1]?.fila).toEqual([expect.objectContaining({ name: 'Cuerpo completo', user_id: 'usuario-1' })])
+    // La plancha es por tiempo: lleva segundos, no repeticiones.
+    expect(inserts[2]?.fila).toContainEqual(
+      expect.objectContaining({ target_seconds: 45, target_reps: null, target_sets: 3 }),
+    )
+  })
+
+  it('Sesión: sin barra inferior, y «Listo» anota la serie con lo de los steppers', async () => {
+    const t = '2026-10-29T19:00:00Z'
+    filas = {
+      workouts: [
+        {
+          id: 'w1',
+          user_id: 'usuario-1',
+          routine_id: 'r1',
+          started_at: t,
+          ended_at: null,
+          notes: null,
+          import_id: null,
+          created_at: t,
+          updated_at: t,
+        },
+      ],
+      routines: [
+        {
+          id: 'r1',
+          user_id: 'usuario-1',
+          name: 'Torso',
+          sort_order: 0,
+          archived_at: null,
+          import_id: null,
+          created_at: t,
+          updated_at: t,
+        },
+      ],
+      routine_exercises: [
+        {
+          id: 'ri1',
+          user_id: 'usuario-1',
+          routine_id: 'r1',
+          exercise_id: 'e1',
+          sort_order: 0,
+          target_sets: 3,
+          target_reps: 8,
+          target_seconds: null,
+          rest_seconds: 120,
+          created_at: t,
+          updated_at: t,
+        },
+      ],
+      exercises: [
+        {
+          id: 'e1',
+          user_id: 'usuario-1',
+          name: 'Press banca',
+          muscle_group: 'Pecho',
+          is_custom: false,
+          measure: 'reps_weight',
+          archived_at: null,
+          created_at: t,
+          updated_at: t,
+        },
+      ],
+    }
+    window.history.pushState({}, '', '/gym/session/w1')
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    expect(await screen.findByRole('heading', { name: 'Press banca' })).toBeInTheDocument()
+    // La barra del teléfono queda inerte (escondida); el menú lateral del escritorio no.
+    const navs = screen.getAllByRole('navigation', { name: 'Áreas', hidden: true })
+    expect(navs.filter((n) => n.hasAttribute('inert'))).toHaveLength(1)
+
+    await usuario.click(screen.getByRole('button', { name: 'Más 2,5 kg' }))
+    await usuario.click(screen.getByRole('button', { name: 'Listo · serie 1' }))
+
+    expect(inserts).toEqual([
+      {
+        tabla: 'workout_sets',
+        fila: expect.objectContaining({
+          workout_id: 'w1',
+          exercise_id: 'e1',
+          set_index: 1,
+          reps: 8,
+          weight_grams: 2500,
+          is_warmup: false,
+        }),
+      },
+    ])
+    expect(await screen.findByRole('timer')).toHaveTextContent('2:00')
   })
 
   it('en el escritorio, 1–5 cambian de área y N abre Registrar', async () => {

@@ -5,6 +5,7 @@ import { IconoBaja, IconoGimnasio, IconoSube, IconoTareas } from '@/components/u
 import { TaskComposer } from '@/features/tasks/TaskComposer'
 import { ExpenseForm } from '@/features/money/ExpenseForm'
 import { IncomeForm } from '@/features/money/IncomeForm'
+import { useWorkouts } from '@/features/gym/gym'
 
 type Formulario = 'gasto' | 'tarea' | 'ingreso'
 
@@ -12,8 +13,8 @@ type Formulario = 'gasto' | 'tarea' | 'ingreso'
  * La hoja «Registrar» que abre el botón + (o la N en el escritorio).
  *
  * Cada opción abre su formulario acá mismo, sin salir de la pantalla en la
- * que se estaba: + → Tarea → escribir → Enter. Serie lleva a Gimnasio,
- * porque una serie vive dentro de una sesión.
+ * que se estaba: + → Tarea → escribir → Enter. Serie lleva a la sesión en
+ * curso, o a Gimnasio para empezar una: una serie vive dentro de una sesión.
  */
 const OPCIONES = [
   { etiqueta: 'Gasto', detalle: 'Monto y sobre', Icono: IconoBaja, formulario: 'gasto' },
@@ -26,7 +27,9 @@ const TITULOS: Record<Formulario, string> = { gasto: 'Gasto', tarea: 'Nueva tare
 
 export function RegisterSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
+  const sesiones = useWorkouts()
   const [formulario, setFormulario] = useState<Formulario | null>(null)
+  const enCurso = sesiones.data?.find((w) => w.ended_at === null)
 
   function cerrar() {
     onClose()
@@ -51,7 +54,7 @@ export function RegisterSheet({ open, onClose }: { open: boolean; onClose: () =>
                   setFormulario(o.formulario)
                 } else {
                   cerrar()
-                  void navigate(o.to)
+                  void navigate(enCurso ? `/gym/session/${enCurso.id}` : o.to)
                 }
               }}
               className="flex flex-col items-start rounded-lg border border-line bg-surface p-3.5 text-left transition-[scale,border-color] duration-(--duration-fast) hover:border-line-strong active:scale-(--press-scale)"

@@ -10,6 +10,7 @@ import { useProfile, useProfileTheme } from '@/features/settings/profile'
 /** Título de la cabecera según dónde estemos parados. */
 function tituloDeRuta(pathname: string): string {
   if (pathname.startsWith('/settings')) return 'Ajustes'
+  if (pathname.startsWith('/gym/')) return 'Gimnasio'
   return AREAS.find((a) => a.to === pathname)?.etiqueta ?? 'Lock In'
 }
 
@@ -58,6 +59,9 @@ export function AppShell() {
   const nombre = perfil.data?.display_name
   const avatar = iniciales(nombre, session?.user.email)
   const activa = AREAS.findIndex((a) => a.to === pathname)
+  // En la sesión de gimnasio la pantalla es toda para la serie: la barra
+  // inferior y el + se esconden hacia abajo (diseño, sección Estructura).
+  const enSesion = pathname.startsWith('/gym/session')
 
   useShortcuts({
     ...Object.fromEntries(AREAS.map((a, i) => [String(i + 1), () => void navigate(a.to)])),
@@ -85,7 +89,9 @@ export function AppShell() {
               aria-keyshortcuts={String(i + 1)}
               className={({ isActive }) =>
                 `group flex h-9 items-center gap-2.5 rounded-sm px-2.5 text-body-sm transition-colors duration-(--duration-fast) ${
-                  isActive ? 'bg-surface-raised font-semibold text-ink' : 'font-medium text-ink-muted hover:bg-surface-raised'
+                  isActive
+                    ? 'bg-surface-raised font-semibold text-ink'
+                    : 'font-medium text-ink-muted hover:bg-surface-raised'
                 }`
               }
             >
@@ -131,7 +137,7 @@ export function AppShell() {
 
       <div className="flex min-h-dvh flex-col">
         {/* Cabecera del teléfono: título del área y el avatar, que abre Ajustes. */}
-        <header className="flex items-center justify-between px-4 pt-4 pb-2 lg:hidden">
+        <header className={`flex items-center justify-between px-4 pt-4 pb-2 lg:hidden ${enSesion ? 'hidden' : ''}`}>
           <h1 className="text-title font-semibold">{tituloDeRuta(pathname)}</h1>
           <NavLink to="/settings" aria-label="Ajustes" className="rounded-full">
             <Avatar iniciales={avatar} className="size-11" />
@@ -143,7 +149,9 @@ export function AppShell() {
             fundido con 10 px de desplazamiento del diseño. */}
         <main
           key={pathname}
-          className={`mx-auto w-full grow px-4 pt-3 pb-[calc(160px+env(safe-area-inset-bottom))] transition-[opacity,translate] duration-(--duration-base) ease-out starting:translate-x-2.5 starting:opacity-0 lg:px-14 lg:pt-10 lg:pb-10 ${anchoDeRuta(pathname)}`}
+          className={`mx-auto w-full grow px-4 pt-3 transition-[opacity,translate] ${
+            enSesion ? 'pb-[calc(24px+env(safe-area-inset-bottom))]' : 'pb-[calc(160px+env(safe-area-inset-bottom))]'
+          } duration-(--duration-base) ease-out starting:translate-x-2.5 starting:opacity-0 lg:px-14 lg:pt-10 lg:pb-10 ${anchoDeRuta(pathname)}`}
         >
           <h1 className="mb-6 hidden text-title font-semibold lg:block">{tituloDeRuta(pathname)}</h1>
           <Outlet />
@@ -156,7 +164,10 @@ export function AppShell() {
         aria-label="Registrar"
         aria-expanded={registrando}
         onClick={() => setRegistrando(true)}
-        className="fixed right-4 bottom-[calc(80px+env(safe-area-inset-bottom))] z-20 grid size-14 place-items-center rounded-2xl bg-accent text-accent-ink shadow-fab transition-[scale] duration-140 ease-out active:scale-94 lg:hidden"
+        inert={enSesion}
+        className={`fixed right-4 bottom-[calc(80px+env(safe-area-inset-bottom))] z-20 grid size-14 place-items-center rounded-2xl bg-accent text-accent-ink shadow-fab transition-[scale,translate] duration-(--duration-moderate) ease-out active:scale-94 lg:hidden ${
+          enSesion ? 'translate-y-[calc(100%+120px)]' : ''
+        }`}
       >
         <IconoMas
           className={`text-2xl transition-[rotate] duration-(--duration-moderate) ease-glide ${registrando ? 'rotate-45' : ''}`}
@@ -166,7 +177,10 @@ export function AppShell() {
 
       <nav
         aria-label="Áreas"
-        className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] lg:hidden"
+        inert={enSesion}
+        className={`fixed inset-x-0 bottom-0 z-10 border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] transition-[translate] duration-(--duration-moderate) ease-out lg:hidden ${
+          enSesion ? 'translate-y-full' : ''
+        }`}
       >
         <div className="relative grid h-16 grid-cols-5">
           {/* La pastilla: una sola, que se desliza a la pestaña elegida. */}
