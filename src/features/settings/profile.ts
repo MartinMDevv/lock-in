@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/auth-context'
 import { applyTheme, parseTheme } from '@/lib/theme'
+import { useNow } from '@/lib/clock'
+import { dayOf } from '@/core/time/day'
+import type { IsoDate } from '@/core/time/day'
 import type { Database } from '@/types/database'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
@@ -112,4 +115,32 @@ export function useProfileTheme() {
   useEffect(() => {
     if (theme !== undefined) applyTheme(parseTheme(theme))
   }, [theme])
+}
+
+/** El id de quien tiene la sesión: toda fila nueva lo lleva en `user_id`. */
+export function useUserId(): string {
+  const { session } = useAuth()
+  return session?.user.id ?? ''
+}
+
+/** Lo que usan todas las áreas, con los valores por defecto mientras el perfil carga. */
+export type Prefs = Pick<Profile, 'currency' | 'currency_decimals' | 'timezone' | 'weight_unit' | 'week_starts_on'>
+
+const DEFAULT_PREFS: Prefs = {
+  currency: 'CLP',
+  currency_decimals: 0,
+  timezone: 'America/Santiago',
+  weight_unit: 'kg',
+  week_starts_on: 1,
+}
+
+export function usePrefs(): Prefs {
+  return useProfile().data ?? DEFAULT_PREFS
+}
+
+/** Hoy y la hora actual, en la zona del perfil. Cambia sola a medianoche. */
+export function useToday(): { today: IsoDate; now: Date; timezone: string } {
+  const { timezone } = usePrefs()
+  const now = useNow()
+  return { today: dayOf(now, timezone), now, timezone }
 }

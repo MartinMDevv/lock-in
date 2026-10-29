@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { fechaLarga } from '@/lib/format'
+import { useToday } from '@/features/settings/profile'
 
 /**
  * "Hoy" es la razón de existir del proyecto: apps de presupuesto hay muchas,
@@ -11,7 +12,8 @@ import { fechaLarga } from '@/lib/format'
  * haya datos solo haya que enchufar la consulta.
  */
 export function TodayPage() {
-  const hoy = fechaLarga(new Date())
+  const { now, timezone } = useToday()
+  const hoy = fechaLarga(now, timezone)
 
   return (
     <div className="space-y-7">
