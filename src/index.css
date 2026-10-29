@@ -129,6 +129,16 @@
 }
 
 /* ── Propio de la app (no viene del paquete de diseño) ── */
+
+/* Las fuentes vienen dentro de la app (@fontsource-variable, importadas en
+   main.tsx): la CSP solo deja cargar fuentes del propio dominio, así que
+   Google Fonts no sirve. El paquete las registra con «Variable» en el nombre;
+   esto pisa las dos líneas de fuentes de los tokens sin tocar ese bloque. */
+@theme {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+}
+
 @layer base {
   html {
     /* Evita el zoom accidental al tocar dos veces en el teléfono */
