@@ -1,19 +1,15 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/auth-context'
-import {
-  CURRENCIES,
-  timezones,
-  useProfile,
-  useUpdateProfile,
-} from './profile'
-import type { Profile } from './profile'
+import { CURRENCIES, timezones, useProfile, useUpdateProfile } from './profile'
+import type { Profile, ProfileChanges } from './profile'
 import { applyTheme, parseTheme } from '@/lib/theme'
 import type { Theme } from '@/lib/theme'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { Field, Input, Select } from '@/components/ui/Field'
+import { Field, Input } from '@/components/ui/Field'
+import { IconoCheck } from '@/components/ui/icons'
+import { Picker } from '@/components/ui/Picker'
 import { Segmented } from '@/components/ui/Segmented'
 
 /**
@@ -22,6 +18,8 @@ import { Segmented } from '@/components/ui/Segmented'
 export function SettingsPage() {
   const { session } = useAuth()
   const perfil = useProfile()
+  // Uno solo para toda la tarjeta, así el aviso de «Guardado» es uno.
+  const guardar = useUpdateProfile()
   const [saliendo, setSaliendo] = useState(false)
 
   async function cerrarSesion() {
@@ -43,19 +41,17 @@ export function SettingsPage() {
       </section>
 
       <section>
-        <Titulo>Preferencias</Titulo>
+        <div className="mb-2 flex items-baseline justify-between gap-3">
+          <Titulo>Preferencias</Titulo>
+          <EstadoGuardado estado={guardar.status} />
+        </div>
         {perfil.isPending && <p className="text-body-sm text-ink-muted">Cargando…</p>}
         {perfil.isError && (
           <p role="alert" className="text-body-sm text-danger">
             No se pudo cargar el perfil. Revisa la conexión y vuelve a abrir Ajustes.
           </p>
         )}
-        {/* La key reinicia el formulario si el perfil cambia desde otro lado.
-            Sale de los campos del formulario y no de updated_at: si no,
-            cambiar el tema borraría lo que se estaba escribiendo acá. */}
-        {perfil.data && (
-          <Preferencias key={clavePreferencias(perfil.data)} perfil={perfil.data} />
-        )}
+        {perfil.data && <Preferencias perfil={perfil.data} guardar={guardar.mutate} />}
       </section>
 
       {perfil.data && (
@@ -81,8 +77,24 @@ function Titulo({ children }: { children: string }) {
   return <h2 className="mb-2 text-body-sm font-medium text-ink-muted">{children}</h2>
 }
 
-function clavePreferencias(p: Profile): string {
-  return [p.display_name, p.currency, p.timezone, p.weight_unit, p.week_starts_on].join('|')
+/**
+ * Cada cambio se guarda solo, así que en vez de un botón grande hay un aviso
+ * chico junto al título. Siempre está en la página (vacío al principio) para
+ * que el lector de pantalla anuncie cuando cambia.
+ */
+function EstadoGuardado({ estado }: { estado: 'idle' | 'pending' | 'success' | 'error' }) {
+  return (
+    <p aria-live="polite" className="text-caption">
+      {estado === 'pending' && <span className="text-ink-faint">Guardando…</span>}
+      {estado === 'success' && (
+        <span className="inline-flex items-center gap-1 text-accent-text">
+          <IconoCheck />
+          Guardado
+        </span>
+      )}
+      {estado === 'error' && <span className="text-danger">No se pudo guardar. Inténtalo de nuevo.</span>}
+    </p>
+  )
 }
 
 const OPCIONES_TEMA = [
@@ -98,10 +110,12 @@ const OPCIONES_TEMA = [
 function SelectorTema({ actual }: { actual: Theme }) {
   const guardar = useUpdateProfile()
 
+  // Se pinta ya, sin esperar a la caché. Si el guardado falla, la caché
+  // vuelve al tema anterior y useProfileTheme lo repinta.
   function elegir(tema: Theme) {
     if (tema === actual) return
     applyTheme(tema)
-    guardar.mutate({ theme: tema }, { onError: () => applyTheme(actual) })
+    guardar.mutate({ theme: tema })
   }
 
   return (
@@ -126,108 +140,114 @@ const INICIOS_SEMANA = [
   { value: 0, label: 'Domingo' },
 ] as const
 
-function Preferencias({ perfil }: { perfil: Profile }) {
-  const guardar = useUpdateProfile()
-  const [nombre, setNombre] = useState(perfil.display_name ?? '')
-  const [moneda, setMoneda] = useState(perfil.currency)
-  const [zona, setZona] = useState(perfil.timezone)
-  const [unidad, setUnidad] = useState(perfil.weight_unit)
-  const [inicioSemana, setInicioSemana] = useState(perfil.week_starts_on)
-  const [guardado, setGuardado] = useState(false)
+function Preferencias({
+  perfil,
+  guardar,
+}: {
+  perfil: Profile
+  guardar: (cambios: ProfileChanges) => void
+}) {
+  // Si la moneda o la zona guardadas no están en la lista, se agregan igual:
+  // si no, el campo mostraría otra cosa que la guardada.
+  const monedas = CURRENCIES.map((c) => ({ value: c.code as string, label: `${c.code} · ${c.label}` }))
+  if (!CURRENCIES.some((c) => c.code === perfil.currency)) {
+    monedas.unshift({ value: perfil.currency, label: perfil.currency })
+  }
 
-  // Si la zona guardada no está en la lista del navegador, se agrega igual:
-  // si no, el select mostraría otra y al guardar la cambiaría sin avisar.
-  const zonas = timezones()
-  if (!zonas.includes(perfil.timezone)) zonas.unshift(perfil.timezone)
-
-  function enviar(e: FormEvent) {
-    e.preventDefault()
-    setGuardado(false)
-    const elegida = CURRENCIES.find((c) => c.code === moneda)
-    guardar.mutate(
-      {
-        display_name: nombre.trim() === '' ? null : nombre.trim(),
-        currency: moneda,
-        // Los decimales siempre salen de la lista, nunca de la mano.
-        currency_decimals: elegida?.decimals ?? perfil.currency_decimals,
-        timezone: zona,
-        weight_unit: unidad,
-        week_starts_on: inicioSemana,
-      },
-      { onSuccess: () => setGuardado(true) },
-    )
+  function elegirMoneda(code: string) {
+    const elegida = CURRENCIES.find((c) => c.code === code)
+    // Los decimales siempre salen de la lista, nunca de la mano (D5).
+    if (elegida) guardar({ currency: elegida.code, currency_decimals: elegida.decimals })
   }
 
   return (
-    <Card>
-      <form onSubmit={enviar} className="space-y-4">
-        <Field label="Nombre">
-          {(id) => (
-            <Input
-              id={id}
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              maxLength={60}
-              autoComplete="nickname"
-            />
-          )}
-        </Field>
+    <Card className="space-y-4">
+      {/* La key la reinicia si el nombre cambia desde otro lado. */}
+      <CampoNombre
+        key={perfil.display_name ?? ''}
+        actual={perfil.display_name}
+        onGuardar={(nombre) => guardar({ display_name: nombre })}
+      />
 
-        <Field label="Moneda">
-          {(id) => (
-            <Select id={id} value={moneda} onChange={(e) => setMoneda(e.target.value)}>
-              {/* La moneda guardada se muestra aunque no esté en la lista. */}
-              {!CURRENCIES.some((c) => c.code === perfil.currency) && (
-                <option value={perfil.currency}>{perfil.currency}</option>
-              )}
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code} · {c.label}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
+      <Field label="Moneda">
+        {(id) => <Picker id={id} label="Moneda" value={perfil.currency} options={monedas} onChange={elegirMoneda} />}
+      </Field>
 
-        <Field label="Zona horaria">
-          {(id) => (
-            <Select id={id} value={zona} onChange={(e) => setZona(e.target.value)}>
-              {zonas.map((z) => (
-                <option key={z} value={z}>
-                  {z.replaceAll('_', ' ')}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-caption text-ink-muted">Peso en</span>
-            <Segmented label="Peso en" options={UNIDADES} value={unidad} onChange={setUnidad} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-caption text-ink-muted">Semana parte el</span>
-            <Segmented
-              label="Semana parte el"
-              options={INICIOS_SEMANA}
-              value={inicioSemana}
-              onChange={setInicioSemana}
-            />
-          </div>
-        </div>
-
-        {guardar.isError && (
-          <p role="alert" className="text-body-sm text-danger">
-            No se pudo guardar. Inténtalo de nuevo.
-          </p>
+      <Field label="Zona horaria">
+        {(id) => (
+          <Picker
+            id={id}
+            label="Zona horaria"
+            value={perfil.timezone}
+            options={opcionesDeZona(perfil.timezone)}
+            onChange={(timezone) => guardar({ timezone })}
+            searchable
+          />
         )}
-        {guardado && <p className="text-body-sm text-ink-muted">Guardado.</p>}
+      </Field>
 
-        <Button type="submit" variant="primary" size="lg" disabled={guardar.isPending} className="w-full">
-          {guardar.isPending ? 'Guardando…' : 'Guardar'}
-        </Button>
-      </form>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-caption text-ink-muted">Peso en</span>
+          <Segmented
+            label="Peso en"
+            options={UNIDADES}
+            value={perfil.weight_unit}
+            onChange={(weight_unit) => guardar({ weight_unit })}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-caption text-ink-muted">Semana parte el</span>
+          <Segmented
+            label="Semana parte el"
+            options={INICIOS_SEMANA}
+            value={perfil.week_starts_on}
+            onChange={(week_starts_on) => guardar({ week_starts_on })}
+          />
+        </div>
+      </div>
     </Card>
+  )
+}
+
+/**
+ * Arriba la zona guardada y la del teléfono, que son las que casi siempre se
+ * buscan; después todas las demás en orden.
+ */
+function opcionesDeZona(guardada: string) {
+  const delTelefono = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const primeras = [...new Set([guardada, delTelefono])]
+  const zonas = [...primeras, ...timezones().filter((z) => !primeras.includes(z))]
+  return zonas.map((z) => ({ value: z, label: z.replaceAll('_', ' ') }))
+}
+
+/** El nombre se guarda al salir del campo o con Enter, no a cada letra. */
+function CampoNombre({ actual, onGuardar }: { actual: string | null; onGuardar: (nombre: string | null) => void }) {
+  const [nombre, setNombre] = useState(actual ?? '')
+
+  function guardarSiCambio() {
+    const limpio = nombre.trim()
+    const nuevo = limpio === '' ? null : limpio
+    setNombre(limpio)
+    if (nuevo !== actual) onGuardar(nuevo)
+  }
+
+  return (
+    <Field label="Nombre">
+      {(id) => (
+        <Input
+          id={id}
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          onBlur={guardarSiCambio}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+          }}
+          enterKeyHint="done"
+          maxLength={60}
+          autoComplete="nickname"
+        />
+      )}
+    </Field>
   )
 }

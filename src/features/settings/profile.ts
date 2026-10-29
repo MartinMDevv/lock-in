@@ -82,6 +82,17 @@ export function useUpdateProfile() {
       if (error) throw error
       return data
     },
+    // Ajustes guarda al tocar, sin botón: el cambio se ve al instante y, si
+    // la base lo rechaza, la pantalla vuelve a lo que estaba guardado.
+    onMutate: async (changes) => {
+      await queryClient.cancelQueries({ queryKey: profileKey(userId) })
+      const previous = queryClient.getQueryData<Profile>(profileKey(userId))
+      if (previous) queryClient.setQueryData(profileKey(userId), { ...previous, ...changes })
+      return { previous }
+    },
+    onError: (_error, _changes, context) => {
+      if (context?.previous) queryClient.setQueryData(profileKey(userId), context.previous)
+    },
     // La respuesta ya trae la fila nueva: se pone en la caché directo en vez
     // de pedirla otra vez.
     onSuccess: (profile) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Session } from '@supabase/supabase-js'
 
@@ -138,8 +138,44 @@ describe('esqueleto de la aplicación', () => {
 
     await usuarioHaceClicEn('Ajustes')
     expect(await screen.findByLabelText('Nombre')).toHaveValue('Persona')
-    expect(screen.getByLabelText('Moneda')).toHaveValue('CLP')
-    expect(screen.getByLabelText('Zona horaria')).toHaveValue('America/Santiago')
+    expect(screen.getByRole('button', { name: 'Moneda: CLP · Peso chileno' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Zona horaria: America/Santiago' })).toBeInTheDocument()
+  })
+
+  it('Ajustes guarda al elegir, sin botón, y avisa que quedó guardado', async () => {
+    sesion = sesionSimulada
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuarioHaceClicEn('Ajustes')
+    expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Moneda: CLP · Peso chileno' }))
+    await usuario.click(await screen.findByRole('radio', { name: 'USD · Dólar estadounidense' }))
+
+    // Moneda y decimales viajan juntos (D5).
+    expect(cambios).toEqual({ currency: 'USD', currency_decimals: 2 })
+    expect(await screen.findByText('Guardado')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Moneda: USD · Dólar estadounidense' })).toBeInTheDocument()
+  })
+
+  it('la zona horaria se busca y el nombre se guarda al salir del campo', async () => {
+    sesion = sesionSimulada
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuarioHaceClicEn('Ajustes')
+    await usuario.click(await screen.findByRole('button', { name: 'Zona horaria: America/Santiago' }))
+    await usuario.type(screen.getByRole('searchbox', { name: 'Buscar zona horaria' }), 'lima')
+    const zonas = within(screen.getByRole('radiogroup', { name: 'Zona horaria' }))
+    expect(zonas.getAllByRole('radio').map((r) => r.textContent)).toEqual(['America/Lima'])
+    await usuario.click(screen.getByRole('radio', { name: 'America/Lima' }))
+    expect(cambios).toEqual({ timezone: 'America/Lima' })
+
+    const nombre = screen.getByLabelText('Nombre')
+    await usuario.clear(nombre)
+    await usuario.type(nombre, '  Otra  {Enter}')
+    expect(cambios).toEqual({ display_name: 'Otra' })
   })
 
   it('el tema del perfil se aplica al entrar y cambia al tocarlo en Ajustes', async () => {
@@ -173,7 +209,7 @@ describe('cáscara', () => {
     const hoja = await screen.findByRole('dialog', { name: 'Registrar' })
     expect(hoja).toHaveAttribute('open')
 
-    await usuario.click(screen.getByRole('button', { name: 'Tarea' }))
+    await usuario.click(screen.getByRole('button', { name: /^Tarea/ }))
     expect(await tituloDelArea()).toBe('Tareas')
   })
 

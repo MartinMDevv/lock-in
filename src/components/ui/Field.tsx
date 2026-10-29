@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
+import { controlClass } from './control'
 
 /**
  * Un campo con su etiqueta (componente 02).
@@ -38,24 +39,10 @@ export function Field({
   )
 }
 
-const control = (invalid: boolean) =>
-  `h-12 w-full min-w-0 rounded-lg border bg-bg px-3.5 text-body text-ink outline-none transition-colors duration-(--duration-fast) focus:border-ink-muted ${
-    invalid ? 'border-danger' : 'border-line'
-  }`
-
 export function Input({ className = '', ...props }: ComponentProps<'input'>) {
   return (
     <input
-      className={`${control(props['aria-invalid'] === true)} ${className}`}
-      {...props}
-    />
-  )
-}
-
-export function Select({ className = '', ...props }: ComponentProps<'select'>) {
-  return (
-    <select
-      className={`${control(props['aria-invalid'] === true)} ${className}`}
+      className={`${controlClass(props['aria-invalid'] === true)} ${className}`}
       {...props}
     />
   )
