@@ -158,6 +158,59 @@ describe('esqueleto de la aplicación', () => {
   })
 })
 
+describe('cáscara', () => {
+  beforeEach(() => {
+    sesion = sesionSimulada
+    cambios = {}
+    window.history.pushState({}, '', '/')
+  })
+
+  it('el + abre Registrar, y cada opción lleva a su área', async () => {
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Registrar', expanded: false }))
+    const hoja = await screen.findByRole('dialog', { name: 'Registrar' })
+    expect(hoja).toHaveAttribute('open')
+
+    await usuario.click(screen.getByRole('button', { name: 'Tarea' }))
+    expect(await tituloDelArea()).toBe('Tareas')
+  })
+
+  it('en el escritorio, 1–5 cambian de área y N abre Registrar', async () => {
+    render(<App />)
+    const usuario = userEvent.setup()
+    await screen.findByText('Qué vence')
+
+    await usuario.keyboard('5')
+    expect(await tituloDelArea()).toBe('Plata')
+
+    await usuario.keyboard('n')
+    expect(await screen.findByRole('dialog', { name: 'Registrar' })).toHaveAttribute('open')
+  })
+
+  it('los atajos no se disparan mientras se escribe', async () => {
+    window.history.pushState({}, '', '/settings')
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuario.type(await screen.findByLabelText('Nombre'), '5')
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Persona5')
+    expect(await tituloDelArea()).toBe('Ajustes')
+  })
+
+  it('el avatar muestra las iniciales del nombre del perfil', async () => {
+    render(<App />)
+    expect((await screen.findAllByText('P')).length).toBeGreaterThan(0)
+  })
+})
+
+// El título del área: va dos veces (cabecera del teléfono y del escritorio).
+async function tituloDelArea() {
+  const [titulo] = await screen.findAllByRole('heading', { level: 1 })
+  return titulo?.textContent
+}
+
 async function usuarioHaceClicEn(nombre: string) {
   const usuario = userEvent.setup()
   await usuario.click(await screen.findByRole('link', { name: nombre }))

@@ -140,7 +140,7 @@ escritorio, todavía sin datos.*
   - [x] Barra de progreso (la regla verde/ámbar/rojo del tope vive en `core/money/cap.ts`), stepper, lista con fila y check, esqueleto y estado vacío con acción (28-oct-2026).
   - [x] Toast con Deshacer (28-oct-2026): `components/ui/Toaster.tsx` + `toast.ts` (estado fuera de React, uno a la vez, 4,5 s).
 - [x] **Aviso de límite alcanzado en toda la app**: un `onError` global en el `MutationCache` muestra el toast con `rowCapMessage` cuando cualquier guardado falla con `LKCAP`. Los formularios de F3 lo heredan sin conectarlo uno por uno. Hecho el 28-oct (`lib/query-client.ts`), probado con una mutación simulada; en pantalla se verá con el primer formulario de crear.
-- [ ] La cáscara: barra inferior con pastilla deslizante (< 1024 px) y menú lateral de 224 px (≥ 1024 px).
+- [ ] 🚧 La cáscara: barra inferior con pastilla deslizante (< 1024 px) y menú lateral de 224 px (≥ 1024 px). 28-oct-2026: escrita con el botón + (abre «Registrar» en la hoja inferior; por ahora cada opción lleva a su área), los atajos 1–5 y N, el avatar con las iniciales del perfil, el ancho por área y el fundido al cambiar de área. Íconos de las áreas cambiados por los del diseño. Fuera por ahora: «Buscar o registrar… Ctrl K» (llega con la paleta) y esconder la barra en la sesión de gimnasio (F3). Falta verla en el teléfono.
 - [ ] 🚧 Tema oscuro, claro o sistema, leyendo `profiles.theme` (28-oct-2026, `src/lib/theme.ts`): se aplica en `<html data-theme>` y en la barra del navegador, se elige en Ajustes (se guarda al tocarlo) y el navegador recuerda el último para no parpadear al abrir. Falta verlo en el teléfono.
 - [ ] **Pulir el tema claro**: hoy está menos trabajado que el oscuro.
 - [ ] `prefers-reduced-motion`.
