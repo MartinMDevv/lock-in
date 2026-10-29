@@ -5,9 +5,18 @@ import { RegisterSheet } from './RegisterSheet'
 import { Sidebar } from './Sidebar'
 import { useMediaQuery } from '@/lib/media'
 import { useShortcuts } from './shortcuts'
+import { SETTLE_MS, useAreaSwipe } from './swipe'
+import { TodayPage } from '@/features/today/TodayPage'
+import { SchedulePage } from '@/features/schedule/SchedulePage'
+import { TasksPage } from '@/features/tasks/TasksPage'
+import { GymPage } from '@/features/gym/GymPage'
+import { MoneyPage } from '@/features/money/MoneyPage'
 import { IconoMas } from '@/components/ui/icons'
 import { useAuth } from '@/features/auth/auth-context'
 import { useFirstRunTimezone, useProfile, useProfileTheme } from '@/features/settings/profile'
+
+/** Las pantallas de las áreas, en el orden de AREAS: para dibujar la vecina mientras se desliza. */
+const PAGINAS = [TodayPage, SchedulePage, TasksPage, GymPage, MoneyPage] as const
 
 /** Título de la cabecera según dónde estemos parados. */
 function tituloDeRuta(pathname: string): string {
@@ -51,7 +60,7 @@ function iniciales(nombre: string | null | undefined, correo: string | undefined
  * otra; así no hay que medir la pantalla con JavaScript.
  */
 export function AppShell() {
-  const { pathname } = useLocation()
+  const { pathname, state } = useLocation()
   const navigate = useNavigate()
   const { session } = useAuth()
   const perfil = useProfile()
@@ -78,6 +87,29 @@ export function AppShell() {
     n: () => setRegistrando(true),
     '[': alternarMenu,
   })
+
+  // Deslizar entre áreas (teléfono). Al llegar se navega sin el fundido de
+  // entrada: la pantalla ya entró con el dedo.
+  const puedeDeslizar = !escritorio && activa >= 0 && !enSesion
+  const deslizar = useAreaSwipe({
+    enabled: puedeDeslizar,
+    index: activa,
+    count: AREAS.length,
+    onCommit: (i) => {
+      const area = AREAS[i]
+      if (!area) return
+      window.scrollTo(0, 0)
+      void navigate(area.to, { state: { deslizado: true } })
+    },
+  })
+  const porDeslizar = (state as { deslizado?: boolean } | null)?.deslizado === true
+  const moviendo = deslizar.phase !== 'idle'
+  const fraccion = moviendo ? deslizar.offset / deslizar.width : 0
+  // La pestaña que se ve elegida sigue al dedo: cambia al pasar la mitad.
+  const visible = moviendo ? Math.round(activa - fraccion) : activa
+  const alSoltar = deslizar.phase === 'settle' ? 'transition-[translate] ease-out' : ''
+  const Vecina = deslizar.neighbor !== 0 ? PAGINAS[activa + deslizar.neighbor] : undefined
+  const vecina = AREAS[activa + deslizar.neighbor]
 
   // Ctrl K (⌘K en Mac) abre Registrar mientras no exista la paleta de comandos.
   useEffect(() => {
@@ -109,27 +141,63 @@ export function AppShell() {
         />
       )}
 
-      <div className="flex min-h-dvh flex-col">
-        {/* Cabecera del teléfono: título del área y el avatar, que abre Ajustes. */}
-        <header className={`flex items-center justify-between px-4 pt-4 pb-2 lg:hidden ${enSesion ? 'hidden' : ''}`}>
-          <h1 className="text-title font-semibold">{tituloDeRuta(pathname)}</h1>
-          <NavLink to="/settings" aria-label="Ajustes" className="rounded-full">
-            <Avatar iniciales={avatar} className="size-11" />
-          </NavLink>
-        </header>
-
-        {/* pb en teléfono: aire para que la barra y el + no tapen lo último.
-            La key reinicia el contenedor al cambiar de área, y eso dispara el
-            fundido con 10 px de desplazamiento del diseño. */}
-        <main
-          key={pathname}
-          className={`mx-auto w-full grow px-4 pt-3 transition-[opacity,translate] ${
-            enSesion ? 'pb-[calc(24px+env(safe-area-inset-bottom))]' : 'pb-[calc(160px+env(safe-area-inset-bottom))]'
-          } duration-(--duration-base) ease-out starting:translate-x-2.5 starting:opacity-0 lg:px-14 lg:pt-10 lg:pb-10 ${anchoDeRuta(pathname)}`}
+      <div
+        className="relative flex min-h-dvh flex-col"
+        // pan-y: el scroll vertical sigue siendo del navegador, y lo horizontal
+        // llega a los handlers del deslizamiento.
+        style={puedeDeslizar ? { touchAction: 'pan-y' } : undefined}
+        {...deslizar.handlers}
+      >
+        <div
+          className={`flex grow flex-col ${alSoltar}`}
+          style={moviendo ? { translate: `${deslizar.offset}px 0`, transitionDuration: `${SETTLE_MS}ms` } : undefined}
         >
-          <h1 className="mb-6 hidden text-title font-semibold lg:block">{tituloDeRuta(pathname)}</h1>
-          <Outlet />
-        </main>
+          {/* Cabecera del teléfono: título del área y el avatar, que abre Ajustes. */}
+          <header className={`flex items-center justify-between px-4 pt-4 pb-2 lg:hidden ${enSesion ? 'hidden' : ''}`}>
+            <h1 className="text-title font-semibold">{tituloDeRuta(pathname)}</h1>
+            <NavLink to="/settings" aria-label="Ajustes" className="rounded-full">
+              <Avatar iniciales={avatar} className="size-11" />
+            </NavLink>
+          </header>
+
+          {/* pb en teléfono: aire para que la barra y el + no tapen lo último.
+              La key reinicia el contenedor al cambiar de área, y eso dispara el
+              fundido con 10 px de desplazamiento del diseño (salvo si se llegó
+              deslizando: ahí la pantalla ya entró con el dedo). */}
+          <main
+            key={pathname}
+            className={`mx-auto w-full grow px-4 pt-3 transition-[opacity,translate] ${
+              enSesion ? 'pb-[calc(24px+env(safe-area-inset-bottom))]' : 'pb-[calc(160px+env(safe-area-inset-bottom))]'
+            } duration-(--duration-base) ease-out lg:px-14 lg:pt-10 lg:pb-10 ${
+              porDeslizar ? '' : 'starting:translate-x-2.5 starting:opacity-0'
+            } ${anchoDeRuta(pathname)}`}
+          >
+            <h1 className="mb-6 hidden text-title font-semibold lg:block">{tituloDeRuta(pathname)}</h1>
+            <Outlet />
+          </main>
+        </div>
+
+        {/* La vecina, mientras se desliza: la pantalla de verdad, solo para mirar. */}
+        {Vecina && vecina && (
+          <div
+            aria-hidden="true"
+            inert
+            className={`pointer-events-none absolute inset-x-0 ${alSoltar}`}
+            style={{
+              top: deslizar.scrollTop,
+              translate: `${deslizar.offset + deslizar.neighbor * deslizar.width}px 0`,
+              transitionDuration: `${SETTLE_MS}ms`,
+            }}
+          >
+            <div className="flex items-center justify-between px-4 pt-4 pb-2">
+              <p className="text-title font-semibold">{vecina.etiqueta}</p>
+              <Avatar iniciales={avatar} className="size-11" />
+            </div>
+            <div className="px-4 pt-3">
+              <Vecina />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Botón + y barra inferior: solo teléfono ── */}
@@ -160,34 +228,42 @@ export function AppShell() {
           {/* La pastilla: una sola, que se desliza a la pestaña elegida. */}
           <span
             aria-hidden="true"
-            className={`pointer-events-none absolute top-[9px] left-0 flex w-1/5 justify-center transition-[translate,opacity] duration-(--duration-moderate) ease-glide ${
-              activa < 0 ? 'opacity-0' : ''
-            }`}
-            style={{ translate: `${Math.max(0, activa) * 100}% 0` }}
+            className={`pointer-events-none absolute top-[9px] left-0 flex w-1/5 justify-center ${
+              deslizar.phase === 'drag'
+                ? ''
+                : deslizar.phase === 'settle'
+                  ? 'transition-[translate] ease-out'
+                  : 'transition-[translate,opacity] duration-(--duration-moderate) ease-glide'
+            } ${activa < 0 ? 'opacity-0' : ''}`}
+            // Mientras se desliza, la pastilla va en la misma proporción que la pantalla.
+            style={{
+              translate: `${(Math.max(0, activa) - fraccion) * 100}% 0`,
+              ...(deslizar.phase === 'settle' ? { transitionDuration: `${SETTLE_MS}ms` } : {}),
+            }}
           >
             <span className="h-7.5 w-14 rounded-full bg-surface-raised" />
           </span>
-          {AREAS.map(({ to, etiqueta, Icono }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                `relative flex flex-col items-center justify-center gap-1 text-caption ${
-                  isActive ? 'font-semibold text-ink' : 'font-medium text-ink-muted'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <span className="grid h-7.5 w-14 place-items-center">
-                    <Icono className={`text-[22px] ${isActive ? 'text-accent-text' : ''}`} strokeWidth={1.6} />
-                  </span>
-                  {etiqueta}
-                </>
-              )}
-            </NavLink>
-          ))}
+          {AREAS.map(({ to, etiqueta, Icono }, i) => {
+            const elegida = activa >= 0 ? i === visible : pathname === to
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/'}
+                className={`relative flex flex-col items-center justify-center gap-1 text-caption transition-colors duration-150 ${
+                  elegida ? 'font-semibold text-ink' : 'font-medium text-ink-muted'
+                }`}
+              >
+                <span className="grid h-7.5 w-14 place-items-center">
+                  <Icono
+                    className={`text-[22px] transition-colors duration-150 ${elegida ? 'text-accent-text' : ''}`}
+                    strokeWidth={1.6}
+                  />
+                </span>
+                {etiqueta}
+              </NavLink>
+            )
+          })}
         </div>
       </nav>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Session } from '@supabase/supabase-js'
 import { dayOf } from './core/time/day'
@@ -548,6 +548,24 @@ describe('cáscara', () => {
     await usuario.click(await screen.findByRole('checkbox', { name: 'Completar: Entregar informe' }))
     expect(await screen.findByText('Completada: Entregar informe')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Deshacer' })).toBeInTheDocument()
+  })
+
+  it('en el teléfono, deslizar a la izquierda pasa al área siguiente', async () => {
+    render(<App />)
+    await screen.findByText('Qué vence')
+    const zona = screen.getByRole('main').parentElement!.parentElement!
+    const dedo = { pointerId: 1, pointerType: 'touch', isPrimary: true }
+
+    // jsdom mide la pantalla en 1024 px: hay que pasar el 28 % (unos 290 px).
+    fireEvent.pointerDown(zona, { ...dedo, clientX: 800, clientY: 400 })
+    fireEvent.pointerMove(zona, { ...dedo, clientX: 750, clientY: 402 })
+    fireEvent.pointerMove(zona, { ...dedo, clientX: 100, clientY: 405 })
+    // Mientras se arrastra, la vecina (Horario) ya se ve entrando.
+    expect(screen.getByText('Horario', { selector: 'p' })).toBeInTheDocument()
+    fireEvent.pointerUp(zona, { ...dedo, clientX: 100, clientY: 405 })
+
+    // Llega cuando termina la animación de soltar.
+    await waitFor(() => expect(screen.getAllByRole('heading', { level: 1 })[0]).toHaveTextContent('Horario'))
   })
 
   it('en el escritorio, 1–5 cambian de área y N abre Registrar', async () => {
