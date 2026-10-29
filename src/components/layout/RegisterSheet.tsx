@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router'
 import { Sheet } from '@/components/ui/Sheet'
 import { IconoBaja, IconoGimnasio, IconoSube, IconoTareas } from '@/components/ui/icons'
 import { TaskComposer } from '@/features/tasks/TaskComposer'
+import { ExpenseForm } from '@/features/money/ExpenseForm'
+import { IncomeForm } from '@/features/money/IncomeForm'
 
-type Formulario = 'tarea'
+type Formulario = 'gasto' | 'tarea' | 'ingreso'
 
 /**
  * La hoja «Registrar» que abre el botón + (o la N en el escritorio).
@@ -14,13 +16,13 @@ type Formulario = 'tarea'
  * porque una serie vive dentro de una sesión.
  */
 const OPCIONES = [
-  { etiqueta: 'Gasto', detalle: 'Monto y sobre', Icono: IconoBaja, to: '/money' },
+  { etiqueta: 'Gasto', detalle: 'Monto y sobre', Icono: IconoBaja, formulario: 'gasto' },
   { etiqueta: 'Tarea', detalle: 'Título y Enter', Icono: IconoTareas, formulario: 'tarea' },
   { etiqueta: 'Serie', detalle: 'Sesión de hoy', Icono: IconoGimnasio, to: '/gym' },
-  { etiqueta: 'Ingreso', detalle: 'Con reparto', Icono: IconoSube, to: '/money' },
+  { etiqueta: 'Ingreso', detalle: 'Con reparto', Icono: IconoSube, formulario: 'ingreso' },
 ] as const
 
-const TITULOS: Record<Formulario, string> = { tarea: 'Nueva tarea' }
+const TITULOS: Record<Formulario, string> = { gasto: 'Gasto', tarea: 'Nueva tarea', ingreso: 'Ingreso' }
 
 export function RegisterSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
@@ -34,7 +36,9 @@ export function RegisterSheet({ open, onClose }: { open: boolean; onClose: () =>
 
   return (
     <Sheet open={open} onClose={cerrar} title={formulario ? TITULOS[formulario] : 'Registrar'}>
+      {formulario === 'gasto' && <ExpenseForm onDone={cerrar} />}
       {formulario === 'tarea' && <TaskComposer dueTodayByDefault autoFocus onCreated={cerrar} />}
+      {formulario === 'ingreso' && <IncomeForm onDone={cerrar} />}
 
       {formulario === null && (
         <div className="grid grid-cols-2 gap-2">

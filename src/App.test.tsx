@@ -32,11 +32,13 @@ const perfilSimulado = {
 // los cambios, como hace la base; los inserts quedan anotados en `inserts`.
 let cambios: Record<string, unknown> = {}
 let inserts: { tabla: string; fila: unknown }[] = []
+// Lo que devuelve cada tabla al leerla. Vacío salvo que la prueba lo llene.
+let filas: Record<string, unknown[]> = {}
 
 function consultaSimulada(tabla: string) {
   let leyendo = true
   const respuesta = () =>
-    Promise.resolve({ data: leyendo ? [] : null, error: null })
+    Promise.resolve({ data: leyendo ? (filas[tabla] ?? []) : null, error: null })
   const consulta = {
     select: () => consulta,
     insert: (fila: unknown) => {
@@ -58,6 +60,7 @@ function consultaSimulada(tabla: string) {
     in: () => consulta,
     gte: () => consulta,
     lt: () => consulta,
+    range: () => consulta,
     order: () => consulta,
     limit: () => consulta,
     single: () => Promise.resolve({ data: { ...perfilSimulado, ...cambios }, error: null }),
@@ -90,6 +93,7 @@ describe('esqueleto de la aplicación', () => {
     sesion = null
     cambios = {}
     inserts = []
+    filas = {}
     window.history.pushState({}, '', '/')
   })
 
@@ -141,7 +145,7 @@ describe('esqueleto de la aplicación', () => {
 
     const [pestañaPlata] = await screen.findAllByRole('link', { name: 'Plata' })
     await usuario.click(pestañaPlata!)
-    expect(await screen.findByText('Todavía no hay sobres')).toBeInTheDocument()
+    expect(await screen.findByText('Arma tus sobres')).toBeInTheDocument()
 
     const [pestañaGimnasio] = await screen.findAllByRole('link', { name: 'Gimnasio' })
     await usuario.click(pestañaGimnasio!)
@@ -226,6 +230,7 @@ describe('cáscara', () => {
     sesion = sesionSimulada
     cambios = {}
     inserts = []
+    filas = {}
     window.history.pushState({}, '', '/')
   })
 
@@ -247,6 +252,64 @@ describe('cáscara', () => {
     ])
     // Sigue en Hoy: la tarea se creó desde donde se estaba.
     expect(await tituloDelArea()).toBe('Hoy')
+  })
+
+  it('+ → Gasto viene con el último sobre elegido y registra en 4 toques', async () => {
+    const sobre = (id: string, name: string, sort_order: number) => ({
+      id,
+      user_id: 'usuario-1',
+      name,
+      fill_rule: 'residual',
+      fill_value: 0,
+      cap_amount: null,
+      cap_period: 'none',
+      rollover: true,
+      sweep_to_envelope_id: null,
+      sort_order,
+      target_minor: null,
+      target_date: null,
+      achieved_at: null,
+      group_id: null,
+      archived_at: null,
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-01T00:00:00Z',
+    })
+    filas = {
+      envelopes: [sobre('ahorro', 'Ahorro', 0), sobre('vida', 'Vida diaria', 1)],
+      movements: [
+        {
+          id: 'm1',
+          user_id: 'usuario-1',
+          kind: 'expense',
+          envelope_from: 'vida',
+          envelope_to: null,
+          amount_minor: 2000,
+          note: null,
+          occurred_at: '2026-10-28T12:00:00Z',
+          batch_id: null,
+          import_id: null,
+          created_at: '2026-10-28T12:00:00Z',
+          updated_at: '2026-10-28T12:00:00Z',
+        },
+      ],
+    }
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Registrar', expanded: false }))
+    await usuario.click(screen.getByRole('button', { name: /^Gasto/ }))
+    expect(await screen.findByRole('button', { name: 'Vida diaria', pressed: true })).toBeInTheDocument()
+
+    for (const tecla of ['4', '5', '0', '0']) await usuario.click(screen.getByRole('button', { name: tecla }))
+    await usuario.click(screen.getByRole('button', { name: 'Registrar $4.500 en Vida diaria' }))
+
+    expect(inserts).toEqual([
+      {
+        tabla: 'movements',
+        fila: [expect.objectContaining({ kind: 'expense', envelope_from: 'vida', amount_minor: 4500, user_id: 'usuario-1' })],
+      },
+    ])
+    expect(await screen.findByText('Gasto de $4.500 en Vida diaria')).toBeInTheDocument()
   })
 
   it('en el escritorio, 1–5 cambian de área y N abre Registrar', async () => {
