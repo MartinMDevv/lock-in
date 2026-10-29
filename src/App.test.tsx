@@ -27,17 +27,43 @@ const perfilSimulado = {
   updated_at: '2026-01-01T00:00:00Z',
 }
 
-// Imita la cadena from().select().eq().single() de supabase-js. Un update
-// devuelve el perfil con los cambios, como hace la base.
+// Imita la cadena de supabase-js: from().select().eq()…, que se espera con
+// await o termina en single(). Un update del perfil devuelve el perfil con
+// los cambios, como hace la base; los inserts quedan anotados en `inserts`.
 let cambios: Record<string, unknown> = {}
-const consultaSimulada = {
-  select: () => consultaSimulada,
-  update: (c: Record<string, unknown>) => {
-    cambios = c
-    return consultaSimulada
-  },
-  eq: () => consultaSimulada,
-  single: () => Promise.resolve({ data: { ...perfilSimulado, ...cambios }, error: null }),
+let inserts: { tabla: string; fila: unknown }[] = []
+
+function consultaSimulada(tabla: string) {
+  let leyendo = true
+  const respuesta = () =>
+    Promise.resolve({ data: leyendo ? [] : null, error: null })
+  const consulta = {
+    select: () => consulta,
+    insert: (fila: unknown) => {
+      leyendo = false
+      inserts.push({ tabla, fila })
+      return consulta
+    },
+    update: (c: Record<string, unknown>) => {
+      leyendo = false
+      if (tabla === 'profiles') cambios = c
+      return consulta
+    },
+    delete: () => {
+      leyendo = false
+      return consulta
+    },
+    eq: () => consulta,
+    is: () => consulta,
+    in: () => consulta,
+    gte: () => consulta,
+    lt: () => consulta,
+    order: () => consulta,
+    limit: () => consulta,
+    single: () => Promise.resolve({ data: { ...perfilSimulado, ...cambios }, error: null }),
+    then: (bien: (r: unknown) => unknown, mal: (e: unknown) => unknown) => respuesta().then(bien, mal),
+  }
+  return consulta
 }
 
 let sesion: Session | null = null
@@ -53,7 +79,7 @@ vi.mock('@/lib/supabase', () => ({
       signOut: () => Promise.resolve({ error: null }),
       signInWithOAuth,
     },
-    from: () => consultaSimulada,
+    from: consultaSimulada,
   },
 }))
 
@@ -63,6 +89,7 @@ describe('esqueleto de la aplicación', () => {
   beforeEach(() => {
     sesion = null
     cambios = {}
+    inserts = []
     window.history.pushState({}, '', '/')
   })
 
@@ -198,10 +225,11 @@ describe('cáscara', () => {
   beforeEach(() => {
     sesion = sesionSimulada
     cambios = {}
+    inserts = []
     window.history.pushState({}, '', '/')
   })
 
-  it('el + abre Registrar, y cada opción lleva a su área', async () => {
+  it('+ → Tarea → escribir → Enter crea la tarea sin salir de la pantalla', async () => {
     render(<App />)
     const usuario = userEvent.setup()
 
@@ -210,7 +238,15 @@ describe('cáscara', () => {
     expect(hoja).toHaveAttribute('open')
 
     await usuario.click(screen.getByRole('button', { name: /^Tarea/ }))
-    expect(await tituloDelArea()).toBe('Tareas')
+    const campo = await screen.findByRole('textbox', { name: 'Agregar tarea' })
+    expect(campo).toHaveFocus()
+    await usuario.keyboard('Leer cap. 4{Enter}')
+
+    expect(inserts).toEqual([
+      { tabla: 'tasks', fila: expect.objectContaining({ title: 'Leer cap. 4', user_id: 'usuario-1', priority: 0 }) },
+    ])
+    // Sigue en Hoy: la tarea se creó desde donde se estaba.
+    expect(await tituloDelArea()).toBe('Hoy')
   })
 
   it('en el escritorio, 1–5 cambian de área y N abre Registrar', async () => {
