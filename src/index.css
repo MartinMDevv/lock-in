@@ -160,4 +160,10 @@
     /* Respeta la barra de gestos y el notch cuando corre como PWA */
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* Barras de scroll finas y del color de los bordes: la gris del sistema
+     desentona en el escritorio (en el teléfono no se ven). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
 }

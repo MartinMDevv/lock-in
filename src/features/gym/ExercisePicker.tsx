@@ -89,7 +89,7 @@ export function ExercisePicker({
         </form>
       ) : (
         <div className="space-y-2">
-          <div className="sticky top-0 z-10 bg-surface-sheet pb-1">
+          <div className="pb-1">
             <Input
               type="search"
               aria-label="Buscar ejercicio"
@@ -98,7 +98,7 @@ export function ExercisePicker({
               onChange={(e) => setBusqueda(e.target.value)}
             />
           </div>
-          <ul className="flex flex-col">
+          <ul className="-mx-1 flex max-h-[min(50dvh,400px)] flex-col overflow-y-auto overscroll-contain px-1">
             {lista.map((e) => (
               <li key={e.id}>
                 <button

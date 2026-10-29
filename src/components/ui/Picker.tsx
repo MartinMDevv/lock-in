@@ -12,7 +12,8 @@ import { Sheet } from './Sheet'
  * campo se ve como los demás y la lista sale en la hoja inferior.
  *
  * Con `searchable`, la hoja trae un buscador arriba (para las ~400 zonas
- * horarias). Elegir una opción la guarda y cierra la hoja.
+ * horarias). La lista tiene su propio scroll: el título y el buscador no se
+ * mueven. Elegir una opción la guarda y cierra la hoja.
  */
 export function Picker<T extends string>({
   id,
@@ -61,7 +62,7 @@ export function Picker<T extends string>({
 
       <Sheet open={open} onClose={() => setOpen(false)} title={label}>
         {searchable && (
-          <div className="sticky top-0 z-10 bg-surface-sheet pb-2">
+          <div className="pb-2">
             <Input
               type="search"
               aria-label={`Buscar ${label.toLowerCase()}`}
@@ -72,7 +73,11 @@ export function Picker<T extends string>({
             />
           </div>
         )}
-        <div role="radiogroup" aria-label={label} className="flex flex-col">
+        <div
+          role="radiogroup"
+          aria-label={label}
+          className="-mx-1 flex max-h-[min(55dvh,440px)] flex-col overflow-y-auto overscroll-contain px-1"
+        >
           {visible.map((o) => {
             const selected = o.value === value
             return (
