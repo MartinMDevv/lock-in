@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Session } from '@supabase/supabase-js'
+import { dayOf } from './core/time/day'
 
 /**
  * Verifica el cableado del esqueleto: que sin sesión se vea el login, que con
@@ -428,6 +429,36 @@ describe('cáscara', () => {
       },
     ])
     expect(await screen.findByRole('timer')).toHaveTextContent('2:00')
+  })
+
+  it('Hoy: lo que vence hoy se completa con un toque y ofrece Deshacer', async () => {
+    const hoy = dayOf(new Date(), 'America/Santiago')
+    const t = '2026-10-01T00:00:00Z'
+    filas = {
+      tasks: [
+        {
+          id: 't1',
+          user_id: 'usuario-1',
+          title: 'Entregar informe',
+          notes: null,
+          category_id: null,
+          schedule_block_id: null,
+          due_on: hoy,
+          due_time: null,
+          priority: 1,
+          completed_at: null,
+          import_id: null,
+          created_at: t,
+          updated_at: t,
+        },
+      ],
+    }
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('checkbox', { name: 'Completar: Entregar informe' }))
+    expect(await screen.findByText('Completada: Entregar informe')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Deshacer' })).toBeInTheDocument()
   })
 
   it('en el escritorio, 1–5 cambian de área y N abre Registrar', async () => {
