@@ -137,7 +137,7 @@ escritorio, todavía sin datos.*
 - [ ] Los 10 componentes base del diseño: botón, campo, chip, segmentado, hoja inferior, toast con Deshacer, esqueleto de carga…
 - [ ] **Aviso de límite alcanzado en toda la app**: un `onError` global en el `MutationCache` muestra el toast con `rowCapMessage` cuando cualquier guardado falla con `LKCAP`. Los formularios de F3 lo heredan sin conectarlo uno por uno. Se prueba con una mutación simulada.
 - [ ] La cáscara: barra inferior con pastilla deslizante (< 1024 px) y menú lateral de 224 px (≥ 1024 px).
-- [ ] Tema oscuro, claro o sistema, leyendo `profiles.theme`.
+- [ ] 🚧 Tema oscuro, claro o sistema, leyendo `profiles.theme` (28-oct-2026, `src/lib/theme.ts`): se aplica en `<html data-theme>` y en la barra del navegador, se elige en Ajustes (se guarda al tocarlo) y el navegador recuerda el último para no parpadear al abrir. Falta verlo en el teléfono.
 - [ ] **Pulir el tema claro**: hoy está menos trabajado que el oscuro.
 - [ ] `prefers-reduced-motion`.
 

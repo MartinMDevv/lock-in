@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation } from 'react-router'
 import { AREAS } from './areas'
 import { IconoAjustes } from '@/components/ui/icons'
 import { useAuth } from '@/features/auth/auth-context'
+import { useProfileTheme } from '@/features/settings/profile'
 
 /** Título de la cabecera según dónde estemos parados. */
 function tituloDeRuta(pathname: string): string {
@@ -18,6 +19,7 @@ function tituloDeRuta(pathname: string): string {
 export function AppShell() {
   const { pathname } = useLocation()
   const { session } = useAuth()
+  useProfileTheme()
 
   // Inicial para el avatar. El nombre real vive en profiles, que todavía no
   // se consulta: por ahora sale del correo con el que inició sesión.

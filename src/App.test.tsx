@@ -27,12 +27,17 @@ const perfilSimulado = {
   updated_at: '2026-01-01T00:00:00Z',
 }
 
-// Imita la cadena from().select().eq().single() de supabase-js.
+// Imita la cadena from().select().eq().single() de supabase-js. Un update
+// devuelve el perfil con los cambios, como hace la base.
+let cambios: Record<string, unknown> = {}
 const consultaSimulada = {
   select: () => consultaSimulada,
-  update: () => consultaSimulada,
+  update: (c: Record<string, unknown>) => {
+    cambios = c
+    return consultaSimulada
+  },
   eq: () => consultaSimulada,
-  single: () => Promise.resolve({ data: perfilSimulado, error: null }),
+  single: () => Promise.resolve({ data: { ...perfilSimulado, ...cambios }, error: null }),
 }
 
 let sesion: Session | null = null
@@ -57,6 +62,7 @@ const { App } = await import('./App')
 describe('esqueleto de la aplicación', () => {
   beforeEach(() => {
     sesion = null
+    cambios = {}
     window.history.pushState({}, '', '/')
   })
 
@@ -134,6 +140,21 @@ describe('esqueleto de la aplicación', () => {
     expect(await screen.findByLabelText('Nombre')).toHaveValue('Persona')
     expect(screen.getByLabelText('Moneda')).toHaveValue('CLP')
     expect(screen.getByLabelText('Zona horaria')).toHaveValue('America/Santiago')
+  })
+
+  it('el tema del perfil se aplica al entrar y cambia al tocarlo en Ajustes', async () => {
+    sesion = sesionSimulada
+    render(<App />)
+
+    await usuarioHaceClicEn('Ajustes')
+    const claro = await screen.findByRole('radio', { name: 'Claro' })
+    expect(document.documentElement.dataset.theme).toBe('system')
+    expect(screen.getByRole('radio', { name: 'Sistema' })).toHaveAttribute('aria-checked', 'true')
+
+    await userEvent.setup().click(claro)
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(await screen.findByRole('radio', { name: 'Claro' })).toHaveAttribute('aria-checked', 'true')
+    expect(cambios).toEqual({ theme: 'light' })
   })
 })
 

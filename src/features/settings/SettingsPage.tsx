@@ -9,15 +9,14 @@ import {
   useUpdateProfile,
 } from './profile'
 import type { Profile } from './profile'
+import { applyTheme, parseTheme } from '@/lib/theme'
+import type { Theme } from '@/lib/theme'
 
 const campo =
   'mt-1 w-full rounded-lg border border-line bg-surface-raised px-3 py-2 outline-none focus:border-accent'
 
 /**
  * Ajustes: la cuenta y las preferencias que viven en `profiles`.
- *
- * El tema (oscuro, claro o sistema) no está acá todavía: su columna entra con
- * la migración `ajustar_profiles` de la F1.
  */
 export function SettingsPage() {
   const { session } = useAuth()
@@ -50,11 +49,20 @@ export function SettingsPage() {
             No se pudo cargar el perfil. Revisa la conexión y vuelve a abrir Ajustes.
           </p>
         )}
-        {/* La key reinicia el formulario si el perfil cambia desde otro lado. */}
+        {/* La key reinicia el formulario si el perfil cambia desde otro lado.
+            Sale de los campos del formulario y no de updated_at: si no,
+            cambiar el tema borraría lo que se estaba escribiendo acá. */}
         {perfil.data && (
-          <Preferencias key={perfil.data.updated_at} perfil={perfil.data} />
+          <Preferencias key={clavePreferencias(perfil.data)} perfil={perfil.data} />
         )}
       </section>
+
+      {perfil.data && (
+        <section>
+          <h2 className="mb-2 text-sm font-medium text-ink-muted">Apariencia</h2>
+          <SelectorTema actual={parseTheme(perfil.data.theme)} />
+        </section>
+      )}
 
       <button
         type="button"
@@ -64,6 +72,63 @@ export function SettingsPage() {
       >
         {saliendo ? 'Cerrando…' : 'Cerrar sesión'}
       </button>
+    </div>
+  )
+}
+
+function clavePreferencias(p: Profile): string {
+  return [p.display_name, p.currency, p.timezone, p.weight_unit, p.week_starts_on].join('|')
+}
+
+const OPCIONES_TEMA: { valor: Theme; etiqueta: string }[] = [
+  { valor: 'dark', etiqueta: 'Oscuro' },
+  { valor: 'light', etiqueta: 'Claro' },
+  { valor: 'system', etiqueta: 'Sistema' },
+]
+
+/**
+ * Tema oscuro, claro o del sistema. Se guarda al tocarlo, sin botón: el
+ * cambio se ve al instante, y si el guardado falla vuelve al que estaba.
+ *
+ * Provisorio: cuando exista el segmentado de los componentes base (F2), este
+ * grupo pasa a usarlo.
+ */
+function SelectorTema({ actual }: { actual: Theme }) {
+  const guardar = useUpdateProfile()
+
+  function elegir(tema: Theme) {
+    if (tema === actual) return
+    applyTheme(tema)
+    guardar.mutate({ theme: tema }, { onError: () => applyTheme(actual) })
+  }
+
+  return (
+    <div>
+      <div
+        role="radiogroup"
+        aria-label="Tema"
+        className="grid grid-cols-3 gap-1 rounded-full border border-line bg-surface p-1"
+      >
+        {OPCIONES_TEMA.map(({ valor, etiqueta }) => (
+          <button
+            key={valor}
+            type="button"
+            role="radio"
+            aria-checked={actual === valor}
+            onClick={() => elegir(valor)}
+            className={`rounded-full px-3 py-2 text-body-sm ${
+              actual === valor ? 'bg-surface-raised font-semibold text-ink' : 'text-ink-muted'
+            }`}
+          >
+            {etiqueta}
+          </button>
+        ))}
+      </div>
+      {guardar.isError && (
+        <p role="alert" className="mt-2 text-sm text-danger">
+          No se pudo guardar el tema. Inténtalo de nuevo.
+        </p>
+      )}
     </div>
   )
 }

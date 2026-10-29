@@ -1,12 +1,14 @@
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/auth-context'
+import { applyTheme, parseTheme } from '@/lib/theme'
 import type { Database } from '@/types/database'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type ProfileChanges = Pick<
   Database['public']['Tables']['profiles']['Update'],
-  'display_name' | 'currency' | 'currency_decimals' | 'timezone' | 'weight_unit' | 'week_starts_on'
+  'display_name' | 'currency' | 'currency_decimals' | 'timezone' | 'weight_unit' | 'week_starts_on' | 'theme'
 >
 
 /**
@@ -86,4 +88,17 @@ export function useUpdateProfile() {
       queryClient.setQueryData(profileKey(userId), profile)
     },
   })
+}
+
+/**
+ * Aplica el tema del perfil apenas llega, y cada vez que cambia.
+ *
+ * Va en la cáscara, que solo existe con sesión: en el login queda el último
+ * tema que se usó en este navegador.
+ */
+export function useProfileTheme() {
+  const theme = useProfile().data?.theme
+  useEffect(() => {
+    if (theme !== undefined) applyTheme(parseTheme(theme))
+  }, [theme])
 }
