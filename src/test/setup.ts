@@ -33,3 +33,22 @@ if (typeof window.matchMedia !== 'function') {
     dispatchEvent: () => false,
   })
 }
+
+// jsdom tiene <dialog> pero sin showModal() ni close(). Lo mínimo para
+// probar la hoja inferior: abrir y cerrar cambian el atributo open. El foco
+// encerrado y el fondo inerte son del navegador real y no se prueban acá.
+if (typeof HTMLDialogElement.prototype.showModal !== 'function') {
+  HTMLDialogElement.prototype.showModal = function showModal() {
+    this.setAttribute('open', '')
+  }
+  HTMLDialogElement.prototype.close = function close() {
+    this.removeAttribute('open')
+    this.dispatchEvent(new Event('close'))
+  }
+}
+
+// jsdom tampoco tiene la captura del puntero, que usa el arrastre de la hoja.
+if (typeof Element.prototype.setPointerCapture !== 'function') {
+  Element.prototype.setPointerCapture = () => {}
+  Element.prototype.releasePointerCapture = () => {}
+}
