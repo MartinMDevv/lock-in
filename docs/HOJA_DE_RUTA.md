@@ -29,7 +29,7 @@ Dos reglas:
 | Fase | Qué deja lista | Avance |
 |---|---|---|
 | **F0 · Cimientos y esqueleto** | Arranca, se verifica sola, está publicada y se navega | ✅ cerrada el 28-oct-2026 |
-| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | 🚧 7 migraciones, *Advisors* limpio y RLS probada: 127/127 (28-oct); falta el respaldo |
+| **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | ✅ cerrada el 28-oct-2026: 7 migraciones, *Advisors* limpio, RLS 127/127 y primer respaldo |
 | **F2 · El diseño en el código** | La app se ve como el prototipo | ⬜ |
 | **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | ⬜ |
 | **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | ⬜ |
@@ -119,7 +119,13 @@ de cargar datos reales**.
     para el plan Pro y no aplica: con el proveedor Email apagado (D32) no hay
     contraseñas que revisar.
 - [x] **Migración 7** `revocar_execute_funciones` (28-oct-2026, `1f15bc5`): aplicada. *Advisors* confirmó que se fueron los 4 WARN de `security_definer_function_executable`.
-- [ ] Primer `supabase db dump` y decidir dónde se guarda (fuera del repo).
+- [x] **Primer respaldo** (28-oct-2026): con el `pg_dump` local (18.6, sirve contra el 17.6 de
+  producción) en vez de `supabase db dump`, para no depender de Docker. Conexión directa por IPv6;
+  la contraseña vive en `~/.pgpass` (600). Se guarda en `~/respaldos/lock-in/`, fuera del repo y de
+  la bóveda: `*-esquema.sql` (solo `public`) y `*-datos.dump` (`-Fc`, `public.*` + `auth.users` +
+  `auth.identities`; sin sesiones ni tokens). Ojo: `-t` anula `-n`, por eso las tablas de `public`
+  van como `-t 'public.*'`. `envelopes` tiene una FK circular: al restaurar solo los datos hace
+  falta `--disable-triggers`. Restauración todavía sin probar.
 
 ## F2 · El diseño en el código
 
