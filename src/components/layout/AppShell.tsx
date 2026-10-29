@@ -36,7 +36,7 @@ export function AppShell() {
               end={to === '/'}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                  isActive ? 'bg-accent/10 font-medium text-accent' : 'text-ink-muted hover:bg-line/40'
+                  isActive ? 'bg-accent-soft font-medium text-accent-text' : 'text-ink-muted hover:bg-line/40'
                 }`
               }
             >
@@ -79,7 +79,7 @@ export function AppShell() {
             end={to === '/'}
             className={({ isActive }) =>
               `flex flex-col items-center gap-0.5 py-2 text-[11px] ${
-                isActive ? 'text-accent' : 'text-ink-muted'
+                isActive ? 'text-accent-text' : 'text-ink-muted'
               }`
             }
           >

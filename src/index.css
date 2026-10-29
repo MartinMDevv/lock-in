@@ -1,18 +1,134 @@
+/* Lock In · tokens de diseño · dirección 1a (grafito + lima)
+   Vienen tal cual de tokens/index.css del paquete de diseño (F2): si cambia
+   el diseño, se reemplaza este bloque entero en vez de editarlo a mano.
+   Tema: <html data-theme="dark|light|system">. Oscuro por defecto.
+   Cada color usa light-dark(claro, oscuro); el tema solo cambia color-scheme. */
+
 @import "tailwindcss";
 
-/* Tokens de tema. Se definen acá para que la app tenga una sola fuente de
-   color y el modo oscuro sea un cambio de variables, no de clases. */
+:root { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="system"] { color-scheme: light dark; }
+
 @theme {
-  --color-surface: oklch(99% 0.004 265);
-  --color-surface-raised: oklch(100% 0 0);
-  --color-ink: oklch(22% 0.02 265);
-  --color-ink-muted: oklch(52% 0.02 265);
-  --color-line: oklch(92% 0.008 265);
-  --color-accent: oklch(58% 0.16 155);
-  /* Texto sobre el color de acento: contraste suficiente para botones. */
-  --color-accent-ink: oklch(100% 0 0);
+  /* ── Superficies (fondo → tarjeta → elevada → hoja) ── */
+  --color-bg:              light-dark(oklch(0.985 0.002 255), oklch(0.155 0.006 255));
+  --color-surface:         light-dark(oklch(1 0 0),           oklch(0.19 0.007 255));
+  --color-surface-raised:  light-dark(oklch(0.955 0.004 255), oklch(0.235 0.008 255));
+  --color-surface-sheet:   light-dark(oklch(1 0 0),           oklch(0.21 0.008 255));
+  --color-scrim:           light-dark(oklch(0.2 0.01 255 / 0.35), oklch(0.08 0.005 255 / 0.62));
+
+  /* ── Bordes (1 px, poco contraste; reemplazan sombras) ── */
+  --color-line:            light-dark(oklch(0.91 0.005 255), oklch(0.27 0.008 255));
+  --color-line-strong:     light-dark(oklch(0.8 0.008 255),  oklch(0.38 0.01 255));
+
+  /* ── Texto ── */
+  --color-ink:             light-dark(oklch(0.2 0.01 255),   oklch(0.965 0.003 255));
+  --color-ink-muted:       light-dark(oklch(0.42 0.012 255), oklch(0.77 0.01 255));
+  --color-ink-faint:       light-dark(oklch(0.52 0.012 255), oklch(0.65 0.012 255));
+
+  /* ── Acento: solo acción principal y estado activo ── */
+  --color-accent:          oklch(0.89 0.18 128);                 /* relleno */
+  --color-accent-ink:      oklch(0.22 0.05 128);                 /* texto sobre el acento */
+  --color-accent-text:     light-dark(oklch(0.5 0.13 130), oklch(0.89 0.18 128)); /* acento como texto/ícono */
+  --color-accent-soft:     light-dark(oklch(0.5 0.13 130 / 0.08), oklch(0.89 0.18 128 / 0.08));
+  --color-accent-line:     light-dark(oklch(0.5 0.13 130 / 0.35), oklch(0.89 0.18 128 / 0.35));
+
+  /* ── Semánticos (tope: verde < 85% ≤ ámbar < 100% ≤ rojo) ── */
+  --color-success:         light-dark(oklch(0.52 0.12 160), oklch(0.78 0.13 160));
+  --color-warning:         light-dark(oklch(0.54 0.13 65),  oklch(0.82 0.14 75));
+  --color-danger:          light-dark(oklch(0.55 0.19 25),  oklch(0.71 0.17 25));
+
+  /* ── Colores de materias y categorías (los elige el usuario) ──
+     Fondo de bloque: color-mix(in oklch, var(--color-tag-x) 16%, transparent) */
+  --color-tag-azul:        light-dark(oklch(0.52 0.14 250), oklch(0.78 0.11 250));
+  --color-tag-cian:        light-dark(oklch(0.55 0.1 210),  oklch(0.8 0.1 205));
+  --color-tag-verde:       light-dark(oklch(0.52 0.12 160), oklch(0.79 0.12 160));
+  --color-tag-lima:        light-dark(oklch(0.52 0.14 130), oklch(0.85 0.14 125));
+  --color-tag-ambar:       light-dark(oklch(0.53 0.12 75),  oklch(0.82 0.12 85));
+  --color-tag-naranja:     light-dark(oklch(0.55 0.15 50),  oklch(0.76 0.13 55));
+  --color-tag-rojo:        light-dark(oklch(0.55 0.18 25),  oklch(0.7 0.15 22));
+  --color-tag-rosa:        light-dark(oklch(0.55 0.16 355), oklch(0.76 0.12 350));
+  --color-tag-violeta:     light-dark(oklch(0.52 0.15 300), oklch(0.74 0.12 305));
+  --color-tag-gris:        light-dark(oklch(0.5 0.01 255),  oklch(0.72 0.01 255));
+
+  /* ── Tipografía · 5 tamaños, sin excepciones ── */
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  --text-caption: 0.75rem;   --text-caption--line-height: 1rem;      /* 12 · metadatos, etiquetas */
+  --text-body-sm: 0.875rem;  --text-body-sm--line-height: 1.25rem;   /* 14 · filas, botones */
+  --text-body:    1rem;      --text-body--line-height: 1.5rem;       /* 16 · campos, títulos de hoja */
+  --text-title:   1.5rem;    --text-title--line-height: 1.875rem;    /* 24 · título de área, saldos */
+  --text-title--letter-spacing: -0.02em;
+  --text-display: 2.5rem;    --text-display--line-height: 2.75rem;   /* 40 · montos, ejercicio actual */
+  --text-display--letter-spacing: -0.03em;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* ── Espaciado: base 4 px (p-1 = 4, p-4 = 16, p-5 = 20 …) ── */
+  --spacing: 0.25rem;
+
+  /* ── Radios ── */
+  --radius-xs: 4px;      /* kbd, ahora en la línea de tiempo */
+  --radius-sm: 8px;      /* ítems del menú lateral, bloques de semana */
+  --radius-md: 10px;     /* botones de escritorio, bloques de horario */
+  --radius-lg: 12px;     /* campos, botones del teléfono, toasts */
+  --radius-xl: 16px;     /* tarjetas, ventanas */
+  --radius-2xl: 18px;    /* botón + */
+  --radius-sheet: 24px;  /* hoja inferior (solo esquinas superiores) */
+  /* chips y segmentos: rounded-full */
+
+  /* ── Sombras: solo en lo que flota ── */
+  --shadow-fab:     0 8px 24px oklch(0 0 0 / 0.45), inset 0 1px 0 oklch(1 0 0 / 0.2);
+  --shadow-sheet:   0 -12px 40px oklch(0 0 0 / 0.4);
+  --shadow-popover: 0 24px 64px oklch(0 0 0 / 0.5);
+  --shadow-toast:   0 12px 32px oklch(0 0 0 / 0.45);
+
+  /* ── Movimiento: solo transform y opacity ── */
+  --ease-out:    cubic-bezier(0.2, 0.8, 0.2, 1);     /* default: entradas, barras, colapsos */
+  --ease-spring: cubic-bezier(0.32, 1.18, 0.5, 1);   /* hoja inferior */
+  --ease-glide:  cubic-bezier(0.3, 1.25, 0.5, 1);    /* indicador de pestaña, interruptor */
+  --ease-pop:    cubic-bezier(0.34, 1.56, 0.64, 1);  /* récord, check, plata que cae */
+
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  @keyframes shimmer { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
 }
 
+/* Duraciones (no son utilidades de Tailwind: usar con duration-(--duration-base) o en CSS) */
+:root {
+  --duration-press: 90ms;     /* escala 0,97 al tocar */
+  --duration-fast: 150ms;     /* hover, color, borde */
+  --duration-base: 200ms;     /* cambio de área (fundido + 10 px) */
+  --duration-moderate: 280ms; /* indicador, fila que se colapsa, toast */
+  --duration-sheet: 440ms;    /* hoja inferior */
+  --duration-count: 600ms;    /* números que cuentan */
+  --duration-fill: 700ms;     /* barras de tope y metas */
+  --stagger: 110ms;           /* reparto de ingreso, fila por fila */
+  --shift-area: 10px;
+  --press-scale: 0.97;
+}
+
+@layer base {
+  html { font-family: var(--font-sans); background: var(--color-bg); color: var(--color-ink);
+         -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+  input::placeholder { color: var(--color-ink-faint); }
+  :focus-visible { outline: 2px solid var(--color-accent-text); outline-offset: 2px; }
+}
+
+/* Con «reducir movimiento»: solo fundidos */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: opacity, color, background-color, border-color !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Propio de la app (no viene del paquete de diseño) ── */
 @layer base {
   html {
     /* Evita el zoom accidental al tocar dos veces en el teléfono */
@@ -20,7 +136,7 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    @apply bg-surface text-ink antialiased;
+    @apply bg-bg text-ink;
     /* Respeta la barra de gestos y el notch cuando corre como PWA */
     padding-bottom: env(safe-area-inset-bottom);
   }

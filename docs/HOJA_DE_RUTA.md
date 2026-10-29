@@ -132,9 +132,10 @@ de cargar datos reales**.
 *Termina cuando la app se ve como el prototipo en el teléfono **y** en el
 escritorio, todavía sin datos.*
 
-- [ ] Pegar `tokens/index.css` del paquete de diseño en `src/index.css`.
+- [x] Pegar `tokens/index.css` del paquete de diseño en `src/index.css` (28-oct-2026). Lo propio de la app (zoom, barra de gestos) quedó al final, aparte; `theme-color` pasó al fondo oscuro.
 - [ ] Fuentes Geist y Geist Mono.
 - [ ] Los 10 componentes base del diseño: botón, campo, chip, segmentado, hoja inferior, toast con Deshacer, esqueleto de carga…
+- [ ] **Aviso de límite alcanzado en toda la app**: un `onError` global en el `MutationCache` muestra el toast con `rowCapMessage` cuando cualquier guardado falla con `LKCAP`. Los formularios de F3 lo heredan sin conectarlo uno por uno. Se prueba con una mutación simulada.
 - [ ] La cáscara: barra inferior con pastilla deslizante (< 1024 px) y menú lateral de 224 px (≥ 1024 px).
 - [ ] Tema oscuro, claro o sistema, leyendo `profiles.theme`.
 - [ ] **Pulir el tema claro**: hoy está menos trabajado que el oscuro.
