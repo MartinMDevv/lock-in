@@ -5,7 +5,7 @@ import { RegisterSheet } from './RegisterSheet'
 import { Sidebar } from './Sidebar'
 import { useMediaQuery } from '@/lib/media'
 import { useShortcuts } from './shortcuts'
-import { SETTLE_MS, useAreaSwipe } from './swipe'
+import { useAreaSwipe } from './swipe'
 import { TodayPage } from '@/features/today/TodayPage'
 import { SchedulePage } from '@/features/schedule/SchedulePage'
 import { TasksPage } from '@/features/tasks/TasksPage'
@@ -15,7 +15,7 @@ import { IconoMas } from '@/components/ui/icons'
 import { useAuth } from '@/features/auth/auth-context'
 import { useFirstRunTimezone, useProfile, useProfileTheme } from '@/features/settings/profile'
 
-/** Las pantallas de las áreas, en el orden de AREAS: para dibujar la vecina mientras se desliza. */
+/** Las pantallas de las áreas, en el orden de AREAS: las vecinas quedan armadas a los costados para deslizar. */
 const PAGINAS = [TodayPage, SchedulePage, TasksPage, GymPage, MoneyPage] as const
 
 /** Título de la cabecera según dónde estemos parados. */
@@ -91,7 +91,11 @@ export function AppShell() {
   // Deslizar entre áreas (teléfono). Al llegar se navega sin el fundido de
   // entrada: la pantalla ya entró con el dedo.
   const puedeDeslizar = !escritorio && activa >= 0 && !enSesion
-  const deslizar = useAreaSwipe({
+  const {
+    track: pista,
+    pill: pastilla,
+    handlers: gestos,
+  } = useAreaSwipe({
     enabled: puedeDeslizar,
     index: activa,
     count: AREAS.length,
@@ -103,13 +107,13 @@ export function AppShell() {
     },
   })
   const porDeslizar = (state as { deslizado?: boolean } | null)?.deslizado === true
-  const moviendo = deslizar.phase !== 'idle'
-  const fraccion = moviendo ? deslizar.offset / deslizar.width : 0
-  // La pestaña que se ve elegida sigue al dedo: cambia al pasar la mitad.
-  const visible = moviendo ? Math.round(activa - fraccion) : activa
-  const alSoltar = deslizar.phase === 'settle' ? 'transition-[translate] ease-out' : ''
-  const Vecina = deslizar.neighbor !== 0 ? PAGINAS[activa + deslizar.neighbor] : undefined
-  const vecina = AREAS[activa + deslizar.neighbor]
+  const vecinas = puedeDeslizar
+    ? ([-1, 1] as const).flatMap((lado) => {
+        const area = AREAS[activa + lado]
+        const Pagina = PAGINAS[activa + lado]
+        return area && Pagina ? [{ lado, area, Pagina }] : []
+      })
+    : []
 
   // Ctrl K (⌘K en Mac) abre Registrar mientras no exista la paleta de comandos.
   useEffect(() => {
@@ -146,12 +150,11 @@ export function AppShell() {
         // pan-y: el scroll vertical sigue siendo del navegador, y lo horizontal
         // llega a los handlers del deslizamiento.
         style={puedeDeslizar ? { touchAction: 'pan-y' } : undefined}
-        {...deslizar.handlers}
+        {...gestos}
       >
-        <div
-          className={`flex grow flex-col ${alSoltar}`}
-          style={moviendo ? { translate: `${deslizar.offset}px 0`, transitionDuration: `${SETTLE_MS}ms` } : undefined}
-        >
+        {/* La pista: lo que se mueve con el dedo. Las vecinas van a los costados,
+            ya armadas, para que al deslizar no haya que construir nada. */}
+        <div ref={pista} className="relative flex grow flex-col">
           {/* Cabecera del teléfono: título del área y el avatar, que abre Ajustes. */}
           <header className={`flex items-center justify-between px-4 pt-4 pb-2 lg:hidden ${enSesion ? 'hidden' : ''}`}>
             <h1 className="text-title font-semibold">{tituloDeRuta(pathname)}</h1>
@@ -175,29 +178,26 @@ export function AppShell() {
             <h1 className="mb-6 hidden text-title font-semibold lg:block">{tituloDeRuta(pathname)}</h1>
             <Outlet />
           </main>
-        </div>
 
-        {/* La vecina, mientras se desliza: la pantalla de verdad, solo para mirar. */}
-        {Vecina && vecina && (
-          <div
-            aria-hidden="true"
-            inert
-            className={`pointer-events-none absolute inset-x-0 ${alSoltar}`}
-            style={{
-              top: deslizar.scrollTop,
-              translate: `${deslizar.offset + deslizar.neighbor * deslizar.width}px 0`,
-              transitionDuration: `${SETTLE_MS}ms`,
-            }}
-          >
-            <div className="flex items-center justify-between px-4 pt-4 pb-2">
-              <p className="text-title font-semibold">{vecina.etiqueta}</p>
-              <Avatar iniciales={avatar} className="size-11" />
+          {vecinas.map(({ lado, area, Pagina }) => (
+            <div
+              key={area.to}
+              data-vecina
+              aria-hidden="true"
+              inert
+              className="pointer-events-none absolute top-0 h-dvh overflow-hidden"
+              style={{ left: `${lado * 100}%`, right: `${-lado * 100}%` }}
+            >
+              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                <p className="text-title font-semibold">{area.etiqueta}</p>
+                <Avatar iniciales={avatar} className="size-11" />
+              </div>
+              <div className="px-4 pt-3">
+                <Pagina />
+              </div>
             </div>
-            <div className="px-4 pt-3">
-              <Vecina />
-            </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
 
       {/* ── Botón + y barra inferior: solo teléfono ── */}
@@ -228,23 +228,17 @@ export function AppShell() {
           {/* La pastilla: una sola, que se desliza a la pestaña elegida. */}
           <span
             aria-hidden="true"
-            className={`pointer-events-none absolute top-[9px] left-0 flex w-1/5 justify-center ${
-              deslizar.phase === 'drag'
-                ? ''
-                : deslizar.phase === 'settle'
-                  ? 'transition-[translate] ease-out'
-                  : 'transition-[translate,opacity] duration-(--duration-moderate) ease-glide'
-            } ${activa < 0 ? 'opacity-0' : ''}`}
-            // Mientras se desliza, la pastilla va en la misma proporción que la pantalla.
-            style={{
-              translate: `${(Math.max(0, activa) - fraccion) * 100}% 0`,
-              ...(deslizar.phase === 'settle' ? { transitionDuration: `${SETTLE_MS}ms` } : {}),
-            }}
+            ref={pastilla}
+            className={`pointer-events-none absolute top-[9px] left-0 flex w-1/5 justify-center transition-[translate,opacity] duration-(--duration-moderate) ease-glide ${
+              activa < 0 ? 'opacity-0' : ''
+            }`}
+            // Mientras se desliza, la mueve el gesto directo en el DOM, en la misma proporción que la pantalla.
+            style={{ translate: `${Math.max(0, activa) * 100}% 0` }}
           >
             <span className="h-7.5 w-14 rounded-full bg-surface-raised" />
           </span>
           {AREAS.map(({ to, etiqueta, Icono }, i) => {
-            const elegida = activa >= 0 ? i === visible : pathname === to
+            const elegida = i === activa
             return (
               <NavLink
                 key={to}

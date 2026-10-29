@@ -556,12 +556,13 @@ describe('cáscara', () => {
     const zona = screen.getByRole('main').parentElement!.parentElement!
     const dedo = { pointerId: 1, pointerType: 'touch', isPrimary: true }
 
-    // jsdom mide la pantalla en 1024 px: hay que pasar el 28 % (unos 290 px).
+    // jsdom mide la pantalla en 1024 px: hay que pasar el 20 % (unos 205 px).
     fireEvent.pointerDown(zona, { ...dedo, clientX: 800, clientY: 400 })
     fireEvent.pointerMove(zona, { ...dedo, clientX: 750, clientY: 402 })
     fireEvent.pointerMove(zona, { ...dedo, clientX: 100, clientY: 405 })
-    // Mientras se arrastra, la vecina (Horario) ya se ve entrando.
+    // La vecina (Horario) ya estaba armada al costado, y la pista se movió con el dedo.
     expect(screen.getByText('Horario', { selector: 'p' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('main').parentElement?.style.translate).toBe('-700px 0'))
     fireEvent.pointerUp(zona, { ...dedo, clientX: 100, clientY: 405 })
 
     // Llega cuando termina la animación de soltar.
