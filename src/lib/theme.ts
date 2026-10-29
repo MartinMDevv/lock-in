@@ -18,7 +18,7 @@ const STORAGE_KEY = 'lock-in:theme'
 
 // Los mismos fondos de --color-bg en index.css, en hex: theme-color no
 // entiende oklch en todos los navegadores.
-const BAR_COLOR = { dark: '#0a0c0f', light: '#f9fafb' } as const
+const BAR_COLOR = { dark: '#0a0c0f', light: '#f4f6f8' } as const
 
 /** Cualquier valor a un tema válido. Oscuro por defecto, como el diseño. */
 export function parseTheme(value: unknown): Theme {

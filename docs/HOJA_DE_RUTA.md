@@ -142,7 +142,7 @@ escritorio, todavía sin datos.*
 - [x] **Aviso de límite alcanzado en toda la app**: un `onError` global en el `MutationCache` muestra el toast con `rowCapMessage` cuando cualquier guardado falla con `LKCAP`. Los formularios de F3 lo heredan sin conectarlo uno por uno. Hecho el 28-oct (`lib/query-client.ts`), probado con una mutación simulada; en pantalla se verá con el primer formulario de crear.
 - [x] La cáscara: barra inferior con pastilla deslizante (< 1024 px) y menú lateral de 224 px (≥ 1024 px), el botón + que abre «Registrar», los atajos 1–5 y N, el avatar con las iniciales y el fundido al cambiar de área (28-oct-2026). Probada en el teléfono el 29-oct: se corrigieron la barra que se corría hacia abajo al cambiar de área (desborde lateral del fundido) y la hoja que temblaba al abrirse (el foco de `showModal()`). Fuera por ahora: «Buscar o registrar… Ctrl K» (llega con la paleta).
 - [x] Tema oscuro, claro o sistema, leyendo `profiles.theme` (28-oct-2026, `src/lib/theme.ts`): se aplica en `<html data-theme>` y en la barra del navegador, se elige en Ajustes (se guarda al tocarlo) y el navegador recuerda el último para no parpadear al abrir. Probado en el teléfono el 29-oct.
-- [ ] **Pulir el tema claro**: hoy está menos trabajado que el oscuro.
+- [x] **Tema claro** (29-oct-2026): tokens del paquete «Modo claro» aprobado. El fondo es gris frío y no blanco, el lima va solo como relleno (como texto se usa `accent-text`) y la línea «ahora» del horario usa el token nuevo `now`, verde oscuro con la hora en blanco. Falta verlo en el teléfono.
 - [ ] `prefers-reduced-motion`.
 
 ## F3 · Una cosa útil por área

@@ -34,7 +34,7 @@ describe('applyTheme', () => {
   it('pone el tema en <html>, pinta la barra y lo recuerda', () => {
     applyTheme('light')
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(barColor()).toBe('#f9fafb')
+    expect(barColor()).toBe('#f4f6f8')
     expect(savedTheme()).toBe('light')
   })
 
@@ -42,7 +42,7 @@ describe('applyTheme', () => {
     mockSystem(true)
     applyTheme('system')
     expect(document.documentElement.dataset.theme).toBe('system')
-    expect(barColor()).toBe('#f9fafb')
+    expect(barColor()).toBe('#f4f6f8')
   })
 
   it('sin nada guardado, arranca en oscuro', () => {

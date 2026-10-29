@@ -189,7 +189,7 @@ export function GymPage() {
                     ? 'bg-accent'
                     : d.status === 'missed'
                       ? 'border border-line-strong'
-                      : 'border border-dashed border-accent'
+                      : 'border border-dashed border-accent-text'
                 }`}
               />
             ))}

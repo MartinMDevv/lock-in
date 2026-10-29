@@ -1,4 +1,4 @@
-/* Lock In · tokens de diseño · dirección 1a (grafito + lima)
+/* Lock In · tokens de diseño · dirección 1a (grafito + lima) · oscuro y claro
    Vienen tal cual de tokens/index.css del paquete de diseño (F2): si cambia
    el diseño, se reemplaza este bloque entero en vez de editarlo a mano.
    Tema: <html data-theme="dark|light|system">. Oscuro por defecto.
@@ -12,32 +12,35 @@
 
 @theme {
   /* ── Superficies (fondo → tarjeta → elevada → hoja) ── */
-  --color-bg:              light-dark(oklch(0.985 0.002 255), oklch(0.155 0.006 255));
+  --color-bg:              light-dark(oklch(0.972 0.003 250), oklch(0.155 0.006 255));
   --color-surface:         light-dark(oklch(1 0 0),           oklch(0.19 0.007 255));
-  --color-surface-raised:  light-dark(oklch(0.955 0.004 255), oklch(0.235 0.008 255));
+  --color-surface-raised:  light-dark(oklch(0.952 0.004 250), oklch(0.235 0.008 255));
   --color-surface-sheet:   light-dark(oklch(1 0 0),           oklch(0.21 0.008 255));
-  --color-scrim:           light-dark(oklch(0.2 0.01 255 / 0.35), oklch(0.08 0.005 255 / 0.62));
+  --color-scrim:           light-dark(oklch(0.2 0.01 255 / 0.3), oklch(0.08 0.005 255 / 0.62));
 
   /* ── Bordes (1 px, poco contraste; reemplazan sombras) ── */
-  --color-line:            light-dark(oklch(0.91 0.005 255), oklch(0.27 0.008 255));
-  --color-line-strong:     light-dark(oklch(0.8 0.008 255),  oklch(0.38 0.01 255));
+  --color-line:            light-dark(oklch(0.915 0.005 250), oklch(0.27 0.008 255));
+  --color-line-strong:     light-dark(oklch(0.8 0.008 250),  oklch(0.38 0.01 255));
 
   /* ── Texto ── */
-  --color-ink:             light-dark(oklch(0.2 0.01 255),   oklch(0.965 0.003 255));
-  --color-ink-muted:       light-dark(oklch(0.42 0.012 255), oklch(0.77 0.01 255));
-  --color-ink-faint:       light-dark(oklch(0.52 0.012 255), oklch(0.65 0.012 255));
+  --color-ink:             light-dark(oklch(0.2 0.012 255),  oklch(0.965 0.003 255));
+  --color-ink-muted:       light-dark(oklch(0.43 0.012 255), oklch(0.77 0.01 255));
+  --color-ink-faint:       light-dark(oklch(0.51 0.012 255), oklch(0.65 0.012 255));
 
   /* ── Acento: solo acción principal y estado activo ── */
-  --color-accent:          oklch(0.89 0.18 128);                 /* relleno */
-  --color-accent-ink:      oklch(0.22 0.05 128);                 /* texto sobre el acento */
-  --color-accent-text:     light-dark(oklch(0.5 0.13 130), oklch(0.89 0.18 128)); /* acento como texto/ícono */
-  --color-accent-soft:     light-dark(oklch(0.5 0.13 130 / 0.08), oklch(0.89 0.18 128 / 0.08));
-  --color-accent-line:     light-dark(oklch(0.5 0.13 130 / 0.35), oklch(0.89 0.18 128 / 0.35));
+  --color-accent:          light-dark(oklch(0.87 0.19 128), oklch(0.89 0.18 128)); /* relleno: botón principal, check, + */
+  --color-accent-ink:      oklch(0.22 0.05 128);                                   /* texto sobre el acento */
+  --color-accent-text:     light-dark(oklch(0.45 0.12 135), oklch(0.89 0.18 128)); /* acento como texto o ícono activo */
+  --color-accent-soft:     light-dark(oklch(0.87 0.19 128 / 0.18), oklch(0.89 0.18 128 / 0.08)); /* fondo del bloque «ahora» */
+  --color-accent-line:     light-dark(oklch(0.62 0.15 132 / 0.45), oklch(0.89 0.18 128 / 0.35)); /* borde del bloque «ahora» */
+  /* Línea y etiqueta «ahora» del horario. En claro: verde oscuro con texto blanco */
+  --color-now:             light-dark(oklch(0.45 0.12 135), oklch(0.89 0.18 128));
+  --color-now-ink:         light-dark(oklch(1 0 0),         oklch(0.22 0.05 128));
 
   /* ── Semánticos (tope: verde < 85% ≤ ámbar < 100% ≤ rojo) ── */
-  --color-success:         light-dark(oklch(0.52 0.12 160), oklch(0.78 0.13 160));
+  --color-success:         light-dark(oklch(0.5 0.12 160),  oklch(0.78 0.13 160));
   --color-warning:         light-dark(oklch(0.54 0.13 65),  oklch(0.82 0.14 75));
-  --color-danger:          light-dark(oklch(0.55 0.19 25),  oklch(0.71 0.17 25));
+  --color-danger:          light-dark(oklch(0.54 0.19 25),  oklch(0.71 0.17 25));
 
   /* ── Colores de materias y categorías (los elige el usuario) ──
      Fondo de bloque: color-mix(in oklch, var(--color-tag-x) 16%, transparent) */
@@ -82,10 +85,11 @@
   /* chips y segmentos: rounded-full */
 
   /* ── Sombras: solo en lo que flota ── */
-  --shadow-fab:     0 8px 24px oklch(0 0 0 / 0.45), inset 0 1px 0 oklch(1 0 0 / 0.2);
-  --shadow-sheet:   0 -12px 40px oklch(0 0 0 / 0.4);
-  --shadow-popover: 0 24px 64px oklch(0 0 0 / 0.5);
-  --shadow-toast:   0 12px 32px oklch(0 0 0 / 0.45);
+  /* En claro son más cortas y teñidas; la del + es verdosa */
+  --shadow-fab:     0 6px 16px light-dark(oklch(0.45 0.12 130 / 0.3), oklch(0 0 0 / 0.45)), inset 0 1px 0 light-dark(oklch(1 0 0 / 0.6), oklch(1 0 0 / 0.2));
+  --shadow-sheet:   0 -8px 32px light-dark(oklch(0.2 0.01 255 / 0.1), oklch(0 0 0 / 0.4));
+  --shadow-popover: 0 16px 48px light-dark(oklch(0.2 0.01 255 / 0.14), oklch(0 0 0 / 0.5));
+  --shadow-toast:   0 8px 24px light-dark(oklch(0.2 0.01 255 / 0.16), oklch(0 0 0 / 0.45));
 
   /* ── Movimiento: solo transform y opacity ── */
   --ease-out:    cubic-bezier(0.2, 0.8, 0.2, 1);     /* default: entradas, barras, colapsos */

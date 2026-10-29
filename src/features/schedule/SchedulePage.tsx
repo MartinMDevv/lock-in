@@ -125,7 +125,7 @@ export function SchedulePage() {
             >
               <span>{diaDeSemanaCorto(d)}</span>
               <span className="text-body-sm tabular-nums">{Number(d.slice(8))}</span>
-              {d === today && <span aria-hidden="true" className="absolute bottom-1 size-1 rounded-full bg-accent" />}
+              {d === today && <span aria-hidden="true" className="absolute bottom-1 size-1 rounded-full bg-now" />}
             </button>
           ))}
         </div>
@@ -262,11 +262,19 @@ function Grilla({
               )
             })}
             {day === today && ahora >= rango.from * 60 && ahora <= rango.to * 60 && (
+              // La línea «ahora» y, en la vista día, su etiqueta con la hora. Va en
+              // `now` y no en el lima: en el tema claro el lima no se ve sobre blanco.
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 h-0.5 bg-accent"
+                className="pointer-events-none absolute inset-x-0 z-10 h-0.5 bg-now"
                 style={{ top: y(ahora) + 8 }}
-              />
+              >
+                {!compacta && (
+                  <span className="absolute -top-2 left-1 rounded-full bg-now px-1.5 text-caption leading-4 font-semibold text-now-ink tabular-nums">
+                    {minutesToTime(ahora)}
+                  </span>
+                )}
+              </span>
             )}
           </div>
         ))}
