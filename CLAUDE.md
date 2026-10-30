@@ -42,7 +42,7 @@ Cada documento tiene un trabajo. No duplicar contenido entre ellos: enlazar.
 | 5 | **`src/types/database.ts` no se edita a mano** | Se regenera con `npm run db:types` |
 | 6 | **Un push a `main` aplica migraciones a producción** | El repo está conectado a Supabase: la migración va **sola** en su commit (D16) |
 | 7 | **CI en runner propio, solo con `push`** | Nunca agregar `pull_request`: correría código de forks ajenos en la máquina del autor (D15) |
-| 8 | **Lo que tiene historia se archiva, no se borra** | Sobres, ejercicios y rutinas no tienen «Borrar» y sus referencias usan `on delete no action` (D30) |
+| 8 | **Lo que tiene historia se archiva, no se borra** | Ejercicios y rutinas no tienen «Borrar» y sus referencias usan `on delete no action` (D30). Los sobres sí: manteniendo presionada la tarjeta un segundo y tras una confirmación que avisa que no se recupera (cambio del 30-oct) |
 
 ## Buenas prácticas
 

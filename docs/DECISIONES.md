@@ -274,6 +274,15 @@ vista diaria, pero su historial sigue apareciendo al mirar meses anteriores.
 En la base, esas referencias usan `on delete no action` (no `restrict`, que
 haría fallar el borrado en cascada de la cuenta).
 
+**Cambio del 30-oct-2026 (pedido del autor, tras probarla en el teléfono):**
+los sobres sí se pueden borrar, para que un sobre creado por error no quede
+para siempre en la cuenta. No hay botón: se mantiene presionada la tarjeta un
+segundo (clic derecho en el escritorio), y la confirmación dice cuántos
+movimientos se van con él, que no se recuperan, y ofrece archivar. Sin Deshacer. Como las referencias son `on delete no action`, la
+app las suelta primero (sobrante y grupo de otros sobres, cierres de mes,
+movimientos) y borra el sobre al final; cada paso se puede repetir si la
+conexión se corta. Ejercicios y rutinas siguen igual, solo con «Archivar».
+
 Borrar la cuenta borra todo, así que pide doble confirmación: primero se
 ofrece exportar y se avisa qué se pierde, y después se escribe «BORRAR».
 

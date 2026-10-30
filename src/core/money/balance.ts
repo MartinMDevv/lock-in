@@ -44,8 +44,8 @@ export function spentIn(movements: readonly MovementLike[], envelopeId: string, 
  * Lo que de verdad se puede gastar de un sobre: lo que tiene, sin pasar lo
  * que le queda de tope en el período. Nunca negativo.
  *
- * Es el número que manda en la pantalla: con un tope de $2.000 y el sobre
- * vacío, se pueden gastar $0, no $2.000.
+ * Es el número que manda en la pantalla: con tope y el sobre vacío, se
+ * puede gastar 0, no lo que deja el tope.
  */
 export function spendable(balanceMinor: number, capMinor: number | null, spentMinor: number): number {
   const saldo = Math.max(0, balanceMinor)
