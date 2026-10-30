@@ -1,4 +1,4 @@
-import { balances, spentIn } from '@/core/money/balance'
+import { balances, spendable, spentIn } from '@/core/money/balance'
 import { streakCount, streakDays } from '@/core/gym/gym'
 import { occurrencesOn, restOfDay } from '@/core/schedule/day'
 import type { Occurrence, RestItem } from '@/core/schedule/day'
@@ -97,11 +97,12 @@ export function useSidebarData(): SidebarData {
   const vivos = (sobres.data ?? []).filter((e) => e.archived_at === null)
   const desde = startOfDayInstant(startOfMonth(today), timezone)
   const hasta = startOfDayInstant(startOfNextMonth(today), timezone)
+  const saldos = balances(movs)
+  // Lo que de verdad se puede gastar: un sobre vacío no tiene «$X/día» aunque le quede tope.
   const conTope = vivos
     .filter((e) => e.cap_amount !== null && e.cap_period === 'month')
-    .map((e) => ({ e, queda: Math.max(0, (e.cap_amount ?? 0) - spentIn(movs, e.id, desde, hasta)) }))
+    .map((e) => ({ e, queda: spendable(saldos.get(e.id) ?? 0, e.cap_amount, spentIn(movs, e.id, desde, hasta)) }))
     .sort((a, b) => a.queda / (a.e.cap_amount ?? 1) - b.queda / (b.e.cap_amount ?? 1))[0]
-  const saldos = balances(movs)
   const total = vivos.reduce((s, e) => s + (saldos.get(e.id) ?? 0), 0)
   const diasQuedan = daysBetween(today, startOfNextMonth(today))
 

@@ -41,6 +41,44 @@ export function spentIn(movements: readonly MovementLike[], envelopeId: string, 
 }
 
 /**
+ * Lo que de verdad se puede gastar de un sobre: lo que tiene, sin pasar lo
+ * que le queda de tope en el período. Nunca negativo.
+ *
+ * Es el número que manda en la pantalla: con un tope de $2.000 y el sobre
+ * vacío, se pueden gastar $0, no $2.000.
+ */
+export function spendable(balanceMinor: number, capMinor: number | null, spentMinor: number): number {
+  const saldo = Math.max(0, balanceMinor)
+  if (capMinor === null) return saldo
+  return Math.min(saldo, Math.max(0, capMinor - spentMinor))
+}
+
+/** Por qué conviene avisar antes de registrar un gasto. */
+export type ExpenseWarning =
+  /** El sobre no alcanza: quedaría en rojo por `shortMinor`. */
+  | { kind: 'overdraw'; balanceMinor: number; shortMinor: number }
+  /** Alcanza, pero pasa el tope del período por `overMinor`. */
+  | { kind: 'over-cap'; overMinor: number }
+
+/**
+ * Si un gasto deja el sobre en rojo o pasa su tope. No bloquea nada: a veces
+ * pasa y hay que anotarlo igual; solo se avisa antes. Quedar en rojo pesa
+ * más que pasar el tope, así que se avisa eso primero.
+ */
+export function expenseWarning(
+  amountMinor: number,
+  balanceMinor: number,
+  capMinor: number | null,
+  spentMinor: number,
+): ExpenseWarning | null {
+  if (amountMinor > balanceMinor)
+    return { kind: 'overdraw', balanceMinor: Math.max(0, balanceMinor), shortMinor: amountMinor - balanceMinor }
+  if (capMinor !== null && spentMinor + amountMinor > capMinor)
+    return { kind: 'over-cap', overMinor: spentMinor + amountMinor - capMinor }
+  return null
+}
+
+/**
  * El sobre del último gasto: viene elegido en el próximo, porque casi
  * siempre se gasta del mismo.
  */

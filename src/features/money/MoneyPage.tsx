@@ -6,7 +6,7 @@ import { Segmented } from '@/components/ui/Segmented'
 import { Sheet } from '@/components/ui/Sheet'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { showToast } from '@/components/ui/toast'
-import { balances, netOf, spentIn } from '@/core/money/balance'
+import { balances, netOf, spendable, spentIn } from '@/core/money/balance'
 import { capRatio, capStatus } from '@/core/money/cap'
 import { dayOf, daysBetween, startOfDayInstant, startOfMonth, startOfNextMonth } from '@/core/time/day'
 import { diaCorto, diaRelativo, formatAmount, formatMoney, horaDe } from '@/lib/format'
@@ -24,6 +24,13 @@ const VISTAS = [
   { value: 'envelopes', label: 'Sobres' },
   { value: 'movements', label: 'Movimientos' },
 ] as const satisfies readonly { value: Vista; label: string }[]
+
+/** La primera vez, antes del primer ingreso: cómo se mueve la plata, en tres pasos. */
+const PASOS = [
+  { titulo: 'Registras lo que te entra.', detalle: 'El sueldo, una pega o lo que sea.' },
+  { titulo: 'Se reparte solo entre tus sobres,', detalle: 'según lo que recibe cada uno.' },
+  { titulo: 'Cada gasto sale de un sobre,', detalle: 'y siempre ves cuánto te queda.' },
+] as const
 
 /** Cuántos movimientos se muestran de entrada; «Ver más» suma otros tantos. */
 const PAGINA = 40
@@ -93,23 +100,31 @@ export function MoneyPage() {
   const diasQuedan = daysBetween(today, startOfNextMonth(today))
   const consumo = new Map(activos.map((e) => [e.id, spentIn(movs, e.id, inicioMes, finMes)]))
 
-  // La frase útil: el sobre con tope más apretado.
+  // Todavía no entra plata: los sobres están en cero y lo primero es un ingreso, no un gasto.
+  const sinIngresos = !movs.some((m) => m.kind === 'income')
+
+  // La frase útil: el sobre con tope más apretado, contando lo que de verdad
+  // tiene. Con el sobre vacío no se puede gastar lo que deja el tope.
   const masApretado = activos
     .filter((e) => e.cap_amount !== null && e.cap_period === 'month')
-    .sort(
-      (a, b) =>
-        capRatio(consumo.get(b.id) ?? 0, b.cap_amount ?? 1) - capRatio(consumo.get(a.id) ?? 0, a.cap_amount ?? 1),
-    )[0]
+    .map((e) => ({
+      e,
+      puede: spendable(saldos.get(e.id) ?? 0, e.cap_amount, consumo.get(e.id) ?? 0),
+    }))
+    .sort((a, b) => a.puede / (a.e.cap_amount ?? 1) - b.puede / (b.e.cap_amount ?? 1))[0]
   let frase: string | null = null
-  if (masApretado?.cap_amount) {
-    const queda = Math.max(0, masApretado.cap_amount - (consumo.get(masApretado.id) ?? 0))
+  if (masApretado) {
+    const { e, puede } = masApretado
+    const saldo = saldos.get(e.id) ?? 0
     frase =
-      queda === 0
-        ? `${masApretado.name} ya llegó a su tope de este mes.`
-        : `Te quedan ${formatMoney(queda, prefs)} en ${masApretado.name}: unos ${formatMoney(
-            Math.floor(queda / diasQuedan),
+      puede > 0
+        ? `Puedes gastar ${formatMoney(puede, prefs)} en ${e.name}: unos ${formatMoney(
+            Math.floor(puede / diasQuedan),
             prefs,
           )} al día hasta fin de mes.`
+        : saldo <= 0
+          ? `${e.name} está vacío: se llena con el próximo ingreso.`
+          : `${e.name} ya llegó a su tope de este mes.`
   }
 
   return (
@@ -120,17 +135,45 @@ export function MoneyPage() {
           <span className="text-title font-semibold text-ink-muted">{total < 0 ? '−$' : '$'}</span>
           <span className="text-display font-semibold">{formatAmount(Math.abs(total), prefs.currency_decimals)}</span>
         </p>
-        {frase && <p className="mt-1 text-body-sm text-ink-muted">{frase}</p>}
+        {frase && !sinIngresos && <p className="mt-1 text-body-sm text-ink-muted">{frase}</p>}
       </section>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Button variant="primary" onClick={() => setHoja('expense')}>
-          Gasto
-        </Button>
-        <Button variant="secondary" onClick={() => setHoja('income')}>
-          Ingreso
-        </Button>
-      </div>
+      {sinIngresos ? (
+        <section className="space-y-4 rounded-xl border border-line bg-surface p-4">
+          <div>
+            <h2 className="text-body font-semibold">Así funciona</h2>
+            <p className="text-body-sm text-ink-muted">Tus sobres están listos, pero vacíos.</p>
+          </div>
+          <ol className="space-y-3">
+            {PASOS.map((paso, i) => (
+              <li key={paso.titulo} className="flex gap-3">
+                <span
+                  aria-hidden="true"
+                  className="grid size-6 shrink-0 place-items-center rounded-full bg-surface-raised text-caption font-semibold"
+                >
+                  {i + 1}
+                </span>
+                <span className="text-body-sm">
+                  <span className="font-medium">{paso.titulo}</span>{' '}
+                  <span className="text-ink-muted">{paso.detalle}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <Button variant="primary" size="lg" className="w-full" onClick={() => setHoja('income')}>
+            Registrar tu primer ingreso
+          </Button>
+        </section>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="primary" onClick={() => setHoja('expense')}>
+            Gasto
+          </Button>
+          <Button variant="secondary" onClick={() => setHoja('income')}>
+            Ingreso
+          </Button>
+        </div>
+      )}
 
       <Segmented label="Vista" options={VISTAS} value={vista} onChange={setVista} />
 
@@ -198,6 +241,10 @@ function TarjetaSobre({
 }) {
   const prefs = usePrefs()
   const tope = e.cap_period === 'month' ? e.cap_amount : null
+  const esMeta = e.target_minor !== null
+  // Un solo número grande: lo que se puede gastar. En una meta, lo juntado.
+  const disponible = tope !== null ? spendable(balance, tope, spent) : balance
+  const numero = esMeta ? balance : disponible
   return (
     <button
       type="button"
@@ -209,9 +256,12 @@ function TarjetaSobre({
           <p className="truncate text-body-sm font-medium">{e.name}</p>
           <p className="text-caption text-ink-faint">{describeRule(e, prefs)}</p>
         </div>
-        <p className={`text-title font-semibold tabular-nums ${balance < 0 ? 'text-danger' : ''}`}>
-          {formatMoney(balance, prefs)}
-        </p>
+        <div className="shrink-0 text-right">
+          <p className="text-caption text-ink-faint">{esMeta ? 'Juntado' : 'Disponible'}</p>
+          <p className={`text-title font-semibold tabular-nums ${numero < 0 ? 'text-danger' : ''}`}>
+            {formatMoney(numero, prefs)}
+          </p>
+        </div>
       </div>
       {tope !== null && (
         <div className="space-y-1">
@@ -221,17 +271,20 @@ function TarjetaSobre({
             ratio={capRatio(spent, tope)}
             label={`${e.name}, tope del mes`}
           />
-          <p className="flex justify-between text-caption text-ink-faint">
+          <p className="flex justify-between gap-3 text-caption text-ink-faint">
             <span>
-              {spent >= tope
-                ? `Te pasaste por ${formatMoney(spent - tope, prefs)}`
-                : `Quedan ${formatMoney(tope - spent, prefs)} del tope`}
+              {spent > tope
+                ? `Te pasaste del tope por ${formatMoney(spent - tope, prefs)}`
+                : `Gastado ${formatMoney(spent, prefs)} de ${formatMoney(tope, prefs)} este mes`}
             </span>
-            <span className="tabular-nums">{Math.round(capRatio(spent, tope) * 100)} %</span>
+            {/* Si el tope deja gastar menos de lo que hay, que se sepa que el resto sigue ahí. */}
+            {balance > disponible && !esMeta && (
+              <span className="shrink-0 tabular-nums">Tiene {formatMoney(balance, prefs)}</span>
+            )}
           </p>
         </div>
       )}
-      {e.target_minor !== null && (
+      {esMeta && e.target_minor !== null && (
         <div className="space-y-1">
           <ProgressBar kind="goal" ratio={Math.max(0, balance) / e.target_minor} label={`${e.name}, meta`} />
           <p className="text-caption text-ink-faint">

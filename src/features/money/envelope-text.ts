@@ -2,15 +2,14 @@ import { formatMoney } from '@/lib/format'
 import type { Currency } from '@/lib/format'
 import type { Envelope } from './money'
 
-/** «Fijo $120.000», «20 % de lo que queda», «Lo que sobre», con el tope si lo tiene. */
+/**
+ * Cómo se llena el sobre, dicho como lo diría una persona: «Recibe $120.000
+ * de cada ingreso», «Recibe el 20 % de lo que queda», «Recibe lo que sobre».
+ * El tope no va acá: la tarjeta lo muestra con su barra.
+ */
 export function describeRule(e: Envelope, currency: Currency): string {
-  const regla =
-    e.fill_rule === 'fixed'
-      ? `Fijo ${formatMoney(e.fill_value, currency)}`
-      : e.fill_rule === 'percent'
-        ? `${(e.fill_value / 100).toLocaleString('es-CL')} % de lo que queda`
-        : 'Lo que sobre'
-  const tope =
-    e.cap_amount !== null && e.cap_period === 'month' ? ` · tope ${formatMoney(e.cap_amount, currency)} al mes` : ''
-  return regla + tope
+  if (e.fill_rule === 'fixed') return `Recibe ${formatMoney(e.fill_value, currency)} de cada ingreso`
+  if (e.fill_rule === 'percent')
+    return `Recibe el ${(e.fill_value / 100).toLocaleString('es-CL')} % de lo que queda tras los fijos`
+  return 'Recibe lo que sobre de cada ingreso'
 }

@@ -386,7 +386,7 @@ describe('cáscara', () => {
 
     await usuario.click(await screen.findByRole('button', { name: 'Registrar', expanded: false }))
     await usuario.click(screen.getByRole('button', { name: /^Gasto/ }))
-    expect(await screen.findByRole('button', { name: 'Vida diaria', pressed: true })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Vida diaria/, pressed: true })).toBeInTheDocument()
 
     for (const tecla of ['4', '5', '0', '0']) await usuario.click(screen.getByRole('button', { name: tecla }))
     await usuario.click(screen.getByRole('button', { name: 'Registrar $4.500 en Vida diaria' }))

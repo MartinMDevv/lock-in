@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseAmount, parsePercent, pressBackspace, pressDigits } from './amount'
-import { balances, lastExpenseEnvelope, netOf, spentIn } from './balance'
+import { balances, expenseWarning, lastExpenseEnvelope, netOf, spendable, spentIn } from './balance'
 import type { MovementLike } from './balance'
 import { buildPreset, PRESETS } from './presets'
 
@@ -100,5 +100,48 @@ describe('presets', () => {
     for (const p of PRESETS.filter((p) => p.id !== 'aggressive')) {
       expect(buildPreset(p, [])).not.toBeNull()
     }
+  })
+})
+
+describe('lo que se puede gastar', () => {
+  it('sin tope es el saldo', () => {
+    expect(spendable(30_000, null, 0)).toBe(30_000)
+  })
+
+  it('con tope manda el menor: el saldo o lo que queda del tope', () => {
+    expect(spendable(30_000, 20_000, 5_000)).toBe(15_000)
+    expect(spendable(4_000, 20_000, 5_000)).toBe(4_000)
+  })
+
+  it('un sobre vacío no deja gastar aunque le quede tope', () => {
+    expect(spendable(0, 2_000, 0)).toBe(0)
+  })
+
+  it('nunca es negativo: ni con el saldo en rojo ni pasado del tope', () => {
+    expect(spendable(-1_000, null, 0)).toBe(0)
+    expect(spendable(10_000, 2_000, 3_000)).toBe(0)
+  })
+})
+
+describe('aviso antes de un gasto', () => {
+  it('nada que avisar si alcanza y no pasa el tope', () => {
+    expect(expenseWarning(5_000, 10_000, 20_000, 0)).toBeNull()
+    expect(expenseWarning(5_000, 10_000, null, 0)).toBeNull()
+  })
+
+  it('si el sobre no alcanza, dice cuánto tiene y cuánto falta', () => {
+    expect(expenseWarning(5_000, 2_000, null, 0)).toEqual({ kind: 'overdraw', balanceMinor: 2_000, shortMinor: 3_000 })
+  })
+
+  it('con el sobre ya en rojo, tiene $0 y falta todo lo que ya debe más el gasto', () => {
+    expect(expenseWarning(1_000, -500, null, 0)).toEqual({ kind: 'overdraw', balanceMinor: 0, shortMinor: 1_500 })
+  })
+
+  it('si alcanza pero pasa el tope, dice por cuánto', () => {
+    expect(expenseWarning(3_000, 10_000, 5_000, 4_000)).toEqual({ kind: 'over-cap', overMinor: 2_000 })
+  })
+
+  it('quedar en rojo se avisa antes que pasar el tope', () => {
+    expect(expenseWarning(9_000, 1_000, 5_000, 4_000)?.kind).toBe('overdraw')
   })
 })
