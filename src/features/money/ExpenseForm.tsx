@@ -97,7 +97,7 @@ export function ExpenseForm({ onDone }: { onDone: () => void }) {
         className="h-11 w-full rounded-lg border border-line bg-bg px-3.5 text-body outline-none placeholder:text-ink-faint focus:border-ink-muted"
       />
 
-      <div role="group" aria-label="Sobre" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div role="group" aria-label="Sobre" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
         {activos.map((e) => (
           <Chip
             key={e.id}

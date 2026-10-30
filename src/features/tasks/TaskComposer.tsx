@@ -11,8 +11,8 @@ import { createTaskInput, useCreateTask, useTaskCategories } from './tasks'
  * «Agregar tarea…»: título y Enter. Es lo único obligatorio, para que crear
  * una tarea cueste menos de 5 segundos.
  *
- * Al escribir aparecen la flecha para guardar y los chips opcionales: Hoy,
- * Categoría y Alta. Después de guardar el campo queda listo para la
+ * Los chips opcionales (Hoy, Categoría y Alta) están a la vista desde el
+ * principio; al escribir aparece la flecha para guardar. Después de guardar el campo queda listo para la
  * siguiente, con el foco puesto.
  */
 export function TaskComposer({
@@ -102,20 +102,19 @@ export function TaskComposer({
           )}
         </div>
 
-        {escribiendo && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <Chip selected={paraHoy} onClick={() => setParaHoy(!paraHoy)}>
-              Hoy
-            </Chip>
-            <Chip selected={categoria !== null} onClick={() => setEligiendoCategoria(true)}>
-              {categoriaElegida && <ColorDot color={categoriaElegida.color} />}
-              {categoriaElegida?.name ?? 'Categoría'}
-            </Chip>
-            <Chip selected={alta} onClick={() => setAlta(!alta)}>
-              Alta
-            </Chip>
-          </div>
-        )}
+        {/* Los chips están desde el principio: que aparezcan al escribir movía todo bajo el dedo. */}
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          <Chip selected={paraHoy} onClick={() => setParaHoy(!paraHoy)}>
+            Hoy
+          </Chip>
+          <Chip selected={categoria !== null} onClick={() => setEligiendoCategoria(true)}>
+            {categoriaElegida && <ColorDot color={categoriaElegida.color} />}
+            {categoriaElegida?.name ?? 'Categoría'}
+          </Chip>
+          <Chip selected={alta} onClick={() => setAlta(!alta)}>
+            Alta
+          </Chip>
+        </div>
       </form>
 
       {/* Fuera del form: la hoja tiene su propio form, y no se anidan. */}
