@@ -278,18 +278,19 @@ function RestoDelDia({ datos }: { datos: ReturnType<typeof useSidebarData> }) {
         <p className="px-1 py-2 text-caption text-ink-faint">No queda nada en el horario de hoy.</p>
       ) : (
         <ol className="relative flex flex-col">
-          <span aria-hidden="true" className="absolute top-4.5 bottom-4 left-11.5 w-px bg-line" />
+          {/* Pasa por el centro de los puntos: borde de 1 px + hora de 36 px + la mitad de la columna de 16 px. */}
+          <span aria-hidden="true" className="absolute top-4.25 bottom-4 left-[44.5px] w-px bg-line" />
           {rest.map((r) => {
             if (r.kind === 'free') {
               return (
-                <li key={`libre-${r.start}`} className="relative flex items-start px-0 py-1.5">
-                  <span className="w-9 shrink-0 pt-px text-caption text-ink-faint tabular-nums">
+                <li key={`libre-${r.start}`} className="relative flex items-start border border-transparent py-1.5">
+                  <span className="w-9 shrink-0 text-caption leading-5 text-ink-faint tabular-nums">
                     {minutesToTime(r.start)}
                   </span>
-                  <span className="flex w-4 shrink-0 justify-center pt-1.25">
+                  <span className="flex h-5 w-4 shrink-0 items-center justify-center">
                     <span className="size-2 rounded-full border border-dashed border-line-strong bg-bg" />
                   </span>
-                  <span className="text-caption text-ink-faint">Libre · {formatDuration(r.end - r.start)}</span>
+                  <span className="text-caption leading-5 text-ink-faint">Libre · {formatDuration(r.end - r.start)}</span>
                 </li>
               )
             }
@@ -305,13 +306,13 @@ function RestoDelDia({ datos }: { datos: ReturnType<typeof useSidebarData> }) {
                 }`}
               >
                 <span
-                  className={`w-9 shrink-0 pt-px text-caption whitespace-nowrap tabular-nums ${
+                  className={`w-9 shrink-0 text-caption leading-5 whitespace-nowrap tabular-nums ${
                     r.isNow ? 'font-semibold text-accent-text' : 'text-ink-faint'
                   }`}
                 >
                   {r.isNow ? 'Ahora' : minutesToTime(o.start)}
                 </span>
-                <span className="flex w-4 shrink-0 justify-center pt-1.25">
+                <span className="flex h-5 w-4 shrink-0 items-center justify-center">
                   <span
                     className="size-2 rounded-full shadow-[0_0_0_3px_var(--color-bg)]"
                     style={{ backgroundColor: tagVar(o.block.color) }}
