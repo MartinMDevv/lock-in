@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { AREAS } from './areas'
 import { RegisterSheet } from './RegisterSheet'
 import { Sidebar } from './Sidebar'
-import { useMediaQuery } from '@/lib/media'
+import { useMediaQuery, useTyping } from '@/lib/media'
 import { useShortcuts } from './shortcuts'
 import { useAreaSwipe } from './swipe'
 import { TodayPage } from '@/features/today/TodayPage'
@@ -74,6 +74,10 @@ export function AppShell() {
   // En la sesión de gimnasio la pantalla es toda para la serie: la barra
   // inferior y el + se esconden hacia abajo (diseño, sección Estructura).
   const enSesion = pathname.startsWith('/gym/session')
+  // Escribiendo en un campo de la página: el teclado ocupa la parte de abajo y
+  // la barra y el + se esconden igual que en la sesión, para no quedar encima de él.
+  const escribiendo = useTyping()
+  const esconderAbajo = enSesion || escribiendo
 
   const escritorio = useMediaQuery('(min-width: 1024px)')
   const [menuCerrado, setMenuCerrado] = useState(leerMenuCerrado)
@@ -208,7 +212,7 @@ export function AppShell() {
         onClick={() => setRegistrando(true)}
         inert={enSesion}
         className={`fixed right-4 bottom-[calc(80px+env(safe-area-inset-bottom))] z-20 grid size-14 place-items-center rounded-2xl bg-accent text-accent-ink shadow-fab transition-[scale,translate] duration-(--duration-moderate) ease-out active:scale-94 lg:hidden ${
-          enSesion ? 'translate-y-[calc(100%+120px)]' : ''
+          esconderAbajo ? 'translate-y-[calc(100%+120px)]' : ''
         }`}
       >
         <IconoMas
@@ -221,7 +225,7 @@ export function AppShell() {
         aria-label="Áreas"
         inert={enSesion}
         className={`fixed inset-x-0 bottom-0 z-10 border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] transition-[translate] duration-(--duration-moderate) ease-out lg:hidden ${
-          enSesion ? 'translate-y-full' : ''
+          esconderAbajo ? 'translate-y-full' : ''
         }`}
       >
         <div className="relative grid h-16 grid-cols-5">
