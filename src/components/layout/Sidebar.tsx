@@ -4,6 +4,7 @@ import { NavLink } from 'react-router'
 import { IconoMas } from '@/components/ui/icons'
 import { showToast } from '@/components/ui/toast'
 import { tagVar } from '@/components/ui/tag-colors'
+import { LogoMark } from '@/components/ui/LogoMark'
 import { formatDuration, formatIn } from '@/core/schedule/day'
 import { minutesToTime } from '@/core/time/day'
 import { useSetTaskDone } from '@/features/tasks/tasks'
@@ -82,9 +83,7 @@ export function Sidebar({
 
       <div className="flex h-11 items-center">
         <span className="grid size-11 shrink-0 place-items-center">
-          <span aria-hidden="true" className="relative block size-5.5 rounded-[7px] border-[1.5px] border-ink">
-            <span className="absolute right-0.5 bottom-0.5 size-2 rounded-[2.5px] bg-accent" />
-          </span>
+          <LogoMark className="size-5.5" />
         </span>
         <span className={`text-body font-semibold tracking-[-0.02em] whitespace-nowrap transition-opacity ${etiqueta}`}>
           Lock In

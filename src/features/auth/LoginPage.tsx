@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
+import { LogoMark } from '@/components/ui/LogoMark'
 
 /**
  * Si Google o Supabase rechazan el login, vuelven a la app con el motivo en
@@ -50,6 +51,7 @@ export function LoginPage() {
   return (
     <main className="grid min-h-dvh place-items-center p-6">
       <div className="w-full max-w-sm">
+        <LogoMark className="mb-4 size-10" />
         <h1 className="text-2xl font-semibold tracking-tight">Lock In</h1>
         <p className="mt-1 text-sm text-ink-muted">
           Tu horario, tus tareas, el gimnasio y la plata en un solo lugar.
