@@ -18,6 +18,7 @@ import {
   weightStep,
 } from '@/core/gym/gym'
 import type { WeightUnit } from '@/core/gym/gym'
+import { parseAmount } from '@/core/money/amount'
 import { useNow } from '@/lib/clock'
 import { newId } from '@/lib/optimistic'
 import { usePrefs } from '@/features/settings/profile'
@@ -383,6 +384,10 @@ function Ejercicio({
               format={(v) => (v === 0 && exercise.measure === 'reps' ? 'Corporal' : (v / 10).toLocaleString('es-CL'))}
               decreaseLabel={`Menos ${unit === 'kg' ? '2,5 kg' : '5 lb'}`}
               increaseLabel={`Más ${unit === 'kg' ? '2,5 kg' : '5 lb'}`}
+              // En décimas, como lo guarda la pantalla: «62,5» → 625.
+              parse={(texto) => parseAmount(texto, 1)}
+              editFormat={(v) => (v === 0 ? '' : (v / 10).toLocaleString('es-CL'))}
+              inputMode="decimal"
               onChange={setPeso}
             />
             <Stepper
@@ -393,6 +398,7 @@ function Ejercicio({
               max={1000}
               decreaseLabel="Una repetición menos"
               increaseLabel="Una repetición más"
+              parse={(texto) => parseAmount(texto, 0)}
               onChange={setReps}
             />
           </div>

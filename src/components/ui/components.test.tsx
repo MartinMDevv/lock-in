@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { parseAmount } from '@/core/money/amount'
 import { Stepper } from './Stepper'
 import { CheckCircle } from './List'
 import { ProgressBar } from './ProgressBar'
@@ -39,6 +40,61 @@ describe('Stepper', () => {
   it('no baja del mínimo: el botón se desactiva', () => {
     render(<Peso inicial={0} />)
     expect(screen.getByRole('button', { name: 'Menos 2,5 kg' })).toBeDisabled()
+  })
+})
+
+describe('Stepper escrito a mano', () => {
+  // Décimas, como la sesión de gimnasio: «62,5» → 625.
+  function Escrito({ onChange }: { onChange: (v: number) => void }) {
+    const [decimas, setDecimas] = useState(600)
+    return (
+      <Stepper
+        label="Peso (kg)"
+        value={decimas}
+        step={25}
+        max={10_000}
+        format={(v) => (v / 10).toLocaleString('es-CL')}
+        decreaseLabel="Menos 2,5 kg"
+        increaseLabel="Más 2,5 kg"
+        parse={(t) => parseAmount(t, 1)}
+        inputMode="decimal"
+        onChange={(v) => {
+          setDecimas(v)
+          onChange(v)
+        }}
+      />
+    )
+  }
+
+  it('se escribe el número de una vez en vez de tocar + cuarenta veces', async () => {
+    const onChange = vi.fn()
+    render(<Escrito onChange={onChange} />)
+    const usuario = userEvent.setup()
+    const campo = screen.getByRole('textbox', { name: 'Peso (kg)' })
+
+    await usuario.clear(campo)
+    await usuario.type(campo, '102,5{Enter}')
+    expect(onChange).toHaveBeenLastCalledWith(1025)
+    expect(campo).toHaveValue('102,5')
+    // Y los botones siguen sumando desde ahí.
+    await usuario.click(screen.getByRole('button', { name: 'Más 2,5 kg' }))
+    expect(campo).toHaveValue('105')
+  })
+
+  it('lo que no es un número vuelve al valor que había; lo que se pasa queda en el máximo', async () => {
+    const onChange = vi.fn()
+    render(<Escrito onChange={onChange} />)
+    const usuario = userEvent.setup()
+    const campo = screen.getByRole('textbox', { name: 'Peso (kg)' })
+
+    await usuario.clear(campo)
+    await usuario.type(campo, 'mucho{Enter}')
+    expect(onChange).not.toHaveBeenCalled()
+    expect(campo).toHaveValue('60')
+
+    await usuario.clear(campo)
+    await usuario.type(campo, '5000{Enter}')
+    expect(onChange).toHaveBeenLastCalledWith(10_000)
   })
 })
 
