@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Segmented } from '@/components/ui/Segmented'
@@ -7,9 +7,10 @@ import { tagSoft, tagVar } from '@/components/ui/tag-colors'
 import { occurrencesOn, visibleHours } from '@/core/schedule/day'
 import type { Occurrence } from '@/core/schedule/day'
 import { addDays, minutesOfDay, minutesToTime, startOfWeek, weekdayOf } from '@/core/time/day'
-import { diaDeSemanaCorto, diaLargo } from '@/lib/format'
+import { diaLargo } from '@/lib/format'
 import { usePrefs, useToday } from '@/features/settings/profile'
 import { BlockSheet } from './BlockSheet'
+import { WeekStrip } from './WeekStrip'
 import type { Block, Slot } from './schedule'
 import { useSchedule } from './schedule'
 
@@ -36,6 +37,11 @@ export function SchedulePage() {
   const inicioSemana = startOfWeek(elegido, week_starts_on)
   const semana = Array.from({ length: 7 }, (_, i) => addDays(inicioSemana, i))
   const ahora = minutesOfDay(now, timezone)
+  // Estable para que la tira no vuelva a enganchar sus eventos en cada dibujo.
+  const cambiarSemana = useCallback(
+    (direccion: -1 | 1) => setDia((d) => addDays(d ?? today, 7 * direccion)),
+    [today],
+  )
 
   const hoja = (
     <BlockSheet
@@ -98,46 +104,17 @@ export function SchedulePage() {
         </Button>
       </div>
 
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          aria-label="Semana anterior"
-          onClick={() => setDia(addDays(elegido, -7))}
-          className="grid size-11 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-surface-raised"
-        >
-          ‹
-        </button>
-        <div role="radiogroup" aria-label="Día" className="grid flex-1 grid-cols-7 gap-1">
-          {semana.map((d) => (
-            <button
-              key={d}
-              type="button"
-              role="radio"
-              aria-checked={d === elegido}
-              aria-label={diaLargo(d)}
-              onClick={() => {
-                setDia(d)
-                setVista('day')
-              }}
-              className={`relative flex h-13 flex-col items-center justify-center rounded-lg text-caption transition-colors duration-(--duration-fast) ${
-                d === elegido && vista === 'day' ? 'bg-surface-raised font-semibold' : 'text-ink-muted'
-              }`}
-            >
-              <span>{diaDeSemanaCorto(d)}</span>
-              <span className="text-body-sm tabular-nums">{Number(d.slice(8))}</span>
-              {d === today && <span aria-hidden="true" className="absolute bottom-1 size-1 rounded-full bg-now" />}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          aria-label="Semana siguiente"
-          onClick={() => setDia(addDays(elegido, 7))}
-          className="grid size-11 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-surface-raised"
-        >
-          ›
-        </button>
-      </div>
+      <WeekStrip
+        weekStart={inicioSemana}
+        selected={elegido}
+        today={today}
+        highlight={vista === 'day'}
+        onSelect={(d) => {
+          setDia(d)
+          setVista('day')
+        }}
+        onShiftWeek={cambiarSemana}
+      />
 
       {elegido !== today && (
         <Button variant="ghost" className="w-full" onClick={() => setDia(null)}>
