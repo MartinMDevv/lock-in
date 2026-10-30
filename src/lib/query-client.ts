@@ -10,15 +10,14 @@ import { rowCapMessage } from '@/lib/row-cap'
  */
 export function createQueryClient() {
   return new QueryClient({
-    // Cualquier guardado que choque con el tope de la cuenta (error LKCAP de
-    // la base) avisa con un toast, en toda la app y sin que cada formulario
-    // tenga que acordarse. Los demás errores los muestra cada pantalla en su
-    // lugar: para no repetir el aviso, un formulario muestra su error solo
-    // si `rowCapMessage(error)` es null.
+    // Todo guardado que falle avisa con un toast, en toda la app y sin que
+    // cada formulario tenga que acordarse. Hace falta: los formularios se
+    // cierran al instante (cambio optimista), así que si la base lo rechaza
+    // el registro desaparecía sin decir nada. El tope de la cuenta (error
+    // LKCAP) tiene su propio mensaje.
     mutationCache: new MutationCache({
       onError: (error) => {
-        const message = rowCapMessage(error)
-        if (message) showToast({ text: message })
+        showToast({ text: rowCapMessage(error) ?? 'No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.' })
       },
     }),
     defaultOptions: {

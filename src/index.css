@@ -140,6 +140,12 @@
   --shadow-tip: 0 8px 24px light-dark(oklch(0.2 0.01 255 / 0.16), oklch(0 0 0 / 0.45));
 }
 
+/* Los 10 colores de etiqueta se usan armados en tiempo de ejecución
+   (`var(--color-tag-${color})`, en tag-colors.ts) y Tailwind no los ve: sin
+   esta línea los borra del CSS final y los puntos, el selector de color y
+   los bloques del horario salen transparentes. Pedir sus clases los mantiene. */
+@source inline("bg-tag-{azul,cian,verde,lima,ambar,naranja,rojo,rosa,violeta,gris}");
+
 /* Las fuentes vienen dentro de la app (@fontsource-variable, importadas en
    main.tsx): la CSP solo deja cargar fuentes del propio dominio, así que
    Google Fonts no sirve. El paquete las registra con «Variable» en el nombre;

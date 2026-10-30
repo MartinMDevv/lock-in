@@ -73,10 +73,9 @@ describe('aviso de límite en toda la app', () => {
     )
   })
 
-  it('cualquier otro error no lo dispara: lo muestra cada pantalla', async () => {
+  it('cualquier otro error también avisa: el formulario ya se cerró', async () => {
     renderConCliente({ code: '42501', details: null })
     await userEvent.setup().click(screen.getByRole('button', { name: 'Crear' }))
-    await act(() => Promise.resolve())
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(await screen.findByRole('status')).toHaveTextContent('No se pudo guardar.')
   })
 })
