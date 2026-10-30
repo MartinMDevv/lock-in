@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { PointerEvent, ReactNode } from 'react'
+import { opensKeyboard } from '@/lib/media'
 
 /**
  * Lo que tarda en salir. La entrada usa ease-out y no el resorte del diseño:
@@ -96,6 +97,39 @@ export function Sheet({
     }
   }, [open])
 
+  // El campo enfocado, a la vista. El navegador desplaza al enfocar, pero
+  // antes de que el teclado termine de abrirse y la hoja se achique: el campo
+  // quedaba al fondo, detrás del teclado. Se vuelve a centrar cuando cambia
+  // el tamaño, y solo se desplaza la hoja, no la página de atrás.
+  useEffect(() => {
+    const p = panel.current
+    if (!open || !p) return
+    let espera: ReturnType<typeof setTimeout> | undefined
+    function mostrar() {
+      const el = document.activeElement
+      if (!p || !(el instanceof HTMLElement) || !p.contains(el) || !opensKeyboard(el)) return
+      const vv = window.visualViewport
+      const panelBox = p.getBoundingClientRect()
+      const abajo = Math.min(panelBox.bottom, vv ? vv.offsetTop + vv.height : window.innerHeight)
+      const campo = el.getBoundingClientRect()
+      const centro = (panelBox.top + abajo) / 2
+      p.scrollBy({ top: campo.top + campo.height / 2 - centro, behavior: 'smooth' })
+    }
+    function alEnfocar() {
+      clearTimeout(espera)
+      espera = setTimeout(mostrar, 350)
+    }
+    p.addEventListener('focusin', alEnfocar)
+    window.visualViewport?.addEventListener('resize', alEnfocar)
+    window.addEventListener('resize', alEnfocar)
+    return () => {
+      clearTimeout(espera)
+      p.removeEventListener('focusin', alEnfocar)
+      window.visualViewport?.removeEventListener('resize', alEnfocar)
+      window.removeEventListener('resize', alEnfocar)
+    }
+  }, [open])
+
   // Si se desmonta abierta, que la página no quede sin poder desplazarse.
   useEffect(() => () => void (document.documentElement.style.overflow = ''), [])
 
@@ -148,20 +182,25 @@ export function Sheet({
         } ${closing ? 'translate-y-full lg:translate-y-2 lg:scale-97 lg:opacity-0 lg:duration-160' : ''}`}
         style={drag > 0 ? { translate: `0 ${drag}px` } : undefined}
       >
-        {/* El tirador: la zona que se arrastra. En el escritorio no hay dedo. */}
-        <div
-          aria-hidden="true"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          className="flex h-7 touch-none items-center justify-center lg:hidden"
-        >
-          <span className="h-1 w-9 rounded-full bg-line-strong" />
+        {/* Tirador y título quedan pegados arriba: si la hoja se desplaza (con el
+            teclado abierto pasa), el contenido corre por debajo en vez de verse
+            cortado contra el borde. */}
+        <div className="sticky top-0 z-10 -mx-4 bg-surface-sheet px-4 pb-3 lg:static lg:mx-0 lg:px-0">
+          {/* El tirador: la zona que se arrastra. En el escritorio no hay dedo. */}
+          <div
+            aria-hidden="true"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            className="flex h-7 touch-none items-center justify-center lg:hidden"
+          >
+            <span className="h-1 w-9 rounded-full bg-line-strong" />
+          </div>
+          <h2 id={titleId} className="text-body font-semibold">
+            {title}
+          </h2>
         </div>
-        <h2 id={titleId} className="mb-3 text-body font-semibold">
-          {title}
-        </h2>
         {children}
       </div>
     </dialog>

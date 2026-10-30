@@ -19,7 +19,7 @@ export function useMediaQuery(query: string): boolean {
 }
 
 /** Los campos que abren el teclado del teléfono. */
-function abreTeclado(el: Element | null): boolean {
+export function opensKeyboard(el: Element | null): boolean {
   if (el instanceof HTMLTextAreaElement) return true
   if (!(el instanceof HTMLInputElement)) return false
   return !['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file'].includes(el.type)
@@ -41,7 +41,7 @@ export function useTyping(): boolean {
         document.removeEventListener('focusout', onChange)
       }
     },
-    () => abreTeclado(document.activeElement),
+    () => opensKeyboard(document.activeElement),
     () => false,
   )
 }
