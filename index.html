@@ -2,7 +2,14 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <!-- El ícono de la app es siempre el oscuro, con el núcleo lima, sin
+         importar el tema que elija cada persona: es la marca, como la ven el
+         navegador, el teléfono y las tiendas. Dentro de la app, el logo sí
+         sigue el tema (components/ui/LogoMark.tsx). -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <!-- viewport-fit=cover: necesario para que la app use la pantalla completa
          bajo el notch y sobre la barra de gestos cuando corre instalada.
          interactive-widget=resizes-content: en Android el teclado achica la
