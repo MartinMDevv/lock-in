@@ -70,6 +70,32 @@ export function Sheet({
     }
   }, [open])
 
+  // El teclado del teléfono: en Android tapa la página sin achicarla, así que
+  // una hoja pegada abajo quedaba detrás de él, con el campo cortado. Mientras
+  // está abierta, el <dialog> mide lo que de verdad se ve (visualViewport) y
+  // la hoja sube junto con el teclado.
+  useEffect(() => {
+    const vv = window.visualViewport
+    const d = dialog.current
+    if (!open || !vv || !d) return
+    function ajustar() {
+      if (!vv || !d) return
+      d.style.height = `${vv.height}px`
+      d.style.top = `${vv.offsetTop}px`
+      d.style.setProperty('--visible-h', `${vv.height}px`)
+    }
+    ajustar()
+    vv.addEventListener('resize', ajustar)
+    vv.addEventListener('scroll', ajustar)
+    return () => {
+      vv.removeEventListener('resize', ajustar)
+      vv.removeEventListener('scroll', ajustar)
+      d.style.height = ''
+      d.style.top = ''
+      d.style.removeProperty('--visible-h')
+    }
+  }, [open])
+
   // Si se desmonta abierta, que la página no quede sin poder desplazarse.
   useEffect(() => () => void (document.documentElement.style.overflow = ''), [])
 
@@ -115,7 +141,7 @@ export function Sheet({
       <div
         ref={panel}
         tabIndex={-1}
-        className={`relative -bottom-10 outline-none max-h-[calc(90dvh+40px)] w-full overflow-y-auto rounded-t-sheet border-t border-line bg-surface-sheet px-4 pb-[calc(56px+env(safe-area-inset-bottom))] shadow-sheet starting:translate-y-full lg:bottom-0 lg:max-h-[85dvh] lg:w-130 lg:rounded-xl lg:border lg:p-6 lg:shadow-popover lg:starting:translate-y-2 lg:starting:scale-97 lg:starting:opacity-0 ${
+        className={`relative -bottom-10 outline-none max-h-[calc(var(--visible-h,100dvh)*0.9+40px)] w-full overflow-y-auto rounded-t-sheet border-t border-line bg-surface-sheet px-4 pb-[calc(56px+env(safe-area-inset-bottom))] shadow-sheet starting:translate-y-full lg:bottom-0 lg:max-h-[85dvh] lg:w-130 lg:rounded-xl lg:border lg:p-6 lg:shadow-popover lg:starting:translate-y-2 lg:starting:scale-97 lg:starting:opacity-0 ${
           dragging
             ? 'transition-none'
             : 'transition-[translate,scale,opacity] duration-(--duration-sheet) ease-out lg:duration-220 lg:ease-[cubic-bezier(.2,.9,.3,1.15)]'
