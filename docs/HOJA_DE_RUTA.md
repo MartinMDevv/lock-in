@@ -152,7 +152,8 @@ escritorio, todavía sin datos.*
 - [x] **Menú lateral final del escritorio** (29-oct-2026, `components/layout/Sidebar.tsx`): abierto de 248 px o riel de 72 px, se alterna con la pestaña del borde o con `[` y el navegador lo recuerda. Cada área lleva una línea de contexto («1 atrasada» en rojo, «$1.170/día · Vida diaria»…). Debajo, «Resto del día» con los huecos libres y «Vence pronto» en Tareas, Gimnasio y Plata; «Pendiente · esta semana» en Hoy y Horario. Cerrado: anillo con lo que queda del bloque actual, bandeja con lo pendiente y globos al pasar el mouse. Solo se monta desde 1024 px: en el teléfono no pide datos de más. «Buscar… Ctrl K» abre Registrar mientras no exista la paleta. Los pagos de «Pendiente» quedan fuera: el modelo no tiene pagos con fecha.
 - [x] Tema oscuro, claro o sistema, leyendo `profiles.theme` (28-oct-2026, `src/lib/theme.ts`): se aplica en `<html data-theme>` y en la barra del navegador, se elige en Ajustes (se guarda al tocarlo) y el navegador recuerda el último para no parpadear al abrir. Probado en el teléfono el 29-oct.
 - [x] **Tema claro** (29-oct-2026): tokens del paquete «Modo claro» aprobado. El fondo es gris frío y no blanco, el lima va solo como relleno (como texto se usa `accent-text`) y la línea «ahora» del horario usa el token nuevo `now`, verde oscuro con la hora en blanco. Falta verlo en el teléfono.
-- [ ] `prefers-reduced-motion`.
+- [x] **Logo y animación de inicio** (30-oct-2026, paquete de marca): `LogoMark` en el menú lateral y en la entrada; `lib/splash.ts` es el `splash.js` del diseño con los colores de los tokens, una vez por pestaña, y se salta tocando la pantalla.
+- [ ] `prefers-reduced-motion`. La animación de inicio ya lo respeta.
 
 ## F3 · Una cosa útil por área
 
@@ -186,7 +187,7 @@ por qué no.*
 La PWA va aquí y no antes, a propósito: instalar una app que no hace nada es
 una forma rápida de que se desinstale.
 
-- [ ] Manifest, íconos (incluido el *maskable*) y color de tema.
+- [x] Manifest, íconos (incluido el *maskable*) y color de tema (30-oct-2026, del paquete de marca «Logo final»). El ícono de afuera es **siempre el oscuro**, sea cual sea el tema de la persona; dentro de la app el logo (`LogoMark`) sigue el tema.
 - [ ] Service worker: cachea la cáscara y los recursos.
 - [ ] Instalar en el teléfono y en el computador.
 - [ ] **Dos semanas de uso real.** Anotar cada fricción en un issue, sin arreglar nada en el momento.
