@@ -11,6 +11,8 @@ import { capRatio, capStatus } from '@/core/money/cap'
 import { dayOf, daysBetween, startOfDayInstant, startOfMonth, startOfNextMonth } from '@/core/time/day'
 import { diaCorto, diaRelativo, formatAmount, formatMoney, horaDe } from '@/lib/format'
 import { usePrefs, useToday } from '@/features/settings/profile'
+import { useLongPress } from '@/lib/long-press'
+import { DeleteEnvelopeSheet } from './DeleteEnvelopeSheet'
 import { EnvelopeSheet } from './EnvelopeSheet'
 import { ExpenseForm } from './ExpenseForm'
 import { IncomeForm } from './IncomeForm'
@@ -43,6 +45,7 @@ export function MoneyPage() {
   const [vista, setVista] = useState<Vista>('envelopes')
   const [hoja, setHoja] = useState<'expense' | 'income' | null>(null)
   const [editando, setEditando] = useState<Envelope | 'new' | null>(null)
+  const [borrando, setBorrando] = useState<Envelope | null>(null)
 
   if (sobres.isPending || movimientos.isPending) {
     return (
@@ -73,11 +76,21 @@ export function MoneyPage() {
   const todos = sobres.data
   const movs = movimientos.data
   const hojaSobre = (
-    <EnvelopeSheet
-      open={editando !== null}
-      envelope={editando === 'new' ? null : editando}
-      onClose={() => setEditando(null)}
-    />
+    <>
+      <EnvelopeSheet
+        open={editando !== null}
+        envelope={editando === 'new' ? null : editando}
+        onClose={() => setEditando(null)}
+      />
+      <DeleteEnvelopeSheet
+        envelope={borrando}
+        onClose={() => setBorrando(null)}
+        onArchive={(e) => {
+          setBorrando(null)
+          setEditando(e)
+        }}
+      />
+    </>
   )
 
   if (todos.length === 0) {
@@ -187,12 +200,14 @@ export function MoneyPage() {
                 balance={saldos.get(e.id) ?? 0}
                 spent={consumo.get(e.id) ?? 0}
                 onOpen={() => setEditando(e)}
+                onLongPress={() => setBorrando(e)}
               />
             ))}
           </div>
           <Button variant="ghost" className="w-full" onClick={() => setEditando('new')}>
             Nuevo sobre
           </Button>
+          <p className="text-center text-caption text-ink-faint">Mantén presionado un sobre para borrarlo.</p>
           {archivados.length > 0 && (
             <details className="rounded-xl border border-line bg-surface">
               <summary className="cursor-pointer px-4 py-3 text-body-sm text-ink-muted">
@@ -200,16 +215,13 @@ export function MoneyPage() {
               </summary>
               <ul className="divide-y divide-line border-t border-line">
                 {archivados.map((e) => (
-                  <li key={e.id}>
-                    <button
-                      type="button"
-                      onClick={() => setEditando(e)}
-                      className="flex w-full items-center justify-between px-4 py-3 text-left text-body-sm"
-                    >
-                      <span className="text-ink-muted">{e.name}</span>
-                      <span className="tabular-nums text-ink-faint">{formatMoney(saldos.get(e.id) ?? 0, prefs)}</span>
-                    </button>
-                  </li>
+                  <FilaArchivado
+                    key={e.id}
+                    envelope={e}
+                    balance={saldos.get(e.id) ?? 0}
+                    onOpen={() => setEditando(e)}
+                    onLongPress={() => setBorrando(e)}
+                  />
                 ))}
               </ul>
             </details>
@@ -228,18 +240,60 @@ export function MoneyPage() {
   )
 }
 
+/**
+ * Lo que comparten la tarjeta y la fila de archivado: mantener presionado un
+ * segundo abre el borrado. Mientras el dedo espera, el elemento se achica de
+ * a poco, para que se note que algo va a pasar.
+ */
+function presionClass(pressing: boolean): string {
+  return `select-none [-webkit-touch-callout:none] ${
+    pressing ? 'scale-97 transition-[scale] duration-1000 ease-linear' : 'transition-[scale] duration-150'
+  }`
+}
+
+function FilaArchivado({
+  envelope: e,
+  balance,
+  onOpen,
+  onLongPress,
+}: {
+  envelope: Envelope
+  balance: number
+  onOpen: () => void
+  onLongPress: () => void
+}) {
+  const prefs = usePrefs()
+  const { pressing, handlers } = useLongPress(onLongPress)
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onOpen}
+        {...handlers}
+        className={`flex w-full items-center justify-between px-4 py-3 text-left text-body-sm ${presionClass(pressing)}`}
+      >
+        <span className="text-ink-muted">{e.name}</span>
+        <span className="tabular-nums text-ink-faint">{formatMoney(balance, prefs)}</span>
+      </button>
+    </li>
+  )
+}
+
 function TarjetaSobre({
   envelope: e,
   balance,
   spent,
   onOpen,
+  onLongPress,
 }: {
   envelope: Envelope
   balance: number
   spent: number
   onOpen: () => void
+  onLongPress: () => void
 }) {
   const prefs = usePrefs()
+  const { pressing, handlers } = useLongPress(onLongPress)
   const tope = e.cap_period === 'month' ? e.cap_amount : null
   const esMeta = e.target_minor !== null
   // Un solo número grande: lo que se puede gastar. En una meta, lo juntado.
@@ -249,7 +303,8 @@ function TarjetaSobre({
     <button
       type="button"
       onClick={onOpen}
-      className="flex w-full flex-col gap-2 rounded-xl border border-line bg-surface p-4 text-left transition-colors duration-(--duration-fast) hover:border-line-strong"
+      {...handlers}
+      className={`flex w-full flex-col gap-2 rounded-xl border border-line bg-surface p-4 text-left hover:border-line-strong ${presionClass(pressing)}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

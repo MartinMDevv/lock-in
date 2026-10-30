@@ -39,8 +39,9 @@ const EJEMPLO_MINOR = 100_000
  * en vivo de cuánto recibiría. El tope, el fin de mes y la meta quedan en
  * «Más opciones»: la primera vez son demasiadas decisiones juntas.
  *
- * Los sobres no tienen «Borrar» (D30): tienen historia. Se archivan y dejan
- * de aparecer en el gasto y en el reparto, sin perder sus movimientos.
+ * Lo normal es archivar (D30): el sobre deja de aparecer en el gasto y en el
+ * reparto sin perder sus movimientos. Borrar no está acá: se llega
+ * manteniendo presionada la tarjeta del sobre (DeleteEnvelopeSheet).
  */
 export function EnvelopeSheet({
   open,

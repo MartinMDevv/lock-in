@@ -35,6 +35,8 @@ let cambios: Record<string, unknown> = {}
 // Lo que una prueba cambia del perfil guardado, antes de cualquier update.
 let perfilBase: Record<string, unknown> = {}
 let inserts: { tabla: string; fila: unknown }[] = []
+// Las tablas de cada update y delete que no son del perfil, en orden.
+let escrituras: string[] = []
 // Lo que devuelve cada tabla al leerla. Vacío salvo que la prueba lo llene.
 let filas: Record<string, unknown[]> = {}
 
@@ -56,13 +58,16 @@ function consultaSimulada(tabla: string) {
     update: (c: Record<string, unknown>) => {
       leyendo = false
       if (tabla === 'profiles') cambios = c
+      else escrituras.push(`update ${tabla}`)
       return consulta
     },
     delete: () => {
       leyendo = false
+      escrituras.push(`delete ${tabla}`)
       return consulta
     },
     eq: () => consulta,
+    or: () => consulta,
     is: () => consulta,
     in: () => consulta,
     gte: () => consulta,
@@ -101,6 +106,7 @@ describe('esqueleto de la aplicación', () => {
     cambios = {}
     perfilBase = {}
     inserts = []
+    escrituras = []
     filas = {}
     window.history.pushState({}, '', '/')
   })
@@ -318,6 +324,7 @@ describe('cáscara', () => {
     cambios = {}
     perfilBase = {}
     inserts = []
+    escrituras = []
     filas = {}
     window.history.pushState({}, '', '/')
   })
@@ -400,6 +407,75 @@ describe('cáscara', () => {
       },
     ])
     expect(await screen.findByText('Gasto de $4.500 en Vida diaria')).toBeInTheDocument()
+  })
+
+  it('Plata: borrar un sobre pide mantenerlo presionado, avisa que no se recupera y suelta sus referencias', async () => {
+    filas = {
+      envelopes: [
+        {
+          id: 'vida',
+          user_id: 'usuario-1',
+          name: 'Vida diaria',
+          fill_rule: 'residual',
+          fill_value: 0,
+          cap_amount: null,
+          cap_period: 'none',
+          rollover: true,
+          sweep_to_envelope_id: null,
+          sort_order: 0,
+          target_minor: null,
+          target_date: null,
+          achieved_at: null,
+          group_id: null,
+          archived_at: null,
+          created_at: '2026-10-01T00:00:00Z',
+          updated_at: '2026-10-01T00:00:00Z',
+        },
+      ],
+      movements: [
+        {
+          id: 'm1',
+          user_id: 'usuario-1',
+          kind: 'income',
+          envelope_from: null,
+          envelope_to: 'vida',
+          amount_minor: 10000,
+          note: null,
+          occurred_at: '2026-10-28T12:00:00Z',
+          batch_id: null,
+          import_id: null,
+          created_at: '2026-10-28T12:00:00Z',
+          updated_at: '2026-10-28T12:00:00Z',
+        },
+      ],
+    }
+    window.history.pushState({}, '', '/money')
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    // Un toque abre la edición, y ahí no hay «Borrar».
+    const tarjeta = await screen.findByRole('button', { name: /^Vida diaria/ })
+    await usuario.click(tarjeta)
+    expect(await screen.findByRole('dialog', { name: 'Vida diaria' })).toHaveAttribute('open')
+    expect(screen.queryByRole('button', { name: /Borrar/ })).not.toBeInTheDocument()
+    await usuario.keyboard('{Escape}')
+
+    // Clic derecho en el escritorio (en el teléfono, mantener un segundo) abre el borrado.
+    fireEvent.contextMenu(tarjeta)
+    expect(await screen.findByText('¿Borrar «Vida diaria» para siempre?')).toBeInTheDocument()
+    expect(screen.getByText(/Se borra también su único movimiento/)).toBeInTheDocument()
+    expect(screen.getByText('No se puede recuperar.')).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Borrar para siempre' }))
+    await waitFor(() =>
+      expect(escrituras).toEqual([
+        'update envelopes',
+        'update envelopes',
+        'delete period_closures',
+        'delete movements',
+        'delete envelopes',
+      ]),
+    )
   })
 
   it('Horario: un bloque nuevo se guarda con su horario', async () => {

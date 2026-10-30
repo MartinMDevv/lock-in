@@ -169,3 +169,47 @@ export function useUpdateEnvelope() {
     ),
   })
 }
+
+/**
+ * Borrar un sobre para siempre, con todos sus movimientos. Es la excepción a
+ * D30, pedida por el autor: se ofrece solo detrás de una confirmación que dice
+ * que no se puede recuperar. No tiene Deshacer.
+ *
+ * Las referencias usan `on delete no action`, así que primero se sueltan, en
+ * orden: los sobres que le pasaban su sobrante o lo tenían de grupo, sus
+ * cierres de mes y sus movimientos; al final, el sobre. Cada paso se puede
+ * repetir sin daño: si la conexión se corta a medias, volver a borrar termina
+ * el trabajo.
+ */
+export function useDeleteEnvelope() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const sobrante = await supabase.from('envelopes').update({ sweep_to_envelope_id: null }).eq('sweep_to_envelope_id', id)
+      if (sobrante.error) throw sobrante.error
+      const grupo = await supabase.from('envelopes').update({ group_id: null }).eq('group_id', id)
+      if (grupo.error) throw grupo.error
+      const cierres = await supabase.from('period_closures').delete().eq('envelope_id', id)
+      if (cierres.error) throw cierres.error
+      const movs = await supabase.from('movements').delete().or(`envelope_from.eq.${id},envelope_to.eq.${id}`)
+      if (movs.error) throw movs.error
+      const sobre = await supabase.from('envelopes').delete().eq('id', id)
+      if (sobre.error) throw sobre.error
+    },
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: envelopesKey(userId) })
+      await queryClient.cancelQueries({ queryKey: movementsKey(userId) })
+      queryClient.setQueryData<Envelope[]>(envelopesKey(userId), (list) => list?.filter((e) => e.id !== id))
+      queryClient.setQueryData<Movement[]>(movementsKey(userId), (list) =>
+        list?.filter((m) => m.envelope_from !== id && m.envelope_to !== id),
+      )
+    },
+    // Bien o mal, se vuelve a pedir: si falló a medias, la pantalla muestra lo que de verdad quedó.
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: envelopesKey(userId) }),
+        queryClient.invalidateQueries({ queryKey: movementsKey(userId) }),
+      ]),
+  })
+}
