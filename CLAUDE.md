@@ -79,6 +79,18 @@ solo al autor.
 | Accesible | Etiquetas en los campos, `aria-*` en los botones de solo ícono, que funcione con teclado |
 | Cambios chicos | Un cambio por commit, con su prueba. Si algo no se usa, se borra en vez de comentarlo |
 
+**Herramientas: nada se descarga sin permiso**
+
+Solo se usan las herramientas que ya están en `package.json`, con `npm run …`.
+**`npx <paquete>` con un paquete que no está en `node_modules` lo descarga de
+internet y lo ejecuta**: eso cuenta como instalar algo y requiere el OK
+explícito del autor, igual que `npm install`, `curl`, `pacman` o `docker pull`.
+Antes de un `npx`, confirmar que el paquete existe en `node_modules/.bin/`.
+
+El repo **no tiene formateador** (Prettier no está instalado): el
+estilo se copia a mano del código de al lado. Correr uno reformatea archivos
+enteros y ensucia el diff. Lo que vigila el estilo es `npm run check` (oxlint).
+
 ## Commits
 
 Antes de proponer uno: **`npm run check`** (secretos + lint + tipos + pruebas).
