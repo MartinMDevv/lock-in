@@ -16,7 +16,8 @@ import { DeleteEnvelopeSheet } from './DeleteEnvelopeSheet'
 import { EnvelopeSheet } from './EnvelopeSheet'
 import { ExpenseForm } from './ExpenseForm'
 import { IncomeForm } from './IncomeForm'
-import { PresetPicker } from './PresetPicker'
+import { MoneyGuide } from './MoneyGuide'
+import { ReadyEnvelopes } from './ReadyEnvelopes'
 import { describeRule } from './envelope-text'
 import type { Envelope, Movement } from './money'
 import { useAddMovements, useDeleteMovements, useEnvelopes, useMovements } from './money'
@@ -26,13 +27,6 @@ const VISTAS = [
   { value: 'envelopes', label: 'Sobres' },
   { value: 'movements', label: 'Movimientos' },
 ] as const satisfies readonly { value: Vista; label: string }[]
-
-/** La primera vez, antes del primer ingreso: cómo se mueve la plata, en tres pasos. */
-const PASOS = [
-  { titulo: 'Registras lo que te entra.', detalle: 'El sueldo, una pega o lo que sea.' },
-  { titulo: 'Se reparte solo entre tus sobres,', detalle: 'según lo que recibe cada uno.' },
-  { titulo: 'Cada gasto sale de un sobre,', detalle: 'y siempre ves cuánto te queda.' },
-] as const
 
 /** Cuántos movimientos se muestran de entrada; «Ver más» suma otros tantos. */
 const PAGINA = 40
@@ -46,6 +40,7 @@ export function MoneyPage() {
   const [hoja, setHoja] = useState<'expense' | 'income' | null>(null)
   const [editando, setEditando] = useState<Envelope | 'new' | null>(null)
   const [borrando, setBorrando] = useState<Envelope | null>(null)
+  const [sinGuia, setSinGuia] = useState(false)
 
   if (sobres.isPending || movimientos.isPending) {
     return (
@@ -93,17 +88,30 @@ export function MoneyPage() {
     </>
   )
 
+  // La primera vez, la guía. Quien la salta arma sus sobres uno por uno.
   if (todos.length === 0) {
     return (
       <>
-        <PresetPicker onCustom={() => setEditando('new')} />
+        {sinGuia ? (
+          <EmptyState
+            title="Todavía no tienes sobres"
+            detail="Cada sobre es un frasco: cuando entra plata se reparte entre ellos. Crea el primero, o vuelve a la guía."
+            action={{ label: 'Nuevo sobre', onClick: () => setEditando('new') }}
+          />
+        ) : (
+          <MoneyGuide onSkip={() => setSinGuia(true)} onCreated={() => setHoja('income')} />
+        )}
+        {sinGuia && (
+          <Button variant="ghost" className="mt-2 w-full" onClick={() => setSinGuia(false)}>
+            Volver a la guía
+          </Button>
+        )}
         {hojaSobre}
       </>
     )
   }
 
   const activos = todos.filter((e) => e.archived_at === null)
-  const archivados = todos.filter((e) => e.archived_at !== null)
   const saldos = balances(movs)
   const total = activos.reduce((sum, e) => sum + (saldos.get(e.id) ?? 0), 0)
 
@@ -113,8 +121,27 @@ export function MoneyPage() {
   const diasQuedan = daysBetween(today, startOfNextMonth(today))
   const consumo = new Map(activos.map((e) => [e.id, spentIn(movs, e.id, inicioMes, finMes)]))
 
-  // Todavía no entra plata: los sobres están en cero y lo primero es un ingreso, no un gasto.
-  const sinIngresos = !movs.some((m) => m.kind === 'income')
+  const hojaRegistro = (
+    <Sheet open={hoja !== null} onClose={() => setHoja(null)} title={hoja === 'income' ? 'Ingreso' : 'Gasto'}>
+      {hoja === 'expense' && <ExpenseForm onDone={() => setHoja(null)} />}
+      {hoja === 'income' && <IncomeForm onDone={() => setHoja(null)} />}
+    </Sheet>
+  )
+
+  // Todavía no se anotó nada: los sobres están en cero y lo primero es un
+  // ingreso. Se muestra cómo se repartiría, sin el $0 ni la lista vacía.
+  if (movs.length === 0) {
+    return (
+      <div className="space-y-3">
+        <ReadyEnvelopes envelopes={activos} onIncome={() => setHoja('income')} onEdit={setEditando} />
+        <Button variant="ghost" className="w-full" onClick={() => setEditando('new')}>
+          Nuevo sobre
+        </Button>
+        {hojaRegistro}
+        {hojaSobre}
+      </div>
+    )
+  }
 
   // La frase útil: el sobre con tope más apretado, contando lo que de verdad
   // tiene. Con el sobre vacío no se puede gastar lo que deja el tope.
@@ -148,45 +175,17 @@ export function MoneyPage() {
           <span className="text-title font-semibold text-ink-muted">{total < 0 ? '−$' : '$'}</span>
           <span className="text-display font-semibold">{formatAmount(Math.abs(total), prefs.currency_decimals)}</span>
         </p>
-        {frase && !sinIngresos && <p className="mt-1 text-body-sm text-ink-muted">{frase}</p>}
+        {frase && <p className="mt-1 text-body-sm text-ink-muted">{frase}</p>}
       </section>
 
-      {sinIngresos ? (
-        <section className="space-y-4 rounded-xl border border-line bg-surface p-4">
-          <div>
-            <h2 className="text-body font-semibold">Así funciona</h2>
-            <p className="text-body-sm text-ink-muted">Tus sobres están listos, pero vacíos.</p>
-          </div>
-          <ol className="space-y-3">
-            {PASOS.map((paso, i) => (
-              <li key={paso.titulo} className="flex gap-3">
-                <span
-                  aria-hidden="true"
-                  className="grid size-6 shrink-0 place-items-center rounded-full bg-surface-raised text-caption font-semibold"
-                >
-                  {i + 1}
-                </span>
-                <span className="text-body-sm">
-                  <span className="font-medium">{paso.titulo}</span>{' '}
-                  <span className="text-ink-muted">{paso.detalle}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <Button variant="primary" size="lg" className="w-full" onClick={() => setHoja('income')}>
-            Registrar tu primer ingreso
-          </Button>
-        </section>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="primary" onClick={() => setHoja('expense')}>
-            Gasto
-          </Button>
-          <Button variant="secondary" onClick={() => setHoja('income')}>
-            Ingreso
-          </Button>
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="primary" onClick={() => setHoja('expense')}>
+          Gasto
+        </Button>
+        <Button variant="secondary" onClick={() => setHoja('income')}>
+          Ingreso
+        </Button>
+      </div>
 
       <Segmented label="Vista" options={VISTAS} value={vista} onChange={setVista} />
 
@@ -199,6 +198,7 @@ export function MoneyPage() {
                 envelope={e}
                 balance={saldos.get(e.id) ?? 0}
                 spent={consumo.get(e.id) ?? 0}
+                daysLeft={diasQuedan}
                 onOpen={() => setEditando(e)}
                 onLongPress={() => setBorrando(e)}
               />
@@ -208,42 +208,21 @@ export function MoneyPage() {
             Nuevo sobre
           </Button>
           <p className="text-center text-caption text-ink-faint">Mantén presionado un sobre para borrarlo.</p>
-          {archivados.length > 0 && (
-            <details className="rounded-xl border border-line bg-surface">
-              <summary className="cursor-pointer px-4 py-3 text-body-sm text-ink-muted">
-                Archivados ({archivados.length})
-              </summary>
-              <ul className="divide-y divide-line border-t border-line">
-                {archivados.map((e) => (
-                  <FilaArchivado
-                    key={e.id}
-                    envelope={e}
-                    balance={saldos.get(e.id) ?? 0}
-                    onOpen={() => setEditando(e)}
-                    onLongPress={() => setBorrando(e)}
-                  />
-                ))}
-              </ul>
-            </details>
-          )}
         </div>
       ) : (
         <Movimientos movements={movs} envelopes={todos} today={today} timezone={timezone} />
       )}
 
-      <Sheet open={hoja !== null} onClose={() => setHoja(null)} title={hoja === 'income' ? 'Ingreso' : 'Gasto'}>
-        {hoja === 'expense' && <ExpenseForm onDone={() => setHoja(null)} />}
-        {hoja === 'income' && <IncomeForm onDone={() => setHoja(null)} />}
-      </Sheet>
+      {hojaRegistro}
       {hojaSobre}
     </div>
   )
 }
 
 /**
- * Lo que comparten la tarjeta y la fila de archivado: mantener presionado un
- * segundo abre el borrado. Mientras el dedo espera, el elemento se achica de
- * a poco, para que se note que algo va a pasar.
+ * En la tarjeta, mantener presionado un segundo abre el borrado. Mientras el
+ * dedo espera, la tarjeta se achica de a poco, para que se note que algo va a
+ * pasar.
  */
 function presionClass(pressing: boolean): string {
   return `select-none [-webkit-touch-callout:none] ${
@@ -251,44 +230,25 @@ function presionClass(pressing: boolean): string {
   }`
 }
 
-function FilaArchivado({
-  envelope: e,
-  balance,
-  onOpen,
-  onLongPress,
-}: {
-  envelope: Envelope
-  balance: number
-  onOpen: () => void
-  onLongPress: () => void
-}) {
-  const prefs = usePrefs()
-  const { pressing, handlers } = useLongPress(onLongPress)
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={onOpen}
-        {...handlers}
-        className={`flex w-full items-center justify-between px-4 py-3 text-left text-body-sm ${presionClass(pressing)}`}
-      >
-        <span className="text-ink-muted">{e.name}</span>
-        <span className="tabular-nums text-ink-faint">{formatMoney(balance, prefs)}</span>
-      </button>
-    </li>
-  )
-}
-
+/**
+ * La tarjeta de un sobre (Revisión F3 › 03). Primero y grande, lo que se
+ * puede gastar, con «disponible» al lado; la regla va como nota bajo el
+ * nombre. La barra aparece solo si hay tope, y la línea de abajo cambia de
+ * color y de texto según el estado: el color nunca es el único aviso.
+ */
 function TarjetaSobre({
   envelope: e,
   balance,
   spent,
+  daysLeft,
   onOpen,
   onLongPress,
 }: {
   envelope: Envelope
   balance: number
   spent: number
+  /** Días que quedan del mes, hoy incluido. */
+  daysLeft: number
   onOpen: () => void
   onLongPress: () => void
 }) {
@@ -297,47 +257,48 @@ function TarjetaSobre({
   const tope = e.cap_period === 'month' ? e.cap_amount : null
   const esMeta = e.target_minor !== null
   // Un solo número grande: lo que se puede gastar. En una meta, lo juntado.
-  const disponible = tope !== null ? spendable(balance, tope, spent) : balance
-  const numero = esMeta ? balance : disponible
+  const disponible = tope !== null ? spendable(balance, tope, spent) : Math.max(0, balance)
+  const numero = esMeta ? Math.max(0, balance) : disponible
+  const regla = tope !== null ? `${describeRule(e, prefs)} · tope ${formatMoney(tope, prefs)}` : describeRule(e, prefs)
+  const estado = tope !== null ? capStatus(spent, tope) : null
+  const dias = daysLeft === 1 ? '1 día' : `${daysLeft} días`
+
+  let nota: { texto: string; color: string; lado: string } | null = null
+  if (tope !== null && estado === 'over')
+    nota = { texto: `Te pasaste por ${formatMoney(spent - tope, prefs)} este mes`, color: 'text-danger', lado: 'vuelve a cero el 1' }
+  else if (tope !== null && estado === 'near')
+    nota = {
+      texto: `Te quedan ${formatMoney(disponible, prefs)} para ${dias}`,
+      color: 'text-warning',
+      lado: `${Math.round(capRatio(spent, tope) * 100)} %`,
+    }
+  else if (tope !== null)
+    nota = {
+      texto: `Gastado ${formatMoney(spent, prefs)} de ${formatMoney(tope, prefs)}`,
+      color: 'text-ink-faint',
+      lado: `quedan ${dias}`,
+    }
+  else if (!esMeta && balance <= 0) nota = { texto: 'Se llena con tu próximo ingreso', color: 'text-ink-faint', lado: '' }
+
   return (
     <button
       type="button"
       onClick={onOpen}
       {...handlers}
-      className={`flex w-full flex-col gap-2 rounded-xl border border-line bg-surface p-4 text-left hover:border-line-strong ${presionClass(pressing)}`}
+      className={`flex w-full flex-col gap-3 rounded-xl border border-line bg-surface p-4 text-left hover:border-line-strong ${presionClass(pressing)}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-body-sm font-medium">{e.name}</p>
-          <p className="text-caption text-ink-faint">{describeRule(e, prefs)}</p>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="text-caption text-ink-faint">{esMeta ? 'Juntado' : 'Disponible'}</p>
-          <p className={`text-title font-semibold tabular-nums ${numero < 0 ? 'text-danger' : ''}`}>
-            {formatMoney(numero, prefs)}
-          </p>
-        </div>
+      <div className="min-w-0">
+        <p className="truncate text-body-sm font-medium">{e.name}</p>
+        <p className="text-caption text-ink-faint">{regla}</p>
       </div>
-      {tope !== null && (
-        <div className="space-y-1">
-          <ProgressBar
-            kind="cap"
-            status={capStatus(spent, tope)}
-            ratio={capRatio(spent, tope)}
-            label={`${e.name}, tope del mes`}
-          />
-          <p className="flex justify-between gap-3 text-caption text-ink-faint">
-            <span>
-              {spent > tope
-                ? `Te pasaste del tope por ${formatMoney(spent - tope, prefs)}`
-                : `Gastado ${formatMoney(spent, prefs)} de ${formatMoney(tope, prefs)} este mes`}
-            </span>
-            {/* Si el tope deja gastar menos de lo que hay, que se sepa que el resto sigue ahí. */}
-            {balance > disponible && !esMeta && (
-              <span className="shrink-0 tabular-nums">Tiene {formatMoney(balance, prefs)}</span>
-            )}
-          </p>
-        </div>
+      <p className="flex items-baseline gap-1.5 tabular-nums">
+        <span className={`text-title font-semibold ${numero === 0 ? 'text-ink-muted' : ''}`}>
+          {formatMoney(numero, prefs)}
+        </span>
+        <span className="text-body-sm text-ink-faint">{esMeta ? 'juntado' : 'disponible'}</span>
+      </p>
+      {tope !== null && estado !== null && (
+        <ProgressBar kind="cap" status={estado} ratio={capRatio(spent, tope)} label={`${e.name}, tope del mes`} />
       )}
       {esMeta && e.target_minor !== null && (
         <div className="space-y-1">
@@ -347,6 +308,12 @@ function TarjetaSobre({
             {e.target_date ? ` · para el ${diaCorto(e.target_date)}` : ''}
           </p>
         </div>
+      )}
+      {nota && (
+        <p className="flex justify-between gap-3 text-caption">
+          <span className={nota.color}>{nota.texto}</span>
+          {nota.lado && <span className="shrink-0 text-ink-faint tabular-nums">{nota.lado}</span>}
+        </p>
       )}
     </button>
   )

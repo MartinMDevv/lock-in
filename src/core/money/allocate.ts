@@ -11,6 +11,10 @@ const BASIS_POINTS = 10_000
  *
  * Orden de servicio:
  *   1. Los 'fixed', por sortOrder. Cobran primero porque son intocables.
+ *      Piden lo que les FALTA del mes (D33): `receivedMinor` trae lo que
+ *      cada sobre ya recibió de ingresos este mes. Con un sueldo al mes da
+ *      lo mismo; con cinco pagos chicos, el arriendo se cobra una vez y no
+ *      cinco.
  *   2. Los 'percent', por sortOrder, calculados sobre LO QUE QUEDA después
  *      de los fijos (D20). Todos usan esa misma base, no se encadenan.
  *   3. Los 'residual' se reparten lo que quede, en partes iguales.
@@ -21,6 +25,7 @@ const BASIS_POINTS = 10_000
 export function allocateIncome(
   incomeMinor: number,
   envelopes: readonly EnvelopeRule[],
+  receivedMinor: ReadonlyMap<string, number> = new Map(),
 ): AllocationResult {
   if (!Number.isInteger(incomeMinor)) {
     throw new Error(`El ingreso debe ser un entero en unidad mínima, se recibió: ${incomeMinor}`)
@@ -42,9 +47,9 @@ export function allocateIncome(
     if (given > 0) allocations.push({ envelopeId: envelope.id, amountMinor: given })
   }
 
-  // 1. Montos fijos.
+  // 1. Montos fijos: lo que les falta para completar el mes.
   for (const e of byOrder.filter((e) => e.fillRule === 'fixed')) {
-    serve(e, Math.max(0, Math.trunc(e.fillValue)))
+    serve(e, Math.max(0, Math.trunc(e.fillValue) - Math.max(0, receivedMinor.get(e.id) ?? 0)))
   }
 
   // 2. Porcentajes, sobre lo que dejaron los fijos (D20). Así un porcentaje

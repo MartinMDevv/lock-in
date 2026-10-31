@@ -21,7 +21,7 @@ Cada documento tiene un trabajo. No duplicar contenido entre ellos: enlazar.
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Estructura de `src/`, flujo de datos, sin conexión | Al crear un archivo: dice dónde va |
 | [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md) | **Fuente de verdad del esquema**: las 15 tablas, borrado, orden de las migraciones | Al escribir una migración o una consulta |
 | [`docs/MODELO_ECONOMICO.md`](docs/MODELO_ECONOMICO.md) | Sobres, reparto, topes y metas | Al tocar `core/money/` o el área Plata |
-| [`docs/DECISIONES.md`](docs/DECISIONES.md) | D1–D32: cada decisión con su motivo | Cuando algo parezca raro: ya se discutió |
+| [`docs/DECISIONES.md`](docs/DECISIONES.md) | D1–D33: cada decisión con su motivo | Cuando algo parezca raro: ya se discutió |
 | [`docs/BRIEF_DISENO.md`](docs/BRIEF_DISENO.md) | Lo que se le pidió a Claude Design. El resultado (tokens y prototipos) es un paquete aparte, fuera del repo | Al hacer una pantalla, junto con ese paquete |
 | [`docs/INSTALACION.md`](docs/INSTALACION.md) | Entorno de desarrollo y configuración de producción (Google, Supabase, Vercel) | Al montar una máquina nueva o tocar la configuración del servicio |
 | [`README.md`](README.md) | La cara pública del proyecto | Al cambiar el estado o el alcance |

@@ -2,20 +2,27 @@ import { useCallback, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { showToast } from '@/components/ui/toast'
 import { allocateIncome } from '@/core/money/allocate'
+import { receivedIn } from '@/core/money/balance'
+import { startOfDayInstant, startOfMonth, startOfNextMonth } from '@/core/time/day'
 import { formatAmount, formatMoney } from '@/lib/format'
 import { newId } from '@/lib/optimistic'
-import { usePrefs } from '@/features/settings/profile'
+import { usePrefs, useToday } from '@/features/settings/profile'
 import { AmountPad } from './AmountPad'
-import { useAddMovements, useDeleteMovements, useEnvelopes } from './money'
+import { useAddMovements, useDeleteMovements, useEnvelopes, useMovements } from './money'
 
 /**
  * Un ingreso: el monto, de dónde viene y «Ver reparto». El reparto se ve
  * antes de confirmar, sobre por sobre, para que nadie se lleve sorpresas.
  * Si no alcanza para los fijos, avisa y deja cambiar el monto o seguir igual.
+ *
+ * Los fijos piden lo que les falta del mes (D33): por eso se mira lo que ya
+ * recibieron desde el día 1, en la zona del perfil.
  */
 export function IncomeForm({ onDone }: { onDone: () => void }) {
   const prefs = usePrefs()
+  const { today, timezone } = useToday()
   const sobres = useEnvelopes()
+  const movimientos = useMovements()
   const agregar = useAddMovements()
   const borrar = useDeleteMovements()
   const [monto, setMonto] = useState(0)
@@ -59,6 +66,11 @@ export function IncomeForm({ onDone }: { onDone: () => void }) {
     )
   }
 
+  const yaRecibido = receivedIn(
+    movimientos.data ?? [],
+    startOfDayInstant(startOfMonth(today), timezone),
+    startOfDayInstant(startOfNextMonth(today), timezone),
+  )
   const reparto = allocateIncome(
     monto,
     activos.map((e) => ({
@@ -68,6 +80,7 @@ export function IncomeForm({ onDone }: { onDone: () => void }) {
       fillValue: e.fill_value,
       sortOrder: e.sort_order,
     })),
+    yaRecibido,
   )
   const recibe = new Map(reparto.allocations.map((a) => [a.envelopeId, a.amountMinor]))
 
@@ -100,8 +113,8 @@ export function IncomeForm({ onDone }: { onDone: () => void }) {
 
       {reparto.shortfallMinor > 0 && (
         <p role="alert" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-body-sm text-warning">
-          Faltan {formatMoney(reparto.shortfallMinor, prefs)} para cubrir los montos fijos. Los sobres se llenan en
-          orden hasta donde alcance.
+          Faltan {formatMoney(reparto.shortfallMinor, prefs)} para cubrir los montos fijos de este mes. Los sobres se
+          llenan en orden hasta donde alcance.
         </p>
       )}
       {reparto.unallocatedMinor > 0 && (
@@ -116,7 +129,8 @@ export function IncomeForm({ onDone }: { onDone: () => void }) {
         <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
           {activos.map((e, i) => {
             const recibido = recibe.get(e.id) ?? 0
-            const pedido = e.fill_rule === 'fixed' ? e.fill_value : null
+            // Lo que le faltaba del mes: si recibe menos que eso, quedó a medias.
+            const pedido = e.fill_rule === 'fixed' ? Math.max(0, e.fill_value - (yaRecibido.get(e.id) ?? 0)) : null
             const parcial = pedido !== null && recibido > 0 && recibido < pedido
             return (
               <li

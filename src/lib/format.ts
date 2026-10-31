@@ -50,6 +50,13 @@ export function diaCorto(day: IsoDate): string {
     .replace(',', '')
 }
 
+/** «14 sep», sin el día de la semana. */
+export function diaMes(day: IsoDate): string {
+  return new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(dayDate(day))
+    .replaceAll('.', '')
+}
+
 /** «jueves 29 de octubre». */
 export function diaLargo(day: IsoDate): string {
   return new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })

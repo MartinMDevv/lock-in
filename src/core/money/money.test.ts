@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { parseAmount, parsePercent, pressBackspace, pressDigits } from './amount'
-import { balances, expenseWarning, lastExpenseEnvelope, netOf, spendable, spentIn } from './balance'
+import { balances, expenseWarning, lastExpenseEnvelope, netOf, receivedIn, spendable, spentIn } from './balance'
 import type { MovementLike } from './balance'
-import { buildPreset, PRESETS } from './presets'
+import { buildGuide, essentialGap, exampleIncomes, GUIDE_MODELS, pickModel, setEssential, setIncome, simulateMonth } from './presets'
+import type { GuideModel, GuidePlan } from './presets'
 
 const mov = (m: Partial<MovementLike> & Pick<MovementLike, 'kind' | 'amount_minor'>): MovementLike => ({
   envelope_from: null,
@@ -32,6 +33,17 @@ describe('saldos', () => {
     const inicio = new Date('2026-10-01T03:00:00Z')
     const fin = new Date('2026-11-01T03:00:00Z')
     expect(spentIn(movimientos, 'vida', inicio, fin)).toBe(4_500)
+  })
+
+  it('lo recibido del mes cuenta solo ingresos dentro del período (D33)', () => {
+    const inicio = new Date('2026-10-01T03:00:00Z')
+    const fin = new Date('2026-11-01T03:00:00Z')
+    const conViejo = [
+      ...movimientos,
+      mov({ kind: 'income', envelope_to: 'vida', amount_minor: 7_000, occurred_at: '2026-09-15T12:00:00Z' }),
+    ]
+    // La transferencia a 'ahorro' no es plata nueva, y el ingreso de septiembre es de otro mes.
+    expect(receivedIn(conViejo, inicio, fin)).toEqual(new Map([['vida', 100_000]]))
   })
 
   it('el último sobre usado es el del gasto más reciente', () => {
@@ -79,27 +91,77 @@ describe('montos escritos', () => {
   })
 })
 
-describe('presets', () => {
-  const agresivo = PRESETS.find((p) => p.id === 'aggressive')!
+describe('guía de la primera vez', () => {
+  const [fifty, fixedFirst, seventy] = GUIDE_MODELS as [GuideModel, GuideModel, GuideModel]
+  // Montos abstractos, en una moneda sin decimales.
+  const plan: GuidePlan = { model: fifty, incomeMinor: 400_000, fixedMinor: 140_000, livingMinor: 60_000 }
 
-  it('el ahorro agresivo pide los montos fijos y le pone tope a Vida diaria', () => {
-    const filas = buildPreset(agresivo, [180_000, 120_000])
-    expect(filas?.map((f) => [f.name, f.fill_rule, f.fill_value, f.cap_amount])).toEqual([
-      ['Cuentas fijas', 'fixed', 180_000, null],
-      ['Vida diaria', 'fixed', 120_000, 120_000],
-      ['Gustos', 'percent', 2_000, null],
+  it('en 50/30/20, cambiar lo esencial recalcula el ingreso que hace falta', () => {
+    const p = setEssential(plan, 'fixed', 150_000, 0)
+    // (150.000 + 60.000) ÷ 0,5, redondeado a $1.000.
+    expect(p.incomeMinor).toBe(420_000)
+  })
+
+  it('en 50/30/20, cambiar el ingreso escala lo esencial en proporción', () => {
+    const p = setIncome(plan, 500_000, 0)
+    expect([p.fixedMinor, p.livingMinor]).toEqual([175_000, 75_000])
+  })
+
+  it('el redondeo va en pesos de la moneda, no en unidad mínima', () => {
+    // Con 2 decimales, $1.000 son 100.000 centavos.
+    const conCentavos = { ...plan, fixedMinor: 14_000_000, livingMinor: 6_000_050 }
+    expect(setEssential(conCentavos, 'living', 6_000_050, 2).incomeMinor).toBe(40_000_000)
+  })
+
+  it('«Lo fijo primero» respeta el ingreso y lo fijo', () => {
+    const p = pickModel(plan, fixedFirst, 0)
+    expect(p.incomeMinor).toBe(400_000)
+    expect(setIncome(p, 250_000, 0).fixedMinor).toBe(140_000)
+    // Si el ingreso no alcanza para lo fijo, se sube hasta cubrirlo.
+    expect(pickModel({ ...plan, incomeMinor: 100_000 }, fixedFirst, 0).incomeMinor).toBe(200_000)
+  })
+
+  it('pasar de un modelo de porcentaje a otro recalcula el ingreso', () => {
+    expect(pickModel(plan, seventy, 0).incomeMinor).toBe(286_000) // 200.000 ÷ 0,7
+  })
+
+  it('dice cuánto falta para cubrir lo fijo', () => {
+    expect(essentialGap({ ...plan, model: fixedFirst, incomeMinor: 150_000 })).toEqual({
+      essentialMinor: 200_000,
+      shortMinor: 50_000,
+    })
+  })
+
+  it('un mes con sueldo reparte 50/30/20 sobre el ingreso', () => {
+    expect(simulateMonth(plan, [400_000])).toEqual([140_000, 60_000, 120_000, 80_000])
+  })
+
+  it('un mes flojo: lo fijo se cubre igual y Gustos y Ahorro reciben menos', () => {
+    expect(simulateMonth(plan, [280_000])).toEqual([140_000, 60_000, 48_000, 32_000])
+  })
+
+  it('de a poco, primero se llena lo fijo y después el resto (D33)', () => {
+    const p = { ...plan, model: fixedFirst }
+    expect(simulateMonth(p, [100_000, 60_000])).toEqual([140_000, 20_000, 0, 0])
+    expect(simulateMonth(p, [100_000, 60_000, 90_000])).toEqual([140_000, 60_000, 10_000, 40_000])
+  })
+
+  it('crea los cuatro sobres, con tope en Vida diaria', () => {
+    expect(buildGuide(plan)?.map((f) => [f.name, f.fill_rule, f.fill_value, f.cap_amount])).toEqual([
+      ['Cuentas fijas', 'fixed', 140_000, null],
+      ['Vida diaria', 'fixed', 60_000, 60_000],
+      ['Gustos', 'percent', 6_000, null],
       ['Ahorro', 'residual', 0, null],
     ])
   })
 
   it('sin los montos fijos no se crea nada', () => {
-    expect(buildPreset(agresivo, [180_000, 0])).toBeNull()
+    expect(buildGuide({ ...plan, livingMinor: 0 })).toBeNull()
   })
 
-  it('los demás presets no piden nada', () => {
-    for (const p of PRESETS.filter((p) => p.id !== 'aggressive')) {
-      expect(buildPreset(p, [])).not.toBeNull()
-    }
+  it('el ejemplo antes del primer ingreso parte de lo que piden los fijos', () => {
+    expect(exampleIncomes(201_400, 100_000, 0)).toEqual([201_000, 403_000, 604_000])
+    expect(exampleIncomes(0, 100_000, 0)).toEqual([100_000, 200_000, 300_000])
   })
 })
 

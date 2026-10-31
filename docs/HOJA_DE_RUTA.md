@@ -170,13 +170,22 @@ probarla en el teléfono** y medir los 5 segundos con cronómetro.
 - [x] Tareas: crear con Enter (chips Hoy, Categoría y Alta), completar con un toque y Deshacer, editar o borrar tocándola; vistas Hoy, Semana y Por categoría (`core/tasks/group.ts`).
 - [x] Horario: bloque con sus horarios y uno de los 10 colores; vista día con la línea «ahora» y vista semana (`core/schedule/day.ts`).
 - [x] Gimnasio: rutinas con sus días en el Horario (D22), sesión activa a pantalla completa con la vez pasada, la carga anterior precargada, récord nuevo, descanso y calentamiento; racha; sesión libre (`core/gym/gym.ts`).
-- [ ] 🚧 Archivar y desarchivar sobres, ejercicios y rutinas (D30). Sobres y rutinas ✅; a los ejercicios les falta el botón. Los sobres además se pueden **borrar** desde el 30-oct: manteniendo presionada la tarjeta un segundo, con confirmación (`lib/long-press.ts`). Falta un lugar para ver lo archivado (por decidir dónde).
+- [ ] 🚧 Archivar y desarchivar sobres, ejercicios y rutinas (D30). Sobres y rutinas ✅; a los ejercicios les falta el botón. Los sobres además se pueden **borrar** desde el 30-oct: manteniendo presionada la tarjeta un segundo, con confirmación (`lib/long-press.ts`). Lo archivado se ve en **Ajustes › Archivados** (31-oct, solo sobres por ahora; falta la pestaña Ejercicios).
 - [ ] Ctrl K en el escritorio, eligiendo el sobre a mano (D28).
 - [x] **Hoy con datos reales**: tu día, qué vence (se completa ahí), gimnasio y plata. En el escritorio, dos columnas.
 - [x] Estados vacío, cargando y error en cada área.
 - [x] **Horario: la tira de días es un carrusel** (30-oct, `WeekStrip.tsx`): se desliza para pasar de semana, con imán; las flechas siguen.
 - [x] **Plata más clara** (30-oct), tras verla en el teléfono: cada sobre muestra **«Disponible»** (lo que tiene sin pasar el tope, `core/money/balance.ts › spendable`) en vez del saldo y el tope por separado; reglas dichas en palabras («Recibe $X de cada ingreso»); antes del primer ingreso, «Así funciona» en 3 pasos y «Registrar tu primer ingreso»; el sobre se crea con solo nombre y regla, con un ejemplo en vivo de cuánto recibe, y el resto va en «Más opciones»; el gasto muestra lo disponible de cada sobre y avisa si lo deja en rojo o pasa el tope (`expenseWarning`).
-- [ ] Transferir entre sobres y el barrido de fin de mes: el modelo los tiene (`kind = 'transfer'`, `period_closures`), la interfaz todavía no.
+- [ ] Transferir entre sobres y el barrido de fin de mes: el modelo los tiene (`kind = 'transfer'`, `period_closures`), la interfaz todavía no. La única transferencia que existe es la de archivar un sobre con saldo (31-oct).
+- [x] **Paquete de diseño (4), Plata y stepper** (31-oct-2026). **Falta probarlo en el teléfono.**
+  - **D33**: un monto fijo se completa por mes y no por ingreso. Con ingresos de a poco, el arriendo ya no se cobra en cada pago (`allocate.ts` + `balance.ts › receivedIn`).
+  - La guía de la primera vez en 4 pasos reemplaza a los tres presets: cómo te entra la plata, el modelo (50/30/20, Lo fijo primero o 70/20/10), los montos que se recalculan en los dos sentidos y «Pruébalo». En el escritorio va en tres columnas. La simulación usa el mismo reparto que un ingreso de verdad (`core/money/presets.ts`). Vida diaria nace con tope igual a su monto.
+  - Antes del primer movimiento, «Tus sobres están listos» muestra el reparto con los sobres de la persona y no aparecen el $0 ni la pestaña Movimientos.
+  - Tarjeta de sobre: «disponible» al lado del monto y los cuatro estados (normal, cerca del tope con «Te quedan $X para N días», pasado del tope y vacío). La barra del tope es gris mientras va bien.
+  - Hoja de sobre: el monto y su ejemplo en un solo bloque, «Más opciones» con resumen, solo un sobre con «Lo que sobre», Archivar como enlace. En el escritorio es una ventana de 480 px y Ctrl+Enter guarda.
+  - Archivar un sobre con saldo obliga a pasar la plata a otro primero, con una transferencia («Mover $X y archivar»).
+  - **Ajustes › Archivados**: buscador (`/` en el escritorio), el historial por mes con totales y «Restaurar». Se quitó la lista plegable del final de Plata.
+  - Stepper: el campo se ve con borde lima y − y + se apagan al escribir; lo que se sale del rango no se guarda y avisa debajo; ↑ y ↓ en el escritorio; el peso se redondea a 0,5. Se corrigió que Esc guardaba lo que se quería cancelar.
 - [ ] Los saldos suman todos los movimientos en el navegador, pidiéndolos de a 1.000. Con años de uso conviene una vista que sume en la base (una migración).
 
 ## F4 · PWA y uso de prueba

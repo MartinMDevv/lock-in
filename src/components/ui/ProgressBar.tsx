@@ -3,14 +3,15 @@ import type { CapStatus } from '@/core/money/cap'
 /**
  * La barra de progreso (componente 07). Dos formas:
  *
- * - `cap`: el tope de un sobre, 4 px, verde/ámbar/rojo según `capStatus()`.
+ * - `cap`: el tope de un sobre, 4 px, gris/ámbar/rojo según `capStatus()`. Mientras va
+ *   bien no llama la atención: el color se guarda para cuando hay que avisar.
  * - `goal`: una meta, 6 px, en el color de acento.
  *
  * Se llena desde cero al aparecer (scaleX en 700 ms). Se anima la escala y
  * no el ancho: así la pinta la tarjeta gráfica y va fluida a 120–144 Hz.
  */
 const CAP_COLOR: Record<CapStatus, string> = {
-  ok: 'bg-success',
+  ok: 'bg-ink-muted',
   near: 'bg-warning',
   over: 'bg-danger',
 }

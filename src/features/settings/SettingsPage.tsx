@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/auth-context'
 import { CURRENCIES, useProfile, useUpdateProfile } from './profile'
@@ -13,6 +14,7 @@ import { Field, Input } from '@/components/ui/Field'
 import { IconoCheck } from '@/components/ui/icons'
 import { Picker } from '@/components/ui/Picker'
 import { Segmented } from '@/components/ui/Segmented'
+import { useEnvelopes } from '@/features/money/money'
 
 /**
  * Ajustes: la cuenta y las preferencias que viven en `profiles`.
@@ -23,6 +25,7 @@ export function SettingsPage() {
   // Uno solo para toda la tarjeta, así el aviso de «Guardado» es uno.
   const guardar = useUpdateProfile()
   const [saliendo, setSaliendo] = useState(false)
+  const archivados = (useEnvelopes().data ?? []).filter((e) => e.archived_at !== null).length
 
   async function cerrarSesion() {
     setSaliendo(true)
@@ -62,6 +65,20 @@ export function SettingsPage() {
           <SelectorTema actual={parseTheme(perfil.data.theme)} />
         </section>
       )}
+
+      <section>
+        <Titulo>Archivados</Titulo>
+        <Link
+          to="/settings/archived"
+          className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 hover:border-line-strong"
+        >
+          <span>
+            <span className="block text-body-sm font-medium">Sobres archivados</span>
+            <span className="block text-caption text-ink-faint">Su historial y la opción de restaurarlos</span>
+          </span>
+          <span className="text-body-sm text-ink-muted tabular-nums">{archivados}</span>
+        </Link>
+      </section>
 
       <Button variant="danger" onClick={() => void cerrarSesion()} disabled={saliendo} className="w-full">
         {saliendo ? 'Cerrando…' : 'Cerrar sesión'}

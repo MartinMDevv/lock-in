@@ -327,3 +327,21 @@ SMTP propio. El enlace mágico sigue descartado (D3).
 | Seguridad (F7) | La prueba de RLS con dos cuentas pasa a ser lo más crítico del proyecto |
 | ~~Protección de Vercel~~ | ✅ 28-oct: no hacía falta. Producción ya era pública y la protección solo cubre las vistas previas |
 
+### D33 · Un monto fijo se completa por mes, no por ingreso
+Decidida el 31-oct-2026, al pasar a código la guía de Plata del paquete de
+diseño. Antes, un sobre `fixed` pedía su monto entero en **cada** ingreso: con
+cinco pagos chicos en el mes, el arriendo se cobraba cinco veces y Ahorro
+nunca recibía nada. Contradecía D8, que promete que el mismo código sirve para
+un sueldo mensual y para ingresos de a poco.
+
+Ahora un fijo pide **lo que le falta para completar su monto este mes**: lo
+que ya recibió de ingresos desde el día 1 (en la zona del perfil) se descuenta.
+Con un sueldo al mes el resultado es el mismo de antes. De a poco, primero se
+llena Cuentas fijas, después Vida diaria, y recién cuando lo fijo está cubierto
+lo que entra pasa a los porcentajes y a lo que sobre.
+
+No necesita columna (D6): lo recibido en el mes se calcula desde `movements`
+(`core/money/balance.ts › receivedIn`). Las transferencias no cuentan, porque
+no son plata nueva. Un sueldo que llega el 30 cuenta para ese mes: el del mes
+siguiente vuelve a pedir el fijo completo.
+

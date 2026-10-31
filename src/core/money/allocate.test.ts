@@ -78,6 +78,39 @@ describe('allocateIncome', () => {
     }
   })
 
+  it('un fijo pide solo lo que le falta del mes (D33)', () => {
+    // 'bills' ya recibió 200 de sus 300 este mes; 'living', todo.
+    const recibido = new Map([
+      ['bills', 200],
+      ['living', 500],
+    ])
+    const r = allocateIncome(1000, [bills, living, fun, save], recibido)
+
+    expect(amountOf(r, 'bills')).toBe(100)
+    expect(amountOf(r, 'living')).toBe(0)
+    expect(amountOf(r, 'fun')).toBe(90) // 10% de los 900 que quedan
+    expect(amountOf(r, 'save')).toBe(810)
+    expect(r.shortfallMinor).toBe(0)
+  })
+
+  it('de a poco, los fijos se llenan una sola vez en el mes', () => {
+    // Cinco ingresos chicos seguidos: lo recibido se va sumando.
+    const recibido = new Map<string, number>()
+    for (const ingreso of [150, 150, 150, 150, 400]) {
+      const r = allocateIncome(ingreso, [bills, living, save], recibido)
+      for (const a of r.allocations) recibido.set(a.envelopeId, (recibido.get(a.envelopeId) ?? 0) + a.amountMinor)
+    }
+    expect(recibido.get('bills')).toBe(300)
+    expect(recibido.get('living')).toBe(500)
+    expect(recibido.get('save')).toBe(200) // 1000 − 300 − 500
+  })
+
+  it('lo recibido de más no le resta a nadie', () => {
+    const r = allocateIncome(100, [bills, save], new Map([['bills', 900]]))
+    expect(amountOf(r, 'bills')).toBe(0)
+    expect(amountOf(r, 'save')).toBe(100)
+  })
+
   it('rechaza ingresos inválidos en vez de repartir basura', () => {
     expect(() => allocateIncome(0, [save])).toThrow()
     expect(() => allocateIncome(-100, [save])).toThrow()

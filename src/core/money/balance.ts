@@ -41,6 +41,23 @@ export function spentIn(movements: readonly MovementLike[], envelopeId: string, 
 }
 
 /**
+ * Lo que recibió cada sobre de ingresos en el período, desde `from` inclusive
+ * y hasta `until` exclusive. Es lo que descuentan los fijos al repartir (D33):
+ * una transferencia no cuenta, porque no es plata nueva.
+ */
+export function receivedIn(movements: readonly MovementLike[], from: Date, until: Date): Map<string, number> {
+  const a = from.getTime()
+  const b = until.getTime()
+  const out = new Map<string, number>()
+  for (const m of movements) {
+    if (m.kind !== 'income' || !m.envelope_to) continue
+    const t = new Date(m.occurred_at).getTime()
+    if (t >= a && t < b) out.set(m.envelope_to, (out.get(m.envelope_to) ?? 0) + m.amount_minor)
+  }
+  return out
+}
+
+/**
  * Lo que de verdad se puede gastar de un sobre: lo que tiene, sin pasar lo
  * que le queda de tope en el período. Nunca negativo.
  *

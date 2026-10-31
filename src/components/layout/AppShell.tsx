@@ -30,6 +30,8 @@ function tituloDeRuta(pathname: string): string {
  * que le acomoda (una lista de tareas a lo ancho de 1920 px no se lee).
  */
 function anchoDeRuta(pathname: string): string {
+  // Archivados lleva la lista y el historial lado a lado.
+  if (pathname === '/settings/archived') return 'lg:max-w-280'
   if (pathname.startsWith('/settings')) return 'lg:max-w-160'
   if (pathname === '/tasks') return 'lg:max-w-190'
   if (pathname === '/schedule') return 'lg:max-w-360'

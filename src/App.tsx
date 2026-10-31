@@ -13,6 +13,7 @@ import { GymPage } from '@/features/gym/GymPage'
 import { WorkoutPage } from '@/features/gym/WorkoutPage'
 import { MoneyPage } from '@/features/money/MoneyPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
+import { ArchivedPage } from '@/features/settings/ArchivedPage'
 
 const queryClient = createQueryClient()
 
@@ -48,7 +49,8 @@ function Rutas() {
         <Route path="gym/session/:workoutId" element={<WorkoutPage />} />
         <Route path="money" element={<MoneyPage />} />
         <Route path="settings" element={<SettingsPage />} />
-        {/* Cualquier otra cosa vuelve a Hoy: con seis rutas fijas, una
+        <Route path="settings/archived" element={<ArchivedPage />} />
+        {/* Cualquier otra cosa vuelve a Hoy: con tan pocas rutas fijas, una
             pantalla de "no encontrado" sería más ruido que ayuda. */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

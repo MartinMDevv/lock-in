@@ -212,7 +212,7 @@ describe('esqueleto de la aplicación', () => {
 
     const [pestañaPlata] = await screen.findAllByRole('link', { name: 'Plata' })
     await usuario.click(pestañaPlata!)
-    expect(await screen.findByText('Arma tus sobres')).toBeInTheDocument()
+    expect(await screen.findByText('¿Cómo te entra la plata?')).toBeInTheDocument()
 
     const [pestañaGimnasio] = await screen.findAllByRole('link', { name: 'Gimnasio' })
     await usuario.click(pestañaGimnasio!)
@@ -456,7 +456,7 @@ describe('cáscara', () => {
     // Un toque abre la edición, y ahí no hay «Borrar».
     const tarjeta = await screen.findByRole('button', { name: /^Vida diaria/ })
     await usuario.click(tarjeta)
-    expect(await screen.findByRole('dialog', { name: 'Vida diaria' })).toHaveAttribute('open')
+    expect(await screen.findByRole('dialog', { name: 'Editar sobre' })).toHaveAttribute('open')
     expect(screen.queryByRole('button', { name: /Borrar/ })).not.toBeInTheDocument()
     await usuario.keyboard('{Escape}')
 
@@ -476,6 +476,72 @@ describe('cáscara', () => {
         'delete envelopes',
       ]),
     )
+  })
+
+  it('Plata: archivar un sobre con saldo pide pasarlo a otro y guarda la transferencia', async () => {
+    const sobre = (id: string, name: string, sort_order: number) => ({
+      id,
+      user_id: 'usuario-1',
+      name,
+      fill_rule: sort_order === 0 ? 'residual' : 'percent',
+      fill_value: sort_order === 0 ? 0 : 2000,
+      cap_amount: null,
+      cap_period: 'none',
+      rollover: true,
+      sweep_to_envelope_id: null,
+      sort_order,
+      target_minor: null,
+      target_date: null,
+      achieved_at: null,
+      group_id: null,
+      archived_at: null,
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-01T00:00:00Z',
+    })
+    filas = {
+      envelopes: [sobre('ahorro', 'Ahorro', 0), sobre('gustos', 'Gustos', 1)],
+      movements: [
+        {
+          id: 'm1',
+          user_id: 'usuario-1',
+          kind: 'income',
+          envelope_from: null,
+          envelope_to: 'gustos',
+          amount_minor: 2500,
+          note: null,
+          occurred_at: '2026-10-28T12:00:00Z',
+          batch_id: null,
+          import_id: null,
+          created_at: '2026-10-28T12:00:00Z',
+          updated_at: '2026-10-28T12:00:00Z',
+        },
+      ],
+    }
+    window.history.pushState({}, '', '/money')
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    await usuario.click(await screen.findByRole('button', { name: /^Gustos/ }))
+    await usuario.click(await screen.findByRole('button', { name: 'Archivar este sobre' }))
+    expect(await screen.findByRole('dialog', { name: 'Archivar «Gustos»' })).toHaveAttribute('open')
+    // Ahorro viene elegido: es el que recibe lo que sobra.
+    expect(screen.getByRole('radio', { name: /^Ahorro/ })).toHaveAttribute('aria-checked', 'true')
+
+    await usuario.click(screen.getByRole('button', { name: 'Mover $2.500 y archivar' }))
+    await waitFor(() => expect(escrituras).toEqual(['update envelopes']))
+    expect(inserts).toEqual([
+      {
+        tabla: 'movements',
+        fila: [
+          expect.objectContaining({
+            kind: 'transfer',
+            envelope_from: 'gustos',
+            envelope_to: 'ahorro',
+            amount_minor: 2500,
+          }),
+        ],
+      },
+    ])
   })
 
   it('Horario: un bloque nuevo se guarda con su horario', async () => {

@@ -53,7 +53,9 @@ El calendario cumple una sola función: **reiniciar el contador de los topes.**
 
 ### Orden de servicio ante un ingreso
 
-1. Los sobres `fixed`, por orden. Cobran primero porque son intocables.
+1. Los sobres `fixed`, por orden. Cobran primero porque son intocables, y
+   piden **lo que les falta del mes** (D33): si ya recibieron su monto con un
+   ingreso anterior del mismo mes, no piden nada más.
 2. Los `percent`, calculados sobre **lo que dejaron los fijos** (D20). Todos
    usan esa misma base: 60% y 15% son de la misma cifra, no se encadenan.
 3. Los `residual` se reparten lo que quede, en partes iguales.
@@ -106,14 +108,25 @@ que viene en el preset recomendado.
 Un preset es un botón que inserta sobres ya configurados. Son **filas, no
 código**: quien los usa los edita o los borra.
 
-| Preset | Composición |
-|---|---|
-| **Ahorro agresivo** | Cuentas fijas (`fixed`) · Vida diaria (`fixed` + tope) · Gustos (`percent`) · Ahorro (`residual`) |
-| **50/30/20** | Necesidades 50% · Gustos 30% · Ahorro (`residual`), que recibe el 20% restante |
-| **Desde cero** | Un solo sobre `residual`; el resto lo arma cada persona |
+La primera vez se arman con una guía de 4 pasos (`core/money/presets.ts`).
+Los cuatro sobres son siempre los mismos: **Cuentas fijas** y **Vida diaria**
+(`fixed`, Vida diaria con tope igual a su monto), **Gustos** (`percent` de lo
+que queda tras los fijos) y **Ahorro** (`residual`). Lo que cambia es el modelo:
 
-En 50/30/20 el ahorro va como `residual` y no como `percent` 20%: así absorbe
-el peso que sobra por redondeo y nunca queda plata sin sobre.
+| Modelo | Lo esencial | Gustos (de lo que queda) |
+|---|---|---|
+| **50/30/20** | la mitad del ingreso | 60 % (el 30 % del ingreso) |
+| **Lo fijo primero** | lo que se escriba, tal cual | 20 % |
+| **70/20/10** | el 70 % del ingreso | 66,67 % (el 20 % del ingreso) |
+
+En los de porcentaje la guía calcula en los dos sentidos: cambiar el ingreso
+escala los fijos, y cambiar un fijo dice cuánto hay que ganar para mantener
+el modelo. Pero lo que se guarda son montos fijos y un porcentaje de lo que
+queda (D20): un mes flojo no achica los fijos, achica Gustos y Ahorro.
+
+Ahorro va como `residual` y no como `percent`: así absorbe el peso que sobra
+por redondeo y nunca queda plata sin sobre. Quien salta la guía arma sus
+sobres uno por uno.
 
 ---
 
@@ -125,7 +138,7 @@ con cualquiera de las tres reglas:
 
 | Meta | Cómo se llena | Objetivo |
 |---|---|---|
-| Bicicleta | fijo 25.000 cada vez que entra plata | 350.000 |
+| Bicicleta | fijo, hasta 25.000 al mes | 350.000 |
 | Viaje | 10% de lo que queda | 300.000 para febrero |
 | Fondo de emergencia | lo que sobre | 900.000 |
 
