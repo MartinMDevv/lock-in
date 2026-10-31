@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Segmented } from '@/components/ui/Segmented'
 import { Sheet } from '@/components/ui/Sheet'
+import { Menu } from '@/components/ui/Menu'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { showToast } from '@/components/ui/toast'
 import { balances, netOf, spendable, spentIn } from '@/core/money/balance'
@@ -20,13 +21,23 @@ import { MoneyGuide } from './MoneyGuide'
 import { ReadyEnvelopes } from './ReadyEnvelopes'
 import { describeRule } from './envelope-text'
 import type { Envelope, Movement } from './money'
-import { useAddMovements, useDeleteMovements, useEnvelopes, useMovements } from './money'
+import {
+  useAddMovements,
+  useDeleteEnvelope,
+  useDeleteMovements,
+  useEnvelopes,
+  useMovements,
+  useUpdateEnvelope,
+} from './money'
 
 type Vista = 'envelopes' | 'movements'
 const VISTAS = [
   { value: 'envelopes', label: 'Sobres' },
   { value: 'movements', label: 'Movimientos' },
 ] as const satisfies readonly { value: Vista; label: string }[]
+
+/** Lo que tarda en cerrarse una tarjeta que se borra o se archiva. */
+const CIERRE_MS = 320
 
 /** Cuántos movimientos se muestran de entrada; «Ver más» suma otros tantos. */
 const PAGINA = 40
@@ -40,7 +51,13 @@ export function MoneyPage() {
   const [hoja, setHoja] = useState<'expense' | 'income' | null>(null)
   const [editando, setEditando] = useState<Envelope | 'new' | null>(null)
   const [borrando, setBorrando] = useState<Envelope | null>(null)
+  const [moviendo, setMoviendo] = useState<Envelope | null>(null)
+  const [menu, setMenu] = useState<{ envelope: Envelope; x: number; y: number } | null>(null)
+  // Las tarjetas que se están cerrando: se borran o archivan al terminar de cerrarse.
+  const [cerrando, setCerrando] = useState<ReadonlySet<string>>(new Set())
   const [sinGuia, setSinGuia] = useState(false)
+  const actualizar = useUpdateEnvelope()
+  const eliminar = useDeleteEnvelope()
 
   if (sobres.isPending || movimientos.isPending) {
     return (
@@ -77,16 +94,61 @@ export function MoneyPage() {
         envelope={editando === 'new' ? null : editando}
         onClose={() => setEditando(null)}
       />
+      <EnvelopeSheet open={moviendo !== null} envelope={moviendo} startMoving onClose={() => setMoviendo(null)} />
       <DeleteEnvelopeSheet
         envelope={borrando}
         onClose={() => setBorrando(null)}
         onArchive={(e) => {
           setBorrando(null)
-          setEditando(e)
+          archivar(e)
+        }}
+        onDelete={(e) => {
+          setBorrando(null)
+          cerrarTarjeta(e.id, () => {
+            eliminar.mutate(e.id)
+            showToast({ text: `«${e.name}» borrado` })
+          })
         }}
       />
+      {menu && (
+        <Menu
+          at={menu}
+          label={`Acciones de ${menu.envelope.name}`}
+          onClose={() => setMenu(null)}
+          items={[
+            { label: 'Editar', kbd: 'E', key: 'e', onSelect: () => setEditando(menu.envelope) },
+            { label: 'Archivar', kbd: 'A', key: 'a', onSelect: () => archivar(menu.envelope) },
+            { label: 'Borrar…', kbd: 'Supr', key: 'Delete', danger: true, onSelect: () => setBorrando(menu.envelope) },
+          ]}
+        />
+      )}
     </>
   )
+
+  /** La tarjeta se cierra (320 ms) y recién ahí pasa lo que se pidió, así no desaparece de golpe. */
+  function cerrarTarjeta(id: string, luego: () => void) {
+    setCerrando((c) => new Set(c).add(id))
+    setTimeout(() => {
+      luego()
+      setCerrando((c) => {
+        const sin = new Set(c)
+        sin.delete(id)
+        return sin
+      })
+    }, CIERRE_MS)
+  }
+
+  /** Archivar: con saldo, primero hay que pasarlo a otro sobre; sin saldo, al tiro. */
+  function archivar(e: Envelope) {
+    if ((balances(movs).get(e.id) ?? 0) > 0) return setMoviendo(e)
+    cerrarTarjeta(e.id, () => {
+      actualizar.mutate({ id: e.id, changes: { archived_at: new Date().toISOString() } })
+      showToast({
+        text: `«${e.name}» archivado · está en Ajustes`,
+        undo: () => actualizar.mutate({ id: e.id, changes: { archived_at: null } }),
+      })
+    })
+  }
 
   // La primera vez, la guía. Quien la salta arma sus sobres uno por uno.
   if (todos.length === 0) {
@@ -122,7 +184,12 @@ export function MoneyPage() {
   const consumo = new Map(activos.map((e) => [e.id, spentIn(movs, e.id, inicioMes, finMes)]))
 
   const hojaRegistro = (
-    <Sheet open={hoja !== null} onClose={() => setHoja(null)} title={hoja === 'income' ? 'Ingreso' : 'Gasto'}>
+    <Sheet
+      open={hoja !== null}
+      onClose={() => setHoja(null)}
+      width="narrow"
+      title={hoja === 'income' ? 'Ingreso' : 'Nuevo gasto'}
+    >
       {hoja === 'expense' && <ExpenseForm onDone={() => setHoja(null)} />}
       {hoja === 'income' && <IncomeForm onDone={() => setHoja(null)} />}
     </Sheet>
@@ -199,8 +266,10 @@ export function MoneyPage() {
                 balance={saldos.get(e.id) ?? 0}
                 spent={consumo.get(e.id) ?? 0}
                 daysLeft={diasQuedan}
+                closing={cerrando.has(e.id)}
                 onOpen={() => setEditando(e)}
                 onLongPress={() => setBorrando(e)}
+                onMenu={(x, y) => setMenu({ envelope: e, x, y })}
               />
             ))}
           </div>
@@ -220,17 +289,6 @@ export function MoneyPage() {
 }
 
 /**
- * En la tarjeta, mantener presionado un segundo abre el borrado. Mientras el
- * dedo espera, la tarjeta se achica de a poco, para que se note que algo va a
- * pasar.
- */
-function presionClass(pressing: boolean): string {
-  return `select-none [-webkit-touch-callout:none] ${
-    pressing ? 'scale-97 transition-[scale] duration-1000 ease-linear' : 'transition-[scale] duration-150'
-  }`
-}
-
-/**
  * La tarjeta de un sobre (Revisión F3 › 03). Primero y grande, lo que se
  * puede gastar, con «disponible» al lado; la regla va como nota bajo el
  * nombre. La barra aparece solo si hay tope, y la línea de abajo cambia de
@@ -241,19 +299,25 @@ function TarjetaSobre({
   balance,
   spent,
   daysLeft,
+  closing,
   onOpen,
   onLongPress,
+  onMenu,
 }: {
   envelope: Envelope
   balance: number
   spent: number
   /** Días que quedan del mes, hoy incluido. */
   daysLeft: number
+  /** Se está cerrando porque se borra o se archiva. */
+  closing: boolean
   onOpen: () => void
   onLongPress: () => void
+  /** Clic derecho o ⋯ en el escritorio: el menú en ese punto. */
+  onMenu: (x: number, y: number) => void
 }) {
   const prefs = usePrefs()
-  const { pressing, handlers } = useLongPress(onLongPress)
+  const { pressing, handlers } = useLongPress(onLongPress, onMenu)
   const tope = e.cap_period === 'month' ? e.cap_amount : null
   const esMeta = e.target_minor !== null
   // Un solo número grande: lo que se puede gastar. En una meta, lo juntado.
@@ -281,41 +345,75 @@ function TarjetaSobre({
   else if (!esMeta && balance <= 0) nota = { texto: 'Se llena con tu próximo ingreso', color: 'text-ink-faint', lado: '' }
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      {...handlers}
-      className={`flex w-full flex-col gap-3 rounded-xl border border-line bg-surface p-4 text-left hover:border-line-strong ${presionClass(pressing)}`}
+    // Al borrarse o archivarse, la tarjeta se cierra con grid-template-rows (1fr → 0fr).
+    <div
+      inert={closing}
+      className={`grid transition-[grid-template-rows,opacity] ease-out ${
+        closing ? 'grid-rows-[0fr] opacity-0 duration-320' : 'grid-rows-[1fr]'
+      }`}
     >
-      <div className="min-w-0">
-        <p className="truncate text-body-sm font-medium">{e.name}</p>
-        <p className="text-caption text-ink-faint">{regla}</p>
-      </div>
-      <p className="flex items-baseline gap-1.5 tabular-nums">
-        <span className={`text-title font-semibold ${numero === 0 ? 'text-ink-muted' : ''}`}>
-          {formatMoney(numero, prefs)}
-        </span>
-        <span className="text-body-sm text-ink-faint">{esMeta ? 'juntado' : 'disponible'}</span>
-      </p>
-      {tope !== null && estado !== null && (
-        <ProgressBar kind="cap" status={estado} ratio={capRatio(spent, tope)} label={`${e.name}, tope del mes`} />
-      )}
-      {esMeta && e.target_minor !== null && (
-        <div className="space-y-1">
-          <ProgressBar kind="goal" ratio={Math.max(0, balance) / e.target_minor} label={`${e.name}, meta`} />
-          <p className="text-caption text-ink-faint">
-            {formatMoney(Math.max(0, balance), prefs)} de {formatMoney(e.target_minor, prefs)}
-            {e.target_date ? ` · para el ${diaCorto(e.target_date)}` : ''}
+      <div className="relative min-h-0 overflow-hidden">
+        <button
+          type="button"
+          onClick={onOpen}
+          {...handlers}
+          // Mientras se mantiene, la tarjeta se hunde y un relleno rojo la recorre
+          // en 550 ms; si se suelta antes, el relleno se retira y vuelve con un rebote.
+          className={`relative isolate flex w-full flex-col gap-3 overflow-hidden rounded-xl border border-line bg-surface p-4 text-left select-none [-webkit-touch-callout:none] hover:border-line-strong ${
+            pressing
+              ? 'scale-97 transition-[scale] duration-550 ease-[cubic-bezier(.2,0,.2,1)]'
+              : 'transition-[scale] duration-220 ease-[cubic-bezier(.3,1.4,.5,1)]'
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-0 -z-10 origin-left bg-danger/16 ${
+              pressing ? 'scale-x-100 transition-[scale] duration-550 ease-linear' : 'scale-x-0 transition-[scale] duration-180 ease-out'
+            }`}
+          />
+          <div className="min-w-0 lg:pr-10">
+            <p className="truncate text-body-sm font-medium">{e.name}</p>
+            <p className="text-caption text-ink-faint">{regla}</p>
+          </div>
+          <p className="flex items-baseline gap-1.5 tabular-nums">
+            <span className={`text-title font-semibold ${numero === 0 ? 'text-ink-muted' : ''}`}>
+              {formatMoney(numero, prefs)}
+            </span>
+            <span className="text-body-sm text-ink-faint">{esMeta ? 'juntado' : 'disponible'}</span>
           </p>
-        </div>
-      )}
-      {nota && (
-        <p className="flex justify-between gap-3 text-caption">
-          <span className={nota.color}>{nota.texto}</span>
-          {nota.lado && <span className="shrink-0 text-ink-faint tabular-nums">{nota.lado}</span>}
-        </p>
-      )}
-    </button>
+          {tope !== null && estado !== null && (
+            <ProgressBar kind="cap" status={estado} ratio={capRatio(spent, tope)} label={`${e.name}, tope del mes`} />
+          )}
+          {esMeta && e.target_minor !== null && (
+            <div className="space-y-1">
+              <ProgressBar kind="goal" ratio={Math.max(0, balance) / e.target_minor} label={`${e.name}, meta`} />
+              <p className="text-caption text-ink-faint">
+                {formatMoney(Math.max(0, balance), prefs)} de {formatMoney(e.target_minor, prefs)}
+                {e.target_date ? ` · para el ${diaCorto(e.target_date)}` : ''}
+              </p>
+            </div>
+          )}
+          {nota && (
+            <p className="flex justify-between gap-3 text-caption">
+              <span className={nota.color}>{nota.texto}</span>
+              {nota.lado && <span className="shrink-0 text-ink-faint tabular-nums">{nota.lado}</span>}
+            </p>
+          )}
+        </button>
+        {/* Escritorio: ⋯ abre el mismo menú del clic derecho. */}
+        <button
+          type="button"
+          aria-label={`Acciones de ${e.name}`}
+          onClick={(ev) => {
+            const r = ev.currentTarget.getBoundingClientRect()
+            onMenu(r.left, r.bottom + 4)
+          }}
+          className="absolute top-3 right-3 hidden size-8 place-items-center rounded-md text-ink-faint hover:bg-surface-raised hover:text-ink lg:grid"
+        >
+          <span aria-hidden="true" className="text-body leading-none">⋯</span>
+        </button>
+      </div>
+    </div>
   )
 }
 

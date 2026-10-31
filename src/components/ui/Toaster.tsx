@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { dismissToast, useToast } from './toast'
 import type { Toast } from './toast'
 
@@ -43,6 +43,24 @@ function ToastCard({ toast }: { toast: Toast }) {
     toast.undo?.()
     setLeaving(true)
   }
+
+  // Ctrl+Z (⌘Z en Mac) deshace en el escritorio, salvo escribiendo en un campo,
+  // donde deshace el texto como siempre.
+  const deshacer = useRef(undo)
+  useEffect(() => {
+    deshacer.current = undo
+  })
+  useEffect(() => {
+    if (!toast.undo || leaving) return
+    function onKeyDown(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== 'z') return
+      if (e.target instanceof Element && e.target.closest('input, textarea, [contenteditable]')) return
+      e.preventDefault()
+      deshacer.current()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [toast.undo, leaving])
 
   return (
     <div

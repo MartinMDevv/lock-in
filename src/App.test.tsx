@@ -393,10 +393,12 @@ describe('cáscara', () => {
 
     await usuario.click(await screen.findByRole('button', { name: 'Registrar', expanded: false }))
     await usuario.click(screen.getByRole('button', { name: /^Gasto/ }))
-    expect(await screen.findByRole('button', { name: /^Vida diaria/, pressed: true })).toBeInTheDocument()
+    expect(await screen.findByRole('radio', { name: /^Vida diaria/, checked: true })).toBeInTheDocument()
 
     for (const tecla of ['4', '5', '0', '0']) await usuario.click(screen.getByRole('button', { name: tecla }))
-    await usuario.click(screen.getByRole('button', { name: 'Registrar $4.500 en Vida diaria' }))
+    // La línea bajo los chips dice cómo queda el sobre, y nunca impide guardar.
+    expect(screen.getByText(/^Vida diaria queda en/)).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Guardar $4.500' }))
 
     expect(inserts).toEqual([
       {
@@ -460,11 +462,14 @@ describe('cáscara', () => {
     expect(screen.queryByRole('button', { name: /Borrar/ })).not.toBeInTheDocument()
     await usuario.keyboard('{Escape}')
 
-    // Clic derecho en el escritorio (en el teléfono, mantener un segundo) abre el borrado.
+    // Clic derecho en el escritorio abre el menú (en el teléfono, mantener presionado abre el borrado).
     fireEvent.contextMenu(tarjeta)
-    expect(await screen.findByText('¿Borrar «Vida diaria» para siempre?')).toBeInTheDocument()
-    expect(screen.getByText(/Se borra también su único movimiento/)).toBeInTheDocument()
+    await usuario.click(await screen.findByRole('menuitem', { name: /^Borrar…/ }))
+    expect(await screen.findByRole('dialog', { name: '¿Borrar «Vida diaria»?' })).toHaveAttribute('open')
+    expect(screen.getByText('su único movimiento')).toBeInTheDocument()
     expect(screen.getByText('No se puede recuperar.')).toBeInTheDocument()
+    // Archivar va primero, como acción principal.
+    expect(screen.getByRole('button', { name: /^Archivar en su lugar/ })).toBeInTheDocument()
 
     await usuario.click(screen.getByRole('button', { name: 'Borrar para siempre' }))
     await waitFor(() =>

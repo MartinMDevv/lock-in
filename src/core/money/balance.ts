@@ -1,3 +1,8 @@
+import { CAP_WARNING_PERCENT } from './cap'
+
+/** Desde dónde el gasto avisa en ámbar: el mismo 85 % de la barra del tope. */
+const CAP_WARNING_BP = CAP_WARNING_PERCENT * 100
+
 /**
  * Saldos y consumo de tope, calculados desde los movimientos (D6): ninguna
  * columna guarda un saldo, así que editar un gasto viejo nunca deja un
@@ -70,29 +75,36 @@ export function spendable(balanceMinor: number, capMinor: number | null, spentMi
   return Math.min(saldo, Math.max(0, capMinor - spentMinor))
 }
 
-/** Por qué conviene avisar antes de registrar un gasto. */
-export type ExpenseWarning =
-  /** El sobre no alcanza: quedaría en rojo por `shortMinor`. */
-  | { kind: 'overdraw'; balanceMinor: number; shortMinor: number }
-  /** Alcanza, pero pasa el tope del período por `overMinor`. */
-  | { kind: 'over-cap'; overMinor: number }
-
 /**
- * Si un gasto deja el sobre en rojo o pasa su tope. No bloquea nada: a veces
- * pasa y hay que anotarlo igual; solo se avisa antes. Quedar en rojo pesa
- * más que pasar el tope, así que se avisa eso primero.
+ * Cómo queda un sobre si se registra este gasto (Revisión F3 › 08). Es la
+ * línea bajo los chips del gasto: neutra, en ámbar desde el 85 % del tope y
+ * en rojo si el sobre queda negativo. No bloquea nada: a veces pasa y hay que
+ * anotarlo igual; solo se avisa antes.
  */
-export function expenseWarning(
+export interface ExpenseStatus {
+  tone: 'neutral' | 'warning' | 'danger'
+  /** El saldo después del gasto. Negativo = el sobre queda en rojo. */
+  afterMinor: number
+  /** Lo gastado en el período con este gasto, sobre el tope, en puntos base. null sin tope. */
+  capUsedBp: number | null
+  /** Cuánto se pasa del tope con este gasto, o 0. */
+  overCapMinor: number
+}
+
+export function expenseStatus(
   amountMinor: number,
   balanceMinor: number,
   capMinor: number | null,
   spentMinor: number,
-): ExpenseWarning | null {
-  if (amountMinor > balanceMinor)
-    return { kind: 'overdraw', balanceMinor: Math.max(0, balanceMinor), shortMinor: amountMinor - balanceMinor }
-  if (capMinor !== null && spentMinor + amountMinor > capMinor)
-    return { kind: 'over-cap', overMinor: spentMinor + amountMinor - capMinor }
-  return null
+): ExpenseStatus {
+  const afterMinor = balanceMinor - amountMinor
+  const spent = spentMinor + amountMinor
+  const capUsedBp = capMinor !== null && capMinor > 0 ? Math.floor((spent * 10_000) / capMinor) : null
+  const overCapMinor = capMinor !== null ? Math.max(0, spent - capMinor) : 0
+  let tone: ExpenseStatus['tone'] = 'neutral'
+  if (amountMinor > 0 && afterMinor < 0) tone = 'danger'
+  else if (amountMinor > 0 && capUsedBp !== null && capUsedBp >= CAP_WARNING_BP) tone = 'warning'
+  return { tone, afterMinor, capUsedBp, overCapMinor }
 }
 
 /**

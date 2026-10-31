@@ -7,13 +7,17 @@ import { opensKeyboard } from '@/lib/media'
  * en el teléfono el sobrepaso se veía como si la hoja vibrara al abrirse.
  */
 const EXIT_MS = 300
+/** El ancho de la ventana en el escritorio. */
+const ANCHOS = { base: 'lg:w-130', narrow: 'lg:w-120', confirm: 'lg:w-105' } as const
+
 /** Cuánto hay que arrastrar hacia abajo para cerrarla, según el diseño. */
 export const DRAG_CLOSE_PX = 110
 
 /**
  * La hoja inferior (componente 05). En el escritorio, la misma hoja es una
- * ventana centrada de 520 px, como el registro rápido del diseño, o de 480 px
- * con `narrow` (crear o editar un sobre).
+ * ventana centrada de 520 px, como el registro rápido del diseño; de 480 px
+ * con `width="narrow"` (crear o editar un sobre) o de 420 px con
+ * `width="confirm"` (una confirmación).
  *
  * Va sobre el <dialog> nativo con showModal(): el navegador ya encierra el
  * foco adentro, deja inerte lo de atrás, cierra con Esc y devuelve el foco al
@@ -28,13 +32,13 @@ export function Sheet({
   open,
   onClose,
   title,
-  narrow = false,
+  width = 'base',
   children,
 }: {
   open: boolean
   onClose: () => void
   title: string
-  narrow?: boolean
+  width?: keyof typeof ANCHOS
   children: ReactNode
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
@@ -178,7 +182,7 @@ export function Sheet({
       <div
         ref={panel}
         tabIndex={-1}
-        className={`relative -bottom-10 outline-none max-h-[calc(var(--visible-h,100dvh)*0.9+40px)] w-full overflow-y-auto rounded-t-sheet border-t border-line bg-surface-sheet px-4 pb-[calc(56px+env(safe-area-inset-bottom))] shadow-sheet starting:translate-y-full lg:bottom-0 lg:max-h-[85dvh] ${narrow ? 'lg:w-120' : 'lg:w-130'} lg:rounded-xl lg:border lg:p-6 lg:shadow-popover lg:starting:translate-y-2 lg:starting:scale-97 lg:starting:opacity-0 ${
+        className={`relative -bottom-10 outline-none max-h-[calc(var(--visible-h,100dvh)*0.9+40px)] w-full overflow-y-auto rounded-t-sheet border-t border-line bg-surface-sheet px-4 pb-[calc(56px+env(safe-area-inset-bottom))] shadow-sheet starting:translate-y-full lg:bottom-0 lg:max-h-[85dvh] ${ANCHOS[width]} lg:rounded-xl lg:border lg:p-6 lg:shadow-popover lg:starting:translate-y-2 lg:starting:scale-97 lg:starting:opacity-0 ${
           dragging
             ? 'transition-none'
             : 'transition-[translate,scale,opacity] duration-(--duration-sheet) ease-out lg:duration-220 lg:ease-[cubic-bezier(.2,.9,.3,1.15)]'

@@ -1,26 +1,35 @@
 import { useCallback, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Chip } from '@/components/ui/Chip'
 import { showToast } from '@/components/ui/toast'
-import { balances, expenseWarning, lastExpenseEnvelope, spendable, spentIn } from '@/core/money/balance'
+import { balances, expenseStatus, lastExpenseEnvelope, spentIn } from '@/core/money/balance'
 import { startOfDayInstant, startOfMonth, startOfNextMonth } from '@/core/time/day'
 import { formatMoney } from '@/lib/format'
+import { useMediaQuery } from '@/lib/media'
 import { usePrefs, useToday } from '@/features/settings/profile'
 import { AmountPad } from './AmountPad'
 import { newMovementId, useAddMovements, useDeleteMovements, useEnvelopes, useMovements } from './money'
 
+/** Colores de la línea de estado bajo los chips, por tono (Revisión F3 › 08). */
+const TONO = {
+  neutral: { fondo: 'bg-surface', punto: 'bg-ink-faint', texto: 'text-ink' },
+  warning: { fondo: 'bg-warning/12', punto: 'bg-warning', texto: 'text-warning' },
+  danger: { fondo: 'bg-danger/12', punto: 'bg-danger', texto: 'text-danger' },
+} as const
+
 /**
  * Un gasto en 3 o 4 toques: el monto con el teclado propio, el sobre (ya
- * viene elegido el del último gasto) y Registrar. La nota es opcional.
+ * viene elegido el del último gasto) y Guardar. La nota es opcional.
  *
- * Cada sobre muestra lo que se puede gastar de él, y si el gasto lo deja en
- * rojo o pasa el tope, se avisa antes de registrar (no se bloquea: a veces
- * pasa y hay que anotarlo igual).
+ * Cada chip muestra el saldo del sobre, y en rojo si el monto escrito no
+ * alcanza en él: se ve de un vistazo de dónde sí puede salir. Bajo los
+ * chips, una línea dice cómo queda el elegido (expenseStatus). Nunca
+ * bloquea: a veces pasa y hay que anotarlo igual.
  */
 export function ExpenseForm({ onDone }: { onDone: () => void }) {
   const prefs = usePrefs()
   const { today, timezone } = useToday()
+  const escritorio = useMediaQuery('(min-width: 1024px)')
   const sobres = useEnvelopes()
   const movimientos = useMovements()
   const agregar = useAddMovements()
@@ -40,22 +49,24 @@ export function ExpenseForm({ onDone }: { onDone: () => void }) {
   const saldos = balances(movs)
   const inicioMes = startOfDayInstant(startOfMonth(today), timezone)
   const finMes = startOfDayInstant(startOfNextMonth(today), timezone)
-  const tope = (id: string) => {
-    const e = activos.find((x) => x.id === id)
-    return e && e.cap_period === 'month' ? e.cap_amount : null
-  }
-  const disponible = (id: string) => spendable(saldos.get(id) ?? 0, tope(id), spentIn(movs, id, inicioMes, finMes))
+  const tope = sobre && sobre.cap_period === 'month' ? sobre.cap_amount : null
+  const saldo = sobre ? (saldos.get(sobre.id) ?? 0) : 0
+  const estado = expenseStatus(monto, saldo, tope, sobre ? spentIn(movs, sobre.id, inicioMes, finMes) : 0)
 
-  const alerta =
-    sobre && monto > 0
-      ? expenseWarning(monto, saldos.get(sobre.id) ?? 0, tope(sobre.id), spentIn(movs, sobre.id, inicioMes, finMes))
-      : null
-  const aviso =
-    !sobre || !alerta
-      ? null
-      : alerta.kind === 'overdraw'
-        ? `${sobre.name} tiene ${formatMoney(alerta.balanceMinor, prefs)}: quedaría en −${formatMoney(alerta.shortMinor, prefs)}.`
-        : `Con esto te pasas del tope del mes de ${sobre.name} por ${formatMoney(alerta.overMinor, prefs)}.`
+  let linea = ''
+  let detalle = ''
+  if (sobre && monto <= 0) linea = `${sobre.name} tiene ${formatMoney(saldo, prefs)}`
+  else if (sobre) {
+    linea = `${sobre.name} queda en ${formatMoney(estado.afterMinor, prefs)}`
+    if (estado.tone === 'danger')
+      detalle =
+        estado.overCapMinor > 0
+          ? `Te pasas del tope por ${formatMoney(estado.overCapMinor, prefs)}. Puedes guardarlo igual.`
+          : 'Puedes guardarlo igual; el sobre queda en rojo hasta el próximo ingreso.'
+    else if (estado.tone === 'warning' && tope !== null && estado.capUsedBp !== null)
+      detalle = `${Math.floor(estado.capUsedBp / 100)} % del tope de ${formatMoney(tope, prefs)} este mes`
+  }
+  const tono = TONO[estado.tone]
 
   function registrar(e: FormEvent) {
     e.preventDefault()
@@ -97,28 +108,67 @@ export function ExpenseForm({ onDone }: { onDone: () => void }) {
         className="h-11 w-full rounded-lg border border-line bg-bg px-3.5 text-body outline-none placeholder:text-ink-faint focus:border-ink-muted"
       />
 
-      <div role="group" aria-label="Sobre" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-        {activos.map((e) => (
-          <Chip
-            key={e.id}
-            selected={e.id === sobre?.id}
-            hint={formatMoney(disponible(e.id), prefs)}
-            onClick={() => setElegido(e.id)}
-          >
-            {e.name}
-          </Chip>
-        ))}
+      <div className="space-y-2">
+        <span className="text-caption text-ink-muted">Sale de</span>
+        <div role="radiogroup" aria-label="Sale de" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          {activos.map((e) => {
+            const elegida = e.id === sobre?.id
+            const suSaldo = saldos.get(e.id) ?? 0
+            const noAlcanza = monto > suSaldo
+            return (
+              <button
+                key={e.id}
+                type="button"
+                role="radio"
+                aria-checked={elegida}
+                onClick={() => setElegido(e.id)}
+                className={`flex min-h-13 flex-col justify-center rounded-lg border px-3 py-1.5 text-left transition-colors duration-(--duration-fast) lg:min-h-14 ${
+                  elegida ? 'border-accent bg-accent-soft' : 'border-line bg-surface hover:border-line-strong'
+                }`}
+              >
+                <span className="truncate text-body-sm font-medium">{e.name}</span>
+                <span
+                  className={`text-caption tabular-nums transition-colors duration-200 ${noAlcanza ? 'text-danger' : 'text-ink-faint'}`}
+                >
+                  {formatMoney(suSaldo, prefs)}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {aviso && (
-        <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-body-sm text-warning">
-          {aviso}
-        </p>
+      {sobre && (
+        // Siempre del mismo alto mínimo, así el botón no salta al cambiar el aviso.
+        <div
+          role="status"
+          className={`flex min-h-11 items-start gap-2.5 rounded-lg px-3 py-2.5 transition-colors duration-200 ${tono.fondo}`}
+        >
+          <span aria-hidden="true" className={`mt-1.5 size-2 shrink-0 rounded-full transition-colors duration-200 ${tono.punto}`} />
+          <span className="min-w-0">
+            <span className={`block text-body-sm font-medium tabular-nums transition-colors duration-200 ${tono.texto}`}>
+              {linea}
+            </span>
+            {detalle && <span className={`block text-caption ${tono.texto}`}>{detalle}</span>}
+          </span>
+        </div>
       )}
 
-      <Button type="submit" variant="primary" size="lg" className="w-full" disabled={!sobre || monto <= 0}>
-        {sobre && monto > 0 ? `Registrar ${formatMoney(monto, prefs)} en ${sobre.name}` : 'Registrar gasto'}
-      </Button>
+      <div className="flex gap-2">
+        {escritorio && (
+          <Button type="button" className="flex-1" onClick={onDone}>
+            Cancelar
+          </Button>
+        )}
+        <Button type="submit" variant="primary" size="lg" className="flex-2" disabled={!sobre || monto <= 0}>
+          {monto > 0 ? `Guardar ${formatMoney(monto, prefs)}` : 'Guardar'}
+          {escritorio && (
+            <kbd aria-hidden="true" className="ml-2 font-mono text-caption opacity-70">
+              ↵
+            </kbd>
+          )}
+        </Button>
+      </div>
     </form>
   )
 }

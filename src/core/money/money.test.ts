@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseAmount, parsePercent, pressBackspace, pressDigits } from './amount'
-import { balances, expenseWarning, lastExpenseEnvelope, netOf, receivedIn, spendable, spentIn } from './balance'
+import { balances, expenseStatus, lastExpenseEnvelope, netOf, receivedIn, spendable, spentIn } from './balance'
 import type { MovementLike } from './balance'
 import { buildGuide, essentialGap, exampleIncomes, GUIDE_MODELS, pickModel, setEssential, setIncome, simulateMonth } from './presets'
 import type { GuideModel, GuidePlan } from './presets'
@@ -186,24 +186,28 @@ describe('lo que se puede gastar', () => {
 })
 
 describe('aviso antes de un gasto', () => {
-  it('nada que avisar si alcanza y no pasa el tope', () => {
-    expect(expenseWarning(5_000, 10_000, 20_000, 0)).toBeNull()
-    expect(expenseWarning(5_000, 10_000, null, 0)).toBeNull()
+  it('sin monto, o si alcanza y va lejos del tope, es neutro', () => {
+    expect(expenseStatus(0, 10_000, 20_000, 0).tone).toBe('neutral')
+    expect(expenseStatus(5_000, 10_000, 20_000, 0)).toEqual({
+      tone: 'neutral',
+      afterMinor: 5_000,
+      capUsedBp: 2_500,
+      overCapMinor: 0,
+    })
+    expect(expenseStatus(5_000, 10_000, null, 0).capUsedBp).toBeNull()
   })
 
-  it('si el sobre no alcanza, dice cuánto tiene y cuánto falta', () => {
-    expect(expenseWarning(5_000, 2_000, null, 0)).toEqual({ kind: 'overdraw', balanceMinor: 2_000, shortMinor: 3_000 })
+  it('desde el 85 % del tope avisa en ámbar, aunque el sobre alcance', () => {
+    const s = expenseStatus(1_500, 10_000, 10_000, 7_000)
+    expect(s.tone).toBe('warning')
+    expect(s.capUsedBp).toBe(8_500)
+    // Pasado del tope con saldo de sobra sigue en ámbar, con lo que se pasa.
+    expect(expenseStatus(4_000, 10_000, 10_000, 7_000)).toMatchObject({ tone: 'warning', overCapMinor: 1_000 })
   })
 
-  it('con el sobre ya en rojo, tiene $0 y falta todo lo que ya debe más el gasto', () => {
-    expect(expenseWarning(1_000, -500, null, 0)).toEqual({ kind: 'overdraw', balanceMinor: 0, shortMinor: 1_500 })
-  })
-
-  it('si alcanza pero pasa el tope, dice por cuánto', () => {
-    expect(expenseWarning(3_000, 10_000, 5_000, 4_000)).toEqual({ kind: 'over-cap', overMinor: 2_000 })
-  })
-
-  it('quedar en rojo se avisa antes que pasar el tope', () => {
-    expect(expenseWarning(9_000, 1_000, 5_000, 4_000)?.kind).toBe('overdraw')
+  it('si el sobre queda negativo es rojo, y dice cuánto queda', () => {
+    expect(expenseStatus(5_000, 2_000, null, 0)).toMatchObject({ tone: 'danger', afterMinor: -3_000 })
+    // Quedar en rojo pesa más que el tope.
+    expect(expenseStatus(9_000, 1_000, 5_000, 4_000)).toMatchObject({ tone: 'danger', overCapMinor: 8_000 })
   })
 })

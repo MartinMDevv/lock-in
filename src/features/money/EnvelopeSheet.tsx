@@ -67,27 +67,34 @@ const ORDEN: Record<FillRule, string> = {
 export function EnvelopeSheet({
   open,
   envelope,
+  startMoving = false,
   onClose,
 }: {
   open: boolean
   envelope: Envelope | null
+  /** Abre directo en «pasar el saldo y archivar» (desde la confirmación de borrar). */
+  startMoving?: boolean
   onClose: () => void
 }) {
-  const [moviendo, setMoviendo] = useState(false)
+  const [moviendo, setMoviendo] = useState(startMoving)
   const cerrar = () => {
-    setMoviendo(false)
+    setMoviendo(startMoving)
     onClose()
   }
   return (
     <Sheet
       open={open}
       onClose={cerrar}
-      narrow
+      width="narrow"
       title={moviendo && envelope ? `Archivar «${envelope.name}»` : envelope ? 'Editar sobre' : 'Nuevo sobre'}
     >
       {open &&
         (moviendo && envelope ? (
-          <MoverYArchivar envelope={envelope} onCancel={() => setMoviendo(false)} onDone={cerrar} />
+          <MoverYArchivar
+            envelope={envelope}
+            onCancel={() => (startMoving ? cerrar() : setMoviendo(false))}
+            onDone={cerrar}
+          />
         ) : (
           <Formulario
             key={envelope?.id ?? 'nuevo'}
@@ -237,7 +244,7 @@ function Formulario({
     actualizar.mutate({ id: envelope.id, changes: { archived_at: archivar ? ahora() : null } })
     onClose()
     showToast({
-      text: archivar ? `Archivado: ${envelope.name}` : `De vuelta: ${envelope.name}`,
+      text: archivar ? `«${envelope.name}» archivado · está en Ajustes` : `De vuelta: ${envelope.name}`,
       undo: () =>
         actualizar.mutate({ id: envelope.id, changes: { archived_at: archivar ? null : envelope.archived_at } }),
     })
@@ -474,7 +481,7 @@ function MoverYArchivar({
     actualizar.mutate({ id: envelope.id, changes: { archived_at: ahora() } })
     onDone()
     showToast({
-      text: `Archivado: ${envelope.name}`,
+      text: `«${envelope.name}» archivado · está en Ajustes`,
       undo: () => {
         borrar.mutate([transferencia.id])
         actualizar.mutate({ id: envelope.id, changes: { archived_at: null } })

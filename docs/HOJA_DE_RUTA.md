@@ -170,7 +170,7 @@ probarla en el teléfono** y medir los 5 segundos con cronómetro.
 - [x] Tareas: crear con Enter (chips Hoy, Categoría y Alta), completar con un toque y Deshacer, editar o borrar tocándola; vistas Hoy, Semana y Por categoría (`core/tasks/group.ts`).
 - [x] Horario: bloque con sus horarios y uno de los 10 colores; vista día con la línea «ahora» y vista semana (`core/schedule/day.ts`).
 - [x] Gimnasio: rutinas con sus días en el Horario (D22), sesión activa a pantalla completa con la vez pasada, la carga anterior precargada, récord nuevo, descanso y calentamiento; racha; sesión libre (`core/gym/gym.ts`).
-- [ ] 🚧 Archivar y desarchivar sobres, ejercicios y rutinas (D30). Sobres y rutinas ✅; a los ejercicios les falta el botón. Los sobres además se pueden **borrar** desde el 30-oct: manteniendo presionada la tarjeta un segundo, con confirmación (`lib/long-press.ts`). Lo archivado se ve en **Ajustes › Archivados** (31-oct, solo sobres por ahora; falta la pestaña Ejercicios).
+- [x] Archivar y desarchivar sobres, ejercicios y rutinas (D30). Los ejercicios se archivan desde el selector (31-oct). Los sobres además se pueden **borrar** manteniendo presionada la tarjeta, con confirmación (`lib/long-press.ts`). Lo archivado se ve en **Ajustes › Archivados**, con pestañas Sobres y Ejercicios. **Falta probarlo en el teléfono.**
 - [ ] Ctrl K en el escritorio, eligiendo el sobre a mano (D28).
 - [x] **Hoy con datos reales**: tu día, qué vence (se completa ahí), gimnasio y plata. En el escritorio, dos columnas.
 - [x] Estados vacío, cargando y error en cada área.
@@ -186,6 +186,11 @@ probarla en el teléfono** y medir los 5 segundos con cronómetro.
   - Archivar un sobre con saldo obliga a pasar la plata a otro primero, con una transferencia («Mover $X y archivar»).
   - **Ajustes › Archivados**: buscador (`/` en el escritorio), el historial por mes con totales y «Restaurar». Se quitó la lista plegable del final de Plata.
   - Stepper: el campo se ve con borde lima y − y + se apagan al escribir; lo que se sale del rango no se guarda y avisa debajo; ↑ y ↓ en el escritorio; el peso se redondea a 0,5. Se corrigió que Esc guardaba lo que se quería cancelar.
+- [x] **Paquete de diseño (5)** (31-oct-2026). **Falta probarlo en el teléfono.**
+  - Archivar un ejercicio desde el selector: ⋯ con Renombrar y Archivar en el teléfono, ícono que archiva al instante en el escritorio; la fila se cierra, sale «Deshacer» y al final queda «N archivados · Ver en Ajustes». Archivados ganó la pestaña Ejercicios, con su historial por sesión y la mejor serie (`core/gym/history.ts`).
+  - Borrar un sobre: mantener presionado 550 ms con un relleno rojo que recorre la tarjeta; la confirmación ofrece primero «Archivar en su lugar» (Enter) y después «Borrar para siempre»; la tarjeta se cierra antes de irse. En el escritorio, clic derecho o ⋯ abre un menú con Editar (E), Archivar (A) y Borrar… (Supr), y la confirmación es una ventana de 420 px.
+  - Gasto: los chips muestran el saldo de cada sobre (en rojo si el monto no alcanza) y una línea dice cómo queda el elegido: neutra, ámbar desde el 85 % del tope, roja si queda negativo (`balance.ts › expenseStatus`). Nunca impide guardar.
+  - Ctrl+Z deshace desde el toast en el escritorio.
 - [ ] Los saldos suman todos los movimientos en el navegador, pidiéndolos de a 1.000. Con años de uso conviene una vista que sume en la base (una migración).
 
 ## F4 · PWA y uso de prueba

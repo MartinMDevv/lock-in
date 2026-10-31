@@ -1,24 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent, PointerEvent } from 'react'
 
-/** Cuánto hay que mantener el dedo para que cuente. */
-export const LONG_PRESS_MS = 1000
+/** Cuánto hay que mantener el dedo para que cuente (Revisión F3 › 07). */
+export const LONG_PRESS_MS = 550
 /** Si el dedo se mueve más que esto, era un scroll y no una pulsación. */
 const MOVE_TOLERANCE_PX = 10
 
 /**
- * Mantener presionado un elemento por un segundo, para las acciones que no
- * deben salir con un toque por error (borrar un sobre).
+ * Mantener presionado un elemento algo más de medio segundo, para las
+ * acciones que no deben salir con un toque por error (borrar un sobre).
  *
  * Devuelve los manejadores para el elemento y si el dedo sigue apoyado, para
  * dar una señal mientras se espera. Después de que dispara, el toque que
  * sigue no cuenta como clic. En el escritorio, el clic derecho o la tecla de
- * menú abren lo mismo sin esperar: ahí no hay dedo que se apoye por error.
+ * menú abren `onMenu` (un menú en ese punto) si se pasa, o lo mismo que
+ * mantener presionado: ahí no hay dedo que se apoye por error.
  *
  * El `contextmenu` se bloquea siempre: en Android salta solo a los ~500 ms y
- * abriría el menú del navegador antes del segundo.
+ * abriría el menú del navegador en vez del nuestro.
  */
-export function useLongPress(onLongPress: () => void) {
+export function useLongPress(onLongPress: () => void, onMenu?: (x: number, y: number) => void) {
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const origen = useRef<{ x: number; y: number } | null>(null)
   const tipo = useRef<string>('mouse')
@@ -47,7 +48,7 @@ export function useLongPress(onLongPress: () => void) {
           disparo.current = true
           origen.current = null
           setPressing(false)
-          navigator.vibrate?.(15)
+          navigator.vibrate?.(12)
           onLongPress()
         }, LONG_PRESS_MS)
       },
@@ -70,7 +71,8 @@ export function useLongPress(onLongPress: () => void) {
         e.preventDefault()
         if (tipo.current !== 'touch' && tipo.current !== 'pen') {
           cancelar()
-          onLongPress()
+          if (onMenu) onMenu(e.clientX, e.clientY)
+          else onLongPress()
         }
       },
     },

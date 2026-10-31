@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { parseAmount } from '@/core/money/amount'
 import { Stepper } from './Stepper'
 import { CheckCircle } from './List'
+import { Menu } from './Menu'
 import { ProgressBar } from './ProgressBar'
 import { EmptyState } from './EmptyState'
 
@@ -152,5 +153,41 @@ describe('EmptyState', () => {
     )
     await userEvent.setup().click(screen.getByRole('button', { name: 'Agregar tarea' }))
     expect(onClick).toHaveBeenCalledOnce()
+  })
+})
+
+describe('Menu', () => {
+  function Abierto({ onArchive, onClose }: { onArchive: () => void; onClose: () => void }) {
+    return (
+      <Menu
+        at={{ x: 10, y: 10 }}
+        label="Acciones de Gustos"
+        onClose={onClose}
+        items={[
+          { label: 'Editar', kbd: 'E', key: 'e', onSelect: () => {} },
+          { label: 'Archivar', kbd: 'A', key: 'a', onSelect: onArchive },
+          { label: 'Borrar…', kbd: 'Supr', key: 'Delete', danger: true, onSelect: () => {} },
+        ]}
+      />
+    )
+  }
+
+  it('cada opción se elige con su tecla, y el menú se cierra', async () => {
+    const onArchive = vi.fn()
+    const onClose = vi.fn()
+    render(<Abierto onArchive={onArchive} onClose={onClose} />)
+    expect(screen.getByRole('menuitem', { name: /^Editar/ })).toHaveFocus()
+    await userEvent.setup().keyboard('a')
+    expect(onArchive).toHaveBeenCalledOnce()
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('Esc lo cierra sin elegir nada', async () => {
+    const onArchive = vi.fn()
+    const onClose = vi.fn()
+    render(<Abierto onArchive={onArchive} onClose={onClose} />)
+    await userEvent.setup().keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalled()
+    expect(onArchive).not.toHaveBeenCalled()
   })
 })

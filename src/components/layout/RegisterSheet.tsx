@@ -38,7 +38,7 @@ export function RegisterSheet({ open, onClose }: { open: boolean; onClose: () =>
   }
 
   return (
-    <Sheet open={open} onClose={cerrar} title={formulario ? TITULOS[formulario] : 'Registrar'}>
+    <Sheet open={open} onClose={cerrar} width="narrow" title={formulario ? TITULOS[formulario] : 'Registrar'}>
       {formulario === 'gasto' && <ExpenseForm onDone={cerrar} />}
       {formulario === 'tarea' && <TaskComposer dueTodayByDefault autoFocus onCreated={cerrar} />}
       {formulario === 'ingreso' && <IncomeForm onDone={cerrar} />}
