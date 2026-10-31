@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { newId } from '@/lib/optimistic'
+import { newId, optimistic } from '@/lib/optimistic'
 import { useUserId } from '@/features/settings/profile'
 import { useSchedule } from '@/features/schedule/schedule'
 import { missingExercises } from '@/core/gym/presets'
@@ -212,6 +212,53 @@ export function useCreateExercise() {
       if (error) throw error
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: exercisesKey(userId) }),
+  })
+}
+
+/** Renombrar o archivar un ejercicio. Se ve al instante, y vuelve atrás si la base lo rechaza. */
+export function useUpdateExercise() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, changes }: { id: string; changes: Partial<Pick<Exercise, 'name' | 'archived_at'>> }) => {
+      const { error } = await supabase.from('exercises').update(changes).eq('id', id)
+      if (error) throw error
+    },
+    ...optimistic<Exercise[], { id: string; changes: Partial<Pick<Exercise, 'name' | 'archived_at'>> }>(
+      queryClient,
+      exercisesKey(userId),
+      (list, { id, changes }) => list.map((e) => (e.id === id ? { ...e, ...changes } : e)),
+    ),
+  })
+}
+
+/**
+ * Cuántas series se traen para un historial: lo máximo que entrega Supabase
+ * por llamada. Son años de un ejercicio en uso normal.
+ */
+const HISTORY_SETS = 1000
+
+/**
+ * Las series de uno o varios ejercicios, de la más nueva a la más vieja, para
+ * su historial (la hoja ⋯ del selector y Ajustes › Archivados). Varios van en
+ * una sola consulta. Una lista vacía no pide nada.
+ */
+export function useExerciseSets(exerciseIds: readonly string[]) {
+  const userId = useUserId()
+  const ids = [...exerciseIds].sort()
+  return useQuery({
+    queryKey: ['exercise_sets', userId, ids] as const,
+    enabled: userId !== '' && ids.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workout_sets')
+        .select('*')
+        .in('exercise_id', ids)
+        .order('created_at', { ascending: false })
+        .limit(HISTORY_SETS)
+      if (error) throw error
+      return data
+    },
   })
 }
 

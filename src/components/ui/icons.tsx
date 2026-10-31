@@ -118,3 +118,17 @@ export const IconoSube = (p: Props) => (
     <path d="M12 19V5M6 11l6-6 6 6" />
   </Base>
 )
+
+/** Archivar: una caja con su tapa (Revisión F3 › 06). */
+export const IconoArchivar = (p: Props) => (
+  <Base {...p}>
+    <path d="M4 7h16v3H4zM5 10v9h14v-9M10 14h4" />
+  </Base>
+)
+
+/** Renombrar o editar: un lápiz. */
+export const IconoLapiz = (p: Props) => (
+  <Base {...p}>
+    <path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4" />
+  </Base>
+)
