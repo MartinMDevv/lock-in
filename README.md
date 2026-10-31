@@ -86,7 +86,7 @@ tiene techo y el ahorro se lleva el resto. Detalle en
 
 | | |
 |---|---|
-| 📱 **Instalable** | Es una PWA: se agrega a la pantalla de inicio y abre a pantalla completa, sin pasar por una tienda de aplicaciones. En el escritorio cambia a menú lateral y atajos de teclado |
+| 📱 **Instalable** | Hoy es una PWA: se agrega a la pantalla de inicio y abre a pantalla completa. 🔜 También como app: en la Play Store y con instalador para el PC, con el mismo código ([D34](docs/DECISIONES.md)). En el escritorio cambia a menú lateral y atajos de teclado |
 | 📶 **Sin señal** | Abre con tus últimos datos y deja anotar gastos, tareas y series. Se envían solos cuando vuelve la conexión, sin duplicarse |
 | 🗂️ **Nada se pierde** | Todo queda guardado con su fecha. Un sobre o un ejercicio que ya no usas se archiva, no se borra, y su historial sigue ahí para comparar meses |
 | 📤 **Tus datos salen cuando quieras** | Exporta por área en CSV o todo en un JSON. Importa un CSV y, si te equivocas, deshaz esa importación completa |
@@ -136,15 +136,19 @@ leyendo [`supabase/migrations/`](supabase/migrations/).
 
 ## Estado
 
-🚧 **En construcción.** Ya se entra y se navega. Todavía no se anotan datos.
+🚧 **En construcción.** Las cinco áreas ya guardan datos; falta probarlas en el
+teléfono y usarlas dos semanas antes de abrirla a todos.
 
 | | Fase | |
 |:---:|---|---|
 | ✅ | Cimientos | Andamiaje, CI, escáner de secretos, publicación y la lógica del reparto con pruebas |
 | ✅ | Esqueleto | Entrada con Google; las cinco áreas se navegan en el teléfono y en el escritorio |
 | ✅ | Diseño | Todas las pantallas diseñadas, en tema oscuro y claro |
-| 🚧 | **Base de datos** | Las 15 tablas creadas, con su seguridad. Falta probarla con dos cuentas |
-| ⬜ | Diseño en el código, una cosa útil por área, PWA… | |
+| ✅ | Base de datos | Las 15 tablas en producción, con su seguridad probada con dos cuentas (127 pruebas) y topes por cuenta |
+| ✅ | Diseño en el código | Componentes, menú lateral, tema oscuro y claro, logo y animación de inicio |
+| 🚧 | **Una cosa útil por área** | Hoy, Horario, Tareas, Gimnasio y Plata ya funcionan. Falta probarlas en el teléfono |
+| ⬜ | PWA, sin conexión, importar y exportar | |
+| ⬜ | Apps | Tauri en el PC y Capacitor en la Play Store ([D34](docs/DECISIONES.md)) |
 | ⬜ | Publicación del servicio | Política de privacidad y apertura a todos |
 
 El plan completo, fase por fase y con su avance real, está en

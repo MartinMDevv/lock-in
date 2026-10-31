@@ -17,7 +17,8 @@ inicio que responda *¿qué tengo que hacer hoy?*.
 
 **Cómo se entrega:** un solo servicio (D32). Se abre la URL, se entra con
 Google y cada persona arma su sistema dentro de su cuenta. Nadie instala ni
-configura infraestructura.
+configura infraestructura. Para quien la quiera como app, el mismo código se
+empaqueta: Capacitor en la Play Store y Tauri como instalador para el PC (D34).
 
 ## Áreas
 
@@ -48,15 +49,15 @@ esa altura ya se abandonó.
 | Hito 2 · Una cosa útil por área | **F3–F4** | Se puede vivir un día dentro de la app, y se usa dos semanas como PWA |
 | — | **F5–F7** | Sin conexión, importar y exportar, seguridad |
 | Hito 3 · Profundidad, según uso real | **F8–F9** | **El orden lo decide lo que se esté abriendo**, no un documento |
-| Hito 4 · Publicación | **F10–F12** | Revisión, publicación del servicio y `v1.0.0` |
+| Hito 4 · Publicación | **F10–F12** | Revisión, las apps (F10b: Tauri en el PC y Capacitor en la Play Store, D34), publicación y `v1.0.0` |
 
 ## Fuera de alcance — decidido, no se reabre
 
 | Descartado | Motivo |
 |---|---|
 | Integración bancaria automática | No hay API abierta en Chile; scraping frágil |
-| Notificaciones push | Soporte irregular en PWA: se usan las alarmas del teléfono. **Reabierta solo como prueba de concepto al final (F9, D26)** |
-| App nativa / React Native | Triplica el esfuerzo |
+| Notificaciones push | Soporte irregular en PWA: se usan las alarmas del teléfono. **Reabierta solo como prueba de concepto al final (F9, D26)**; con la app de Capacitor se prueban primero las locales (D34) |
+| App nativa reescrita (React Native, Kotlin, Swift) | Triplica el esfuerzo. **Empaquetar la misma web con Tauri y Capacitor sí entra (D34)**: no se reescribe nada |
 | Calendario mensual con arrastrar y soltar | Caro, poco valor real |
 | Pomodoro, temporizadores, IA integrada | Ya existe en el teléfono |
 | Compartir datos entre usuarios | Fuera del propósito |

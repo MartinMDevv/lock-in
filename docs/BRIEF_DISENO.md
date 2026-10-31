@@ -285,7 +285,7 @@ resorte o *ease-out*, y duraciones cortas.
 | Barras de tope / metas | Se llenan al entrar en pantalla |
 | Pulsar botones | Escala leve (0,97) al tocar |
 
-- Respetar `prefers-reduced-motion`: con esa opción activada, solo fundidos.
+- ~~Respetar `prefers-reduced-motion`: con esa opción activada, solo fundidos.~~ Descartado el 31-oct-2026: las animaciones no se desactivan (D35).
 - Nada de animaciones en bucle de adorno.
 
 ---

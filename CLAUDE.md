@@ -15,13 +15,13 @@ Cada documento tiene un trabajo. No duplicar contenido entre ellos: enlazar.
 
 | Documento | Qué contiene | Cuándo abrirlo |
 |---|---|---|
-| [`docs/HOJA_DE_RUTA.md`](docs/HOJA_DE_RUTA.md) | **El plan de trabajo completo**: fases F0–F12 en checklist, con su avance real | **Antes de proponer trabajo:** dice qué toca ahora |
+| [`docs/HOJA_DE_RUTA.md`](docs/HOJA_DE_RUTA.md) | **El plan de trabajo completo**: fases F0–F12 (más F10b) en checklist, con su avance real | **Antes de proponer trabajo:** dice qué toca ahora |
 | [`docs/PLAN.md`](docs/PLAN.md) | Qué es, las cinco áreas y **Fuera de alcance** | Antes de agregar cualquier funcionalidad |
 | [`docs/CORRER.md`](docs/CORRER.md) | Levantar, verificar, migrar y pushear, paso a paso | Antes de ejecutar comandos |
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Estructura de `src/`, flujo de datos, sin conexión | Al crear un archivo: dice dónde va |
 | [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md) | **Fuente de verdad del esquema**: las 15 tablas, borrado, orden de las migraciones | Al escribir una migración o una consulta |
 | [`docs/MODELO_ECONOMICO.md`](docs/MODELO_ECONOMICO.md) | Sobres, reparto, topes y metas | Al tocar `core/money/` o el área Plata |
-| [`docs/DECISIONES.md`](docs/DECISIONES.md) | D1–D33: cada decisión con su motivo | Cuando algo parezca raro: ya se discutió |
+| [`docs/DECISIONES.md`](docs/DECISIONES.md) | D1–D35: cada decisión con su motivo | Cuando algo parezca raro: ya se discutió |
 | [`docs/BRIEF_DISENO.md`](docs/BRIEF_DISENO.md) | Lo que se le pidió a Claude Design. El resultado (tokens y prototipos) es un paquete aparte, fuera del repo | Al hacer una pantalla, junto con ese paquete |
 | [`docs/INSTALACION.md`](docs/INSTALACION.md) | Entorno de desarrollo y configuración de producción (Google, Supabase, Vercel) | Al montar una máquina nueva o tocar la configuración del servicio |
 | [`README.md`](README.md) | La cara pública del proyecto | Al cambiar el estado o el alcance |

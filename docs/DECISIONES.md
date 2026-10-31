@@ -242,6 +242,10 @@ Decidida el 10-oct-2026. Es la pieza más cara (claves VAPID, Edge Function,
 `pg_cron`, horarios por zona). Se prueba en la F9 si llega una notificación a
 la PWA instalada, y recién ahí se decide construirla.
 
+> **Nota (D34, 31-oct-2026):** con la app de Capacitor, las notificaciones
+> **locales** (programadas en el teléfono, sin servidor ni VAPID) pasan a ser
+> el primer intento: «toca entrenar» y «vence hoy» no necesitan push.
+
 ### D27 · Sin proyecto de staging
 Decidida el 10-oct-2026. Hay un solo autor, así que las migraciones siguen
 yendo directo a producción (D16). La protección está en las reglas: las
@@ -345,3 +349,58 @@ No necesita columna (D6): lo recibido en el mes se calcula desde `movements`
 no son plata nueva. Un sueldo que llega el 30 cuenta para ese mes: el del mes
 siguiente vuelve a pedir el fijo completo.
 
+
+### D34 · Instalable como app: Tauri en el PC y Capacitor en el teléfono
+Decidida el 31-oct-2026. Reabre en parte «App nativa» de **Fuera de alcance**:
+lo descartado era **reescribir** la app (React Native, Kotlin, Swift), que
+triplica el esfuerzo. Esto no reescribe nada: las dos envuelven el mismo `dist/`
+de Vite que hoy publica Vercel.
+
+La PWA instalada desde el navegador funciona, pero se ve como una página: pasa
+por Chrome, no está en la Play Store y no tiene un instalador para el PC. Se
+quiere que Lock In se sienta como una app.
+
+| | PC | Teléfono |
+|---|---|---|
+| Herramienta | **Tauri** (Rust) | **Capacitor** (Android) |
+| Qué abre | Una ventana propia con el WebView del sistema | Un WebView del sistema a pantalla completa |
+| Se entrega como | `.msi` / `.exe`, `.AppImage` / `.deb` | `.aab` en la Play Store |
+| Login con Google | Se abre el navegador **solo para iniciar sesión** y vuelve a la app por un enlace `lockin://` | La hoja nativa de cuentas de Android y `supabase.auth.signInWithIdToken` |
+
+**Por qué no la TWA en el teléfono.** Es más barata, pero solo llega a lo que
+da la web en Chrome: vibración básica y push web, y nada más. Capacitor da
+hápticos finos, notificaciones locales programadas sin servidor, la hoja de
+cuentas de Google, el botón atrás, la barra de estado y el teclado. Además,
+la Play Store rechaza apps que solo envuelven una web, y esas funciones
+nativas son las que la separan de eso. Los widgets de pantalla de inicio
+también son posibles con Capacitor, pero requieren código nativo aparte en
+Kotlin.
+
+**Los archivos van dentro de la app** y no se cargan desde Vercel: abre al
+instante y sin señal desde el primer día, y la Play Store la mira menos. El
+costo es que cada cambio de interfaz es una versión nueva en la tienda (horas o
+un par de días de revisión). Las actualizaciones en vivo quedan para después.
+
+**Qué cambia en el código:**
+
+- `src/lib/native.ts` decide dónde corre (`Capacitor.isNativePlatform()`, Tauri). En la web todo sigue igual.
+- Google rechaza el login dentro de un WebView (`disallowed_useragent`), por eso cada app usa su propio camino (tabla de arriba). La web sigue con PKCE (D32). En el teléfono se necesita un cliente Android en Google Cloud, con la huella de la firma, registrado también en Supabase.
+- La CSP de `vercel.json` no viaja dentro de las apps: se repite como `<meta>` en el HTML.
+- El service worker es solo para la web: dentro de las apps los archivos ya vienen empaquetados.
+
+**Lo que hay que instalar**, cada cosa con OK explícito: Rust y el CLI de Tauri;
+`@capacitor/core`, `@capacitor/cli`, `@capacitor/android` y los plugins;
+Android Studio con el SDK (el JDK 17 ya está).
+
+**Costos:** la cuenta de la Play Store (US$25, pago único) y la prueba cerrada
+que exige Google a las cuentas nuevas (12 personas durante 14 días) antes de
+publicar. El orden y las tareas están en la F10b de la hoja de ruta.
+
+### D35 · Las animaciones no se desactivan
+Decidida el 31-oct-2026 por el autor, al cerrar la F2. La app **no** responde a
+`prefers-reduced-motion`: el movimiento es parte de cómo se entiende (la hoja
+que sube, el reparto fila por fila, el relleno rojo al borrar un sobre, la
+animación de inicio) y se ve igual para todos. Se quitaron la regla de
+`index.css` que dejaba solo fundidos y la versión quieta de la animación de
+inicio (`lib/splash.ts`). Reemplaza lo que pedía el brief de diseño. Si alguien
+lo pide por accesibilidad, se reabre.

@@ -24,21 +24,22 @@ Dos reglas:
 2. **Cada fase tiene un «Termina cuando».** Si eso no se cumple, la fase no
    está cerrada, aunque todas sus casillas estén marcadas.
 
-## Estado general (28-oct-2026)
+## Estado general (31-oct-2026)
 
 | Fase | Qué deja lista | Avance |
 |---|---|---|
 | **F0 · Cimientos y esqueleto** | Arranca, se verifica sola, está publicada y se navega | ✅ cerrada el 28-oct-2026 |
 | **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | ✅ cerrada el 28-oct-2026: 7 migraciones, *Advisors* limpio, RLS 127/127 y primer respaldo |
-| **F2 · El diseño en el código** | La app se ve como el prototipo | ⬜ |
-| **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | ⬜ |
-| **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | ⬜ |
+| **F2 · El diseño en el código** | La app se ve como el prototipo | ✅ cerrada el 31-oct-2026. Las animaciones no se desactivan (D35); falta solo mirar el tema claro en el teléfono |
+| **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | 🚧 escrita (29 al 31-oct, con los paquetes de diseño 4, 5 y 6); falta probarla en el teléfono, medir los 5 segundos, Ctrl K y transferir |
+| **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | 🚧 manifest e íconos listos; falta el service worker |
 | **F5 · Sincronía y sin conexión** | Anotar sin señal sin duplicar nada | ⬜ |
 | **F6 · Importar y exportar** | Un mes de gastos desde un CSV en un minuto | ⬜ |
-| **F7 · Seguridad** | Una cuenta no ve nada de otra, probado en CI | ⬜ (empieza en F1) |
+| **F7 · Seguridad** | Una cuenta no ve nada de otra, probado en CI | 🚧 RLS probada a mano, topes por cuenta y cabeceras; falta la prueba en CI y borrar la cuenta |
 | **F8 · Profundidad** | Lo que pida el uso real | ⬜ |
 | **F9 · Notificaciones** | Prueba de concepto | ⬜ opcional |
 | **F10 · Revisión** | Arquitectura y buenas prácticas revisadas | ⬜ |
+| **F10b · Las apps** | Lock In en la Play Store y con instalador en el PC (D34) | ⬜ |
 | **F11 · Publicación del servicio** | Cualquiera entra con Google y la usa sin preguntar | ⬜ |
 | **F12 · Prueba final** | `v1.0.0` | ⬜ |
 
@@ -51,12 +52,24 @@ F0 ─► F1 Base ─► F2 Diseño ─► F3 Áreas útiles ─► F4 PWA y uso
                                                        ▼
                  F6 Importar/exportar ─► F8 Profundidad ─► F9 Notificaciones (opcional)
                                                        ▼
-                                 F10 Revisión ─► F11 Publicación ─► F12 Prueba final
+             F10 Revisión ─► F10b Apps (Tauri + Capacitor) ─► F11 Publicación ─► F12 Prueba final
 ```
 
 Pensado para que **nada se haga dos veces**. La base va primero porque todo la
 pisa. La PWA va cuando ya hay algo que valga la pena instalar. Importar va
 cuando el esquema ya no se mueve, y publicar va al final, con todo probado.
+Las apps van después de la revisión: empaquetar antes obliga a subir una
+versión nueva a la tienda por cada cambio de interfaz, y el login, el sin
+conexión y la seguridad tienen que estar cerrados antes de envolverlos (D34).
+
+### Lo que toca ahora
+
+1. **Probar en el teléfono** lo de F3 (paquetes 4, 5 y 6 incluidos) y el tema claro de F2, y
+   medir los 5 segundos con cronómetro. Lo que salga se arregla antes de
+   seguir.
+2. **Service worker** (F4). Requiere instalar `vite-plugin-pwa`, con OK.
+3. **Dos semanas de uso real** (F4). Las apps no se adelantan: si la PWA no se
+   abre a diario, empaquetarla no lo arregla.
 
 **A lo ancho primero, en profundidad después:** un módulo perfecto durante tres
 semanas deja una app que todavía no es lo prometido, y a esa altura ya se
@@ -153,7 +166,7 @@ escritorio, todavía sin datos.*
 - [x] Tema oscuro, claro o sistema, leyendo `profiles.theme` (28-oct-2026, `src/lib/theme.ts`): se aplica en `<html data-theme>` y en la barra del navegador, se elige en Ajustes (se guarda al tocarlo) y el navegador recuerda el último para no parpadear al abrir. Probado en el teléfono el 29-oct.
 - [x] **Tema claro** (29-oct-2026): tokens del paquete «Modo claro» aprobado. El fondo es gris frío y no blanco, el lima va solo como relleno (como texto se usa `accent-text`) y la línea «ahora» del horario usa el token nuevo `now`, verde oscuro con la hora en blanco. Falta verlo en el teléfono.
 - [x] **Logo y animación de inicio** (30-oct-2026, paquete de marca): `LogoMark` en el menú lateral y en la entrada; `lib/splash.ts` es el `splash.js` del diseño con los colores de los tokens, una vez por pestaña, y se salta tocando la pantalla.
-- [ ] `prefers-reduced-motion`. La animación de inicio ya lo respeta.
+- [x] ~~`prefers-reduced-motion`~~: **descartado** (31-oct-2026, D35). Las animaciones no se desactivan; se quitó lo que ya lo respetaba.
 
 ## F3 · Una cosa útil por área
 
@@ -203,7 +216,7 @@ La PWA va aquí y no antes, a propósito: instalar una app que no hace nada es
 una forma rápida de que se desinstale.
 
 - [x] Manifest, íconos (incluido el *maskable*) y color de tema (30-oct-2026, del paquete de marca «Logo final»). El ícono de afuera es **siempre el oscuro**, sea cual sea el tema de la persona; dentro de la app el logo (`LogoMark`) sigue el tema.
-- [ ] Service worker: cachea la cáscara y los recursos.
+- [ ] Service worker: cachea la cáscara y los recursos. Es para la web y la PWA: dentro de las apps de F10b los archivos ya vienen empaquetados (D34). Requiere instalar `vite-plugin-pwa`, con OK del autor.
 - [ ] Instalar en el teléfono y en el computador.
 - [ ] **Dos semanas de uso real.** Anotar cada fricción en un issue, sin arreglar nada en el momento.
 - [ ] Al final: recortar lo que no se usó. **Se recorta, nunca se agrega.**
@@ -268,6 +281,7 @@ lista. Nada de aquí es bloqueante: son mejoras a algo que ya funciona.
 | ⬜ | Medidas corporales | Peso y medidas en el tiempo | 🟢 |
 | ⬜ | Ctrl K con palabras clave | «uber» → Transporte. Solo si el uso lo pide (D28) | 🟢 |
 | ⬜ | Exportar a PDF | Resumen imprimible con `window.print()` (D25) | 🟢 |
+| ⬜ | Widget en la pantalla de inicio | «Disponible hoy» o el bloque que sigue, sin abrir la app. Solo existe con la app de Capacitor (F10b) y es código nativo aparte, en Kotlin (D34) | 🟢 |
 | ⬜ | **Ajustes › Atajos de teclado** | Pedido del autor (31-oct): la sección que el paquete de diseño (6) pone en la lista de Ajustes. Muestra los atajos que ya existen: 1–5 (áreas), N (registrar), `[` (menú lateral), Ctrl K, `/` (buscar en Archivados), Ctrl+Z (deshacer), Ctrl+Enter (guardar un sobre) y E/A/Supr en el menú de un sobre | 🟡 |
 
 ## F9 · Notificaciones (prueba de concepto)
@@ -275,7 +289,7 @@ lista. Nada de aquí es bloqueante: son mejoras a algo que ya funciona.
 *Opcional (D26).* Solo sigue si el primer paso funciona y las alarmas del
 teléfono no alcanzan.
 
-- [ ] Una notificación de prueba llega al teléfono con la PWA instalada.
+- [ ] Una notificación de prueba llega al teléfono con la PWA instalada. Si la app de Capacitor (F10b) ya existe, se prueban primero las **locales**: se programan en el teléfono, sin servidor (nota en D26).
 - [ ] Recién si funciona: tabla `push_subscriptions`, la Edge Function que envía y `pg_cron` que la llama.
 - [ ] Qué avisar, en una lista corta y apagable: tarea que vence hoy, toca entrenar, tope al 85 %.
 - [ ] **Ajustes › Notificaciones**: pedido del autor (31-oct). Es la sección que el paquete de diseño (6) pone en la lista de Ajustes, donde se prenden y apagan los avisos de arriba. Entra junto con ellos, no antes: una sección sin avisos detrás sería un interruptor que no hace nada.
@@ -288,6 +302,46 @@ teléfono no alcanzan.
 - [ ] Accesibilidad: contraste AA (ya viene en los tokens), foco visible, navegación con teclado en el escritorio.
 - [ ] Lighthouse en el teléfono: rendimiento, PWA y accesibilidad sobre 90.
 
+## F10b · Las apps: Tauri en el PC y Capacitor en el teléfono
+
+*Decidida en D34. Termina cuando Lock In se instala desde la Play Store y desde
+un instalador en el PC, se entra con Google sin ver una página de Google en el
+teléfono, y abre sin señal.*
+
+Envuelven el mismo `dist/` de Vite: el código de las pantallas no cambia. Los
+archivos van **dentro de la app**, no se cargan desde Vercel (D34). Cada
+instalación (Rust, CLI de Tauri, Capacitor, Android Studio) se hace con OK
+explícito del autor.
+
+**Lo común**
+
+- [ ] `src/lib/native.ts`: sabe si corre en la web, en Tauri o en Capacitor. Fuera de ahí nadie pregunta por la plataforma.
+- [ ] La CSP de `vercel.json` repetida como `<meta>` en `index.html`, porque las cabeceras de Vercel no viajan dentro de las apps.
+- [ ] El login con un camino por plataforma: Google bloquea el login dentro de un WebView (`disallowed_useragent`). La web sigue con PKCE (D32).
+
+**PC · Tauri** 🟡
+
+- [ ] Instalar Rust y el CLI de Tauri. Crear `src-tauri/` con la ventana, el nombre y el ícono del paquete de marca.
+- [ ] Login: se abre el navegador del sistema **solo para entrar** y vuelve por `lockin://`. La URL de retorno se agrega en Supabase.
+- [ ] Instaladores: `.AppImage` y `.deb` en Linux; `.msi` o `.exe` se arman en Windows (decidir dónde: otra máquina o un runner de Windows, sin romper D15).
+- [ ] 🟢 Actualizaciones con el *updater* de Tauri, firmadas.
+
+**Teléfono · Capacitor** 🔴
+
+- [ ] Instalar `@capacitor/core`, `@capacitor/cli`, `@capacitor/android` y Android Studio con el SDK. `cap add android` deja el proyecto en `android/`; el flujo es `npm run build` → `cap sync` → Android Studio.
+- [ ] Ícono adaptable y pantalla de inicio desde el paquete de marca.
+- [ ] Login nativo: cliente Android en Google Cloud con la huella de la firma, registrado en Supabase; el plugin de Google entrega el token y entra con `supabase.auth.signInWithIdToken`.
+- [ ] Botón atrás de Android: cierra la hoja abierta o vuelve a Hoy, no sale de la app.
+- [ ] Barra de estado del color del tema (StatusBar) y el teclado con el plugin Keyboard, en vez de los arreglos de `interactive-widget`.
+- [ ] Hápticos (Haptics) donde hoy hay `navigator.vibrate`: mantener presionado un sobre, completar una tarea, récord nuevo.
+- [ ] La llave de firma (*keystore*) fuera del repo y respaldada: perderla significa no poder actualizar la app. Se usa *Play App Signing*.
+
+**Play Store**
+
+- [ ] Cuenta de desarrollador (US$25, una vez).
+- [ ] Ficha: descripción, capturas, clasificación de contenido, la sección de seguridad de datos y la **política de privacidad** (se adelanta de F11).
+- [ ] Prueba cerrada con **12 personas durante 14 días**, que Google exige a las cuentas nuevas antes de publicar. Se arma la lista antes de empezar.
+
 ## F11 · Publicación del servicio
 
 Antes era «Publicación forkeable»: cambió con D32. Lock In ya no se monta por
@@ -298,9 +352,10 @@ personales.*
 
 - [ ] **Política de privacidad y términos de uso**, en la app y enlazados en la pantalla de consentimiento de Google. Exigidos por la Ley 21.719 y por Google para publicar.
 - [ ] **Rotar el secreto de Google** (el del 28-oct quedó expuesto) y **publicar la app** en Google Cloud: sale del modo Prueba y entra cualquier cuenta.
-- [ ] Repetir el login con la **PWA instalada** en Android.
+- [ ] Repetir el login con la **PWA instalada** en Android y con las dos apps de F10b.
+- [ ] Pasar la app de la prueba cerrada a **producción** en la Play Store y subir los instaladores del PC a GitHub Releases.
 - [ ] `README.md` con capturas y un GIF de registrar un gasto.
-- [ ] Guía corta de uso: entrar, instalar la PWA y armar el primer día.
+- [ ] Guía corta de uso: entrar, instalar (Play Store, instalador del PC o PWA) y armar el primer día.
 - [ ] Revisión de secretos sobre todo el historial (`npm run check:secrets`).
 - [ ] Plantillas de issue (bug, idea) y `CONTRIBUTING.md` con el flujo de [`CORRER.md`](CORRER.md).
 
