@@ -6,18 +6,20 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Segmented } from '@/components/ui/Segmented'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { showToast } from '@/components/ui/toast'
+import { IconoArchivar, IconoBuscar, IconoGimnasio, IconoPlata, IconoTarjeta, IconoTelefono } from '@/components/ui/icons'
 import { bestScore, setScore } from '@/core/gym/gym'
 import type { WeightUnit } from '@/core/gym/gym'
 import { bestSetLine, sessionLine, sessionsByMonth, sessionsOf } from '@/core/gym/history'
 import { byMonth, envelopeTotals } from '@/core/money/history'
 import { dayOf } from '@/core/time/day'
 import { diaMes, formatMoney, nombreDelMes } from '@/lib/format'
-import { useMediaQuery } from '@/lib/media'
+import { useElementWidth, useMediaQuery } from '@/lib/media'
 import { usePrefs, useToday } from '@/features/settings/profile'
 import type { Exercise, WorkoutSet } from '@/features/gym/gym'
 import { useExerciseSets, useExercises, useUpdateExercise } from '@/features/gym/gym'
 import type { Envelope, Movement } from '@/features/money/money'
 import { useEnvelopes, useMovements, useUpdateEnvelope } from '@/features/money/money'
+import { SettingsFrame } from './SettingsFrame'
 
 type Pestaña = 'envelopes' | 'exercises'
 
@@ -34,10 +36,24 @@ interface Archivado {
  * uno abre su historial por mes y termina en «Restaurar». La pestaña se lee
  * de `?tab=exercises`, así el selector de ejercicios lleva directo a la suya.
  *
- * En el teléfono la lista da paso al historial; en el escritorio van lado a
- * lado, y «/» lleva al buscador.
+ * En el teléfono la lista da paso al historial. En el escritorio (paquete de
+ * diseño 6) va dentro de la lista de secciones de Ajustes, sin «← Ajustes»
+ * ni el título repetido: encabezado con pestañas y buscador («/»), y lista e
+ * historial lado a lado si el contenido tiene al menos 1100 px; si no, el
+ * historial se abre encima de la lista, como en el teléfono.
  */
 export function ArchivedPage() {
+  return (
+    <SettingsFrame active="archivados">
+      <Contenido />
+    </SettingsFrame>
+  )
+}
+
+/** Desde cuánto ancho de contenido van lista e historial lado a lado. */
+const DOS_PANELES_PX = 1100
+
+function Contenido() {
   const { timezone } = useToday()
   const sobres = useEnvelopes()
   const movimientos = useMovements()
@@ -48,6 +64,8 @@ export function ArchivedPage() {
   const [busqueda, setBusqueda] = useState('')
   const [abierto, setAbierto] = useState<string | null>(null)
   const buscador = useRef<HTMLInputElement>(null)
+  const [medir, ancho] = useElementWidth<HTMLDivElement>()
+  const dosPaneles = escritorio && ancho >= DOS_PANELES_PX
 
   const ejerciciosArchivados = (ejercicios.data ?? []).filter((e) => e.archived_at !== null)
   // Las series de todos los ejercicios archivados, en una sola consulta.
@@ -101,8 +119,8 @@ export function ArchivedPage() {
   const visibles = todos.filter((e) => e.name.toLocaleLowerCase('es').includes(q))
   const movs = movimientos.data
   const sets = series.data ?? []
-  // En el escritorio siempre hay uno abierto: el elegido o el primero de la lista.
-  const elegido = todos.find((e) => e.id === abierto) ?? (escritorio ? (visibles[0] ?? null) : null)
+  // Con dos paneles siempre hay uno abierto: el elegido o el primero de la lista.
+  const elegido = todos.find((e) => e.id === abierto) ?? (dosPaneles ? (visibles[0] ?? null) : null)
   const fechaArchivo = (e: Archivado) => (e.archived_at ? diaMes(dayOf(new Date(e.archived_at), timezone)) : '')
 
   function cambiarPestaña(p: Pestaña) {
@@ -127,6 +145,7 @@ export function ArchivedPage() {
       return (
         <HistorialSobre
           key={e.id}
+          desk={escritorio}
           envelope={sobre}
           movements={movs}
           envelopes={sobres.data}
@@ -139,6 +158,7 @@ export function ArchivedPage() {
       return (
         <HistorialEjercicio
           key={e.id}
+          desk={escritorio}
           exercise={ejercicio}
           sets={sets.filter((s) => s.exercise_id === e.id)}
           loading={series.isPending}
@@ -225,15 +245,109 @@ export function ArchivedPage() {
   )
 
   if (escritorio) {
-    return (
-      <div className="space-y-6">
-        {volver}
-        <h2 className="text-title font-semibold">Archivados</h2>
-        <div className="grid grid-cols-[320px_1fr] items-start gap-8">
-          {lista}
-          {elegido && historial(elegido)}
-        </div>
+    const filas = (
+      <div className="flex flex-col gap-0.5 rounded-2xl border border-line bg-surface p-1.5">
+        {visibles.map((e) => {
+          const actual = elegido?.id === e.id
+          return (
+            <button
+              key={e.id}
+              type="button"
+              onClick={() => setAbierto(e.id)}
+              aria-current={actual ? 'true' : undefined}
+              className={`flex items-center gap-3 rounded-[11px] p-3.5 text-left transition-colors duration-160 hover:bg-surface-raised ${
+                actual ? 'bg-surface-raised' : ''
+              }`}
+            >
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate text-[15px] font-medium">{e.name}</span>
+                <span className="text-body-sm text-ink-faint">{meta(e)}</span>
+              </span>
+              {/* La marca lima del elegido. */}
+              <span
+                aria-hidden="true"
+                className={`h-5 w-0.75 shrink-0 rounded-sm bg-accent transition-opacity duration-160 ${actual ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </button>
+          )
+        })}
+        {visibles.length === 0 && (
+          <p className="p-3.5 text-body-sm text-ink-muted">Nada archivado se llama «{busqueda.trim()}».</p>
+        )}
       </div>
+    )
+    const pie = (
+      <p className="text-caption text-ink-faint">
+        {pestaña === 'envelopes'
+          ? 'Los sobres archivados no reciben ingresos ni aparecen al registrar un gasto.'
+          : 'Los ejercicios archivados no aparecen en el selector de ejercicios.'}
+      </p>
+    )
+
+    return (
+      <section ref={medir} className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-end gap-6">
+          <div className="flex min-w-70 flex-1 flex-col gap-1.5">
+            <h2 className="text-[32px] font-semibold tracking-[-0.025em]">Archivados</h2>
+            <p className="text-[15px] text-ink-muted">
+              Sobres y ejercicios que ya no usas. Su historial queda guardado aquí.
+            </p>
+          </div>
+          <div className="w-75">{pestañas}</div>
+          {/* Sin nada que buscar, el buscador no aparece. */}
+          {todos.length > 0 && (
+            <label className="flex h-10 w-70 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-ink-faint focus-within:border-ink-muted">
+              <IconoBuscar className="shrink-0 text-base" />
+              <input
+                ref={buscador}
+                type="search"
+                aria-label="Buscar en archivados"
+                placeholder={pestaña === 'envelopes' ? 'Buscar sobres' : 'Buscar ejercicios'}
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-body-sm text-ink outline-none placeholder:text-ink-faint"
+              />
+              <kbd className="rounded-[5px] border border-line px-1.5 py-0.5 font-mono text-[11px]">/</kbd>
+            </label>
+          )}
+        </div>
+
+        {todos.length === 0 ? (
+          <VacioEscritorio pestaña={pestaña} />
+        ) : dosPaneles ? (
+          <div className="grid grid-cols-[380px_minmax(0,1fr)] items-start gap-6">
+            <div className="space-y-3">
+              {filas}
+              {pie}
+            </div>
+            {elegido && historial(elegido)}
+          </div>
+        ) : (
+          // Angosto: una sola columna, y el historial se abre encima de la lista.
+          <div className="grid">
+            <div
+              inert={elegido !== null}
+              className={`col-start-1 row-start-1 space-y-3 transition-[opacity,translate] duration-(--duration-moderate) ease-out ${
+                elegido ? 'pointer-events-none -translate-x-6 opacity-0' : ''
+              }`}
+            >
+              {filas}
+              {pie}
+            </div>
+            <div
+              inert={elegido === null}
+              className={`col-start-1 row-start-1 space-y-4 transition-[opacity,translate] duration-(--duration-moderate) ease-out ${
+                elegido ? '' : 'pointer-events-none translate-x-6 opacity-0'
+              }`}
+            >
+              <button type="button" onClick={() => setAbierto(null)} className="text-body-sm text-ink-muted hover:text-ink">
+                ← Archivados
+              </button>
+              {elegido && historial(elegido)}
+            </div>
+          </div>
+        )}
+      </section>
     )
   }
 
@@ -272,6 +386,7 @@ export function ArchivedPage() {
 
 /** El armazón de un historial: nombre, cuándo se archivó, dos totales, los meses y Restaurar. */
 function Historial({
+  desk,
   name,
   sub,
   stats,
@@ -279,6 +394,7 @@ function Historial({
   onRestore,
   children,
 }: {
+  desk: boolean
   name: string
   sub: string
   stats: readonly [string, string][]
@@ -286,6 +402,36 @@ function Historial({
   onRestore: () => void
   children: ReactNode
 }) {
+  // Escritorio: una tarjeta, con «Restaurar» arriba a la derecha.
+  if (desk) {
+    return (
+      <section className="space-y-6 rounded-2xl border border-line bg-surface px-8 py-7">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="truncate text-[24px] font-semibold tracking-[-0.02em]">{name}</h2>
+            <p className="text-body-sm text-ink-muted">{sub}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onRestore}
+            className="h-9 shrink-0 rounded-lg border border-line-strong px-3.5 text-body-sm font-medium hover:bg-surface-raised"
+          >
+            {restoreLabel}
+          </button>
+        </div>
+        <dl className="grid grid-cols-2 gap-3">
+          {stats.map(([k, v]) => (
+            <div key={k} className="rounded-xl bg-surface-raised p-4">
+              <dt className="text-caption text-ink-muted">{k}</dt>
+              <dd className="text-title font-semibold tabular-nums">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        {children}
+      </section>
+    )
+  }
+
   return (
     <section className="space-y-5">
       <div>
@@ -308,14 +454,35 @@ function Historial({
   )
 }
 
-/** Un mes del historial, con sus filas. */
+/** Un mes del historial, con sus filas. En el escritorio, en tres columnas: qué, cuándo y cuánto. */
 function Mes({
+  desk,
   month,
   rows,
 }: {
+  desk: boolean
   month: string
   rows: { key: string; title: string; meta: string; value: string; highlight: boolean }[]
 }) {
+  if (desk) {
+    return (
+      <div>
+        <h3 className="mb-1 text-body-sm font-medium text-ink-muted first-letter:uppercase">{nombreDelMes(month)}</h3>
+        <ul className="divide-y divide-line">
+          {rows.map((r) => (
+            <li key={r.key} className="grid grid-cols-[1fr_120px_140px] items-center gap-3 py-2.5 text-body-sm">
+              <span className="truncate font-medium">{r.title}</span>
+              <span className="text-ink-faint">{r.meta}</span>
+              <span className={`text-right font-semibold tabular-nums ${r.highlight ? 'text-accent-text' : ''}`}>
+                {r.value}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
   return (
     <div>
       <h3 className="mb-2 text-body-sm font-medium text-ink-muted first-letter:uppercase">{nombreDelMes(month)}</h3>
@@ -339,12 +506,14 @@ function Mes({
 }
 
 function HistorialSobre({
+  desk,
   envelope: e,
   movements,
   envelopes,
   archivedOn,
   onRestored,
 }: {
+  desk: boolean
   envelope: Envelope
   movements: Movement[]
   envelopes: Envelope[]
@@ -378,6 +547,7 @@ function HistorialSobre({
 
   return (
     <Historial
+      desk={desk}
       name={e.name}
       sub={`Archivado el ${archivedOn} · terminó en ${formatMoney(totales.balanceMinor, prefs)}`}
       stats={[
@@ -393,6 +563,7 @@ function HistorialSobre({
         meses.map((g) => (
           <Mes
             key={g.month}
+            desk={desk}
             month={g.month}
             rows={g.rows.map((m) => {
               const { titulo, valor } = fila(m)
@@ -412,12 +583,14 @@ function HistorialSobre({
 }
 
 function HistorialEjercicio({
+  desk,
   exercise: ex,
   sets,
   loading,
   archivedOn,
   onRestored,
 }: {
+  desk: boolean
   exercise: Exercise
   sets: WorkoutSet[]
   loading: boolean
@@ -443,6 +616,7 @@ function HistorialEjercicio({
 
   return (
     <Historial
+      desk={desk}
       name={ex.name}
       sub={`Archivado el ${archivedOn}`}
       stats={[
@@ -460,6 +634,7 @@ function HistorialEjercicio({
         sessionsByMonth(sesiones).map((g) => (
           <Mes
             key={g.month}
+            desk={desk}
             month={g.month}
             rows={g.sessions.map((s) => {
               const efectivas = s.sets.filter((x) => !x.is_warmup).length
@@ -476,5 +651,62 @@ function HistorialEjercicio({
         ))
       )}
     </Historial>
+  )
+}
+
+/** Cómo se archiva cada cosa, para la vista vacía del escritorio. */
+const COMO_ARCHIVAR = {
+  envelopes: [
+    { title: 'Desde el sobre', path: ['Plata', 'abre un sobre', 'Archivar este sobre'], Icono: IconoPlata },
+    { title: 'Desde la tarjeta', path: ['Plata', 'clic derecho en un sobre', 'Archivar'], Icono: IconoTarjeta },
+  ],
+  exercises: [
+    { title: 'Desde el selector', path: ['Gimnasio', 'Elegir ejercicio', 'ícono de archivar'], Icono: IconoGimnasio },
+    { title: 'En el teléfono', path: ['Elegir ejercicio', '⋯', 'Archivar'], Icono: IconoTelefono },
+  ],
+} as const
+
+/** Escritorio, sin nada archivado: qué pasa al archivar y los dos caminos para hacerlo. */
+function VacioEscritorio({ pestaña }: { pestaña: Pestaña }) {
+  const sobres = pestaña === 'envelopes'
+  return (
+    <div className="grid grid-cols-[minmax(0,420px)_minmax(0,1fr)] items-start gap-14 rounded-[20px] border border-line px-12 py-14">
+      <div className="flex flex-col gap-3">
+        <span className="grid size-12 place-items-center rounded-[14px] bg-surface-raised text-2xl text-ink-muted">
+          <IconoArchivar />
+        </span>
+        <h3 className="text-title font-semibold">
+          {sobres ? 'No tienes sobres archivados' : 'No tienes ejercicios archivados'}
+        </h3>
+        <p className="text-body-sm text-ink-muted">
+          {sobres
+            ? 'Cuando archivas un sobre, deja de recibir ingresos y sale de Plata. Su historial queda aquí y puedes restaurarlo cuando quieras.'
+            : 'Cuando archivas un ejercicio, deja de aparecer en el selector. Sus series quedan aquí y puedes restaurarlo cuando quieras.'}
+        </p>
+      </div>
+      <div className="flex flex-col gap-3">
+        <p className="text-body-sm font-medium text-ink-muted">Cómo archivar</p>
+        <div className="divide-y divide-line rounded-xl border border-line">
+          {COMO_ARCHIVAR[pestaña].map(({ title, path, Icono }) => (
+            <div key={title} className="flex items-start gap-3 p-4">
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-raised text-lg text-ink-muted">
+                <Icono />
+              </span>
+              <span className="flex flex-1 flex-col gap-1.5">
+                <span className="text-body-sm font-medium">{title}</span>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  {path.map((t, i) => (
+                    <span key={t} className="flex items-center gap-1.5 text-[13px] text-ink-muted">
+                      {i > 0 && <span className="text-ink-faint">›</span>}
+                      <span className="rounded-md bg-surface-raised px-2 py-0.5">{t}</span>
+                    </span>
+                  ))}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }

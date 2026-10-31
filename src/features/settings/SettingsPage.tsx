@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/features/auth/auth-context'
 import { CURRENCIES, useProfile, useUpdateProfile } from './profile'
@@ -16,6 +16,8 @@ import { Picker } from '@/components/ui/Picker'
 import { Segmented } from '@/components/ui/Segmented'
 import { useEnvelopes } from '@/features/money/money'
 import { useExercises } from '@/features/gym/gym'
+import { SettingsFrame } from './SettingsFrame'
+import type { SettingsSection } from './SettingsFrame'
 
 /**
  * Ajustes: la cuenta y las preferencias que viven en `profiles`.
@@ -30,6 +32,15 @@ export function SettingsPage() {
   const ejerciciosArchivados = (useExercises().data ?? []).filter((e) => e.archived_at !== null).length
   const archivados = sobresArchivados + ejerciciosArchivados
 
+  // La lista de secciones del escritorio lleva a «/settings#apariencia»: se
+  // baja hasta ahí, y esa sección queda marcada.
+  const { hash } = useLocation()
+  const seccion = hash.slice(1)
+  const activa: SettingsSection = seccion === 'preferencias' || seccion === 'apariencia' ? seccion : 'cuenta'
+  useEffect(() => {
+    if (seccion) document.getElementById(seccion)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [seccion])
+
   async function cerrarSesion() {
     setSaliendo(true)
     const { error } = await supabase.auth.signOut()
@@ -39,54 +50,57 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-7">
-      <section>
-        <Titulo>Cuenta</Titulo>
-        <Card>
-          <p className="text-body-sm text-ink-muted">Sesión iniciada como</p>
-          <p className="font-medium break-all">{session?.user.email}</p>
-        </Card>
-      </section>
-
-      <section>
-        <div className="mb-2 flex items-baseline justify-between gap-3">
-          <Titulo>Preferencias</Titulo>
-          <EstadoGuardado estado={guardar.status} />
-        </div>
-        {perfil.isPending && <p className="text-body-sm text-ink-muted">Cargando…</p>}
-        {perfil.isError && (
-          <p role="alert" className="text-body-sm text-danger">
-            No se pudo cargar el perfil. Revisa la conexión y vuelve a abrir Ajustes.
-          </p>
-        )}
-        {perfil.data && <Preferencias perfil={perfil.data} guardar={guardar.mutate} />}
-      </section>
-
-      {perfil.data && (
-        <section>
-          <Titulo>Apariencia</Titulo>
-          <SelectorTema actual={parseTheme(perfil.data.theme)} />
+    <SettingsFrame active={activa}>
+      <div className="space-y-7 lg:max-w-160">
+        <section id="cuenta" className="scroll-mt-14">
+          <Titulo>Cuenta</Titulo>
+          <Card>
+            <p className="text-body-sm text-ink-muted">Sesión iniciada como</p>
+            <p className="font-medium break-all">{session?.user.email}</p>
+          </Card>
         </section>
-      )}
 
-      <section>
-        <Titulo>Archivados</Titulo>
-        <Link
-          to="/settings/archived"
-          className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 hover:border-line-strong"
-        >
-          <span>
-            <span className="block text-body-sm font-medium">Sobres y ejercicios</span>
-            <span className="block text-caption text-ink-faint">Su historial y la opción de restaurarlos</span>
-          </span>
-          <span className="text-body-sm text-ink-muted tabular-nums">{archivados}</span>
-        </Link>
-      </section>
+        <section id="preferencias" className="scroll-mt-14">
+          <div className="mb-2 flex items-baseline justify-between gap-3">
+            <Titulo>Preferencias</Titulo>
+            <EstadoGuardado estado={guardar.status} />
+          </div>
+          {perfil.isPending && <p className="text-body-sm text-ink-muted">Cargando…</p>}
+          {perfil.isError && (
+            <p role="alert" className="text-body-sm text-danger">
+              No se pudo cargar el perfil. Revisa la conexión y vuelve a abrir Ajustes.
+            </p>
+          )}
+          {perfil.data && <Preferencias perfil={perfil.data} guardar={guardar.mutate} />}
+        </section>
 
-      <Button variant="danger" onClick={() => void cerrarSesion()} disabled={saliendo} className="w-full">
-        {saliendo ? 'Cerrando…' : 'Cerrar sesión'}
-      </Button>
-    </div>
+        {perfil.data && (
+          <section id="apariencia" className="scroll-mt-14">
+            <Titulo>Apariencia</Titulo>
+            <SelectorTema actual={parseTheme(perfil.data.theme)} />
+          </section>
+        )}
+
+        {/* En el escritorio, Archivados está en la lista de secciones. */}
+        <section className="lg:hidden">
+          <Titulo>Archivados</Titulo>
+          <Link
+            to="/settings/archived"
+            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3 hover:border-line-strong"
+          >
+            <span>
+              <span className="block text-body-sm font-medium">Sobres y ejercicios</span>
+              <span className="block text-caption text-ink-faint">Su historial y la opción de restaurarlos</span>
+            </span>
+            <span className="text-body-sm text-ink-muted tabular-nums">{archivados}</span>
+          </Link>
+        </section>
+
+        <Button variant="danger" onClick={() => void cerrarSesion()} disabled={saliendo} className="w-full">
+          {saliendo ? 'Cerrando…' : 'Cerrar sesión'}
+        </Button>
+      </div>
+    </SettingsFrame>
   )
 }
 

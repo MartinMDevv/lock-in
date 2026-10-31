@@ -191,6 +191,7 @@ probarla en el teléfono** y medir los 5 segundos con cronómetro.
   - Borrar un sobre: mantener presionado 550 ms con un relleno rojo que recorre la tarjeta; la confirmación ofrece primero «Archivar en su lugar» (Enter) y después «Borrar para siempre»; la tarjeta se cierra antes de irse. En el escritorio, clic derecho o ⋯ abre un menú con Editar (E), Archivar (A) y Borrar… (Supr), y la confirmación es una ventana de 420 px.
   - Gasto: los chips muestran el saldo de cada sobre (en rojo si el monto no alcanza) y una línea dice cómo queda el elegido: neutra, ámbar desde el 85 % del tope, roja si queda negativo (`balance.ts › expenseStatus`). Nunca impide guardar.
   - Ctrl+Z deshace desde el toast en el escritorio.
+- [x] **Paquete de diseño (6): Ajustes y Archivados en el escritorio** (31-oct-2026). Desde 1024 px, Ajustes lleva su título y la lista de secciones a la izquierda (220 px), sin el título repetido ni «← Ajustes». Archivados tiene encabezado con pestañas y buscador (que se oculta sin nada que buscar); con datos, lista e historial lado a lado si el contenido mide al menos 1100 px, y si no, el historial se abre encima. La vista vacía explica cómo archivar. El menú lateral dice «lock in» en minúsculas y marca Ajustes en lima. Notificaciones y Atajos de teclado, que el diseño pone en la lista, quedan pendientes: Atajos en F8 y Notificaciones en F9.
 - [ ] Los saldos suman todos los movimientos en el navegador, pidiéndolos de a 1.000. Con años de uso conviene una vista que sume en la base (una migración).
 
 ## F4 · PWA y uso de prueba
@@ -267,6 +268,7 @@ lista. Nada de aquí es bloqueante: son mejoras a algo que ya funciona.
 | ⬜ | Medidas corporales | Peso y medidas en el tiempo | 🟢 |
 | ⬜ | Ctrl K con palabras clave | «uber» → Transporte. Solo si el uso lo pide (D28) | 🟢 |
 | ⬜ | Exportar a PDF | Resumen imprimible con `window.print()` (D25) | 🟢 |
+| ⬜ | **Ajustes › Atajos de teclado** | Pedido del autor (31-oct): la sección que el paquete de diseño (6) pone en la lista de Ajustes. Muestra los atajos que ya existen: 1–5 (áreas), N (registrar), `[` (menú lateral), Ctrl K, `/` (buscar en Archivados), Ctrl+Z (deshacer), Ctrl+Enter (guardar un sobre) y E/A/Supr en el menú de un sobre | 🟡 |
 
 ## F9 · Notificaciones (prueba de concepto)
 
@@ -276,6 +278,7 @@ teléfono no alcanzan.
 - [ ] Una notificación de prueba llega al teléfono con la PWA instalada.
 - [ ] Recién si funciona: tabla `push_subscriptions`, la Edge Function que envía y `pg_cron` que la llama.
 - [ ] Qué avisar, en una lista corta y apagable: tarea que vence hoy, toca entrenar, tope al 85 %.
+- [ ] **Ajustes › Notificaciones**: pedido del autor (31-oct). Es la sección que el paquete de diseño (6) pone en la lista de Ajustes, donde se prenden y apagan los avisos de arriba. Entra junto con ellos, no antes: una sección sin avisos detrás sería un interruptor que no hace nada.
 
 ## F10 · Revisión de arquitectura y buenas prácticas
 

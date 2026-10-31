@@ -30,9 +30,8 @@ function tituloDeRuta(pathname: string): string {
  * que le acomoda (una lista de tareas a lo ancho de 1920 px no se lee).
  */
 function anchoDeRuta(pathname: string): string {
-  // Archivados lleva la lista y el historial lado a lado.
-  if (pathname === '/settings/archived') return 'lg:max-w-280'
-  if (pathname.startsWith('/settings')) return 'lg:max-w-160'
+  // Ajustes lleva su propia lista de secciones a la izquierda (paquete 6).
+  if (pathname.startsWith('/settings')) return 'lg:max-w-340'
   if (pathname === '/tasks') return 'lg:max-w-190'
   if (pathname === '/schedule') return 'lg:max-w-360'
   return 'lg:max-w-320'
@@ -177,11 +176,16 @@ export function AppShell() {
             key={pathname}
             className={`mx-auto w-full grow px-4 pt-3 transition-[opacity,translate] ${
               enSesion ? 'pb-[calc(24px+env(safe-area-inset-bottom))]' : 'pb-[calc(160px+env(safe-area-inset-bottom))]'
-            } duration-(--duration-base) ease-out lg:px-14 lg:pt-10 lg:pb-10 ${
+            } duration-(--duration-base) ease-out ${
+              pathname.startsWith('/settings') ? 'lg:px-16 lg:py-14' : 'lg:px-14 lg:pt-10 lg:pb-10'
+            } ${
               porDeslizar ? '' : 'starting:translate-x-2.5 starting:opacity-0'
             } ${anchoDeRuta(pathname)}`}
           >
-            <h1 className="mb-6 hidden text-title font-semibold lg:block">{tituloDeRuta(pathname)}</h1>
+            {/* Ajustes pone su título sobre su lista de secciones: aquí se repetiría. */}
+            {!pathname.startsWith('/settings') && (
+              <h1 className="mb-6 hidden text-title font-semibold lg:block">{tituloDeRuta(pathname)}</h1>
+            )}
             <Outlet />
           </main>
 

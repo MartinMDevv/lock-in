@@ -716,6 +716,38 @@ describe('cáscara', () => {
     await waitFor(() => expect(screen.getAllByRole('heading', { level: 1 })[0]).toHaveTextContent('Horario'))
   })
 
+  it('en el escritorio, Archivados va dentro de Ajustes y vacío explica cómo archivar', async () => {
+    const ancho = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query.includes('min-width: 1024px'),
+          media: query,
+          onchange: null,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          addListener: () => {},
+          removeListener: () => {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    )
+    try {
+      window.history.pushState({}, '', '/settings/archived')
+      render(<App />)
+
+      expect(await screen.findByRole('heading', { name: 'Archivados', level: 2 })).toBeInTheDocument()
+      // La vista del teléfono no se reutiliza: sin «← Ajustes» y con la lista de secciones marcada.
+      expect(screen.queryByRole('link', { name: '← Ajustes' })).not.toBeInTheDocument()
+      const secciones = screen.getByRole('navigation', { name: 'Secciones de Ajustes' })
+      expect(within(secciones).getByRole('link', { name: 'Archivados' })).toHaveAttribute('aria-current', 'page')
+      // Vacío: explica cómo archivar y no muestra el buscador.
+      expect(screen.getByText('No tienes sobres archivados')).toBeInTheDocument()
+      expect(screen.getByText('Cómo archivar')).toBeInTheDocument()
+      expect(screen.queryByRole('searchbox', { name: 'Buscar en archivados' })).not.toBeInTheDocument()
+    } finally {
+      ancho.mockRestore()
+    }
+  })
+
   it('en el escritorio, 1–5 cambian de área y N abre Registrar', async () => {
     render(<App />)
     const usuario = userEvent.setup()

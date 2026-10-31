@@ -83,10 +83,11 @@ export function Sidebar({
 
       <div className="flex h-11 items-center">
         <span className="grid size-11 shrink-0 place-items-center">
-          <LogoMark className="size-5.5" />
+          <LogoMark className="size-6" />
         </span>
-        <span className={`text-body font-semibold tracking-[-0.02em] whitespace-nowrap transition-opacity ${etiqueta}`}>
-          Lock In
+        {/* La marca en minúsculas, como en el paquete de marca. */}
+        <span className={`text-[17px] font-semibold tracking-[-0.02em] whitespace-nowrap transition-opacity ${etiqueta}`}>
+          lock in
         </span>
       </div>
 
@@ -235,11 +236,17 @@ export function Sidebar({
         {closed && <Riel datos={datos} />}
       </div>
 
-      <NavLink to="/settings" className="group relative mt-auto flex items-center border-t border-line pt-3 text-ink">
+      {/* En Ajustes (y en Archivados, que cuelga de ahí) el pie queda marcado. */}
+      <NavLink
+        to="/settings"
+        className={({ isActive }) =>
+          `group relative mt-auto flex items-center border-t border-line pt-3 text-ink ${isActive ? 'is-active' : ''}`
+        }
+      >
         <span className="grid size-11 shrink-0 place-items-center">{avatar}</span>
         <span className={`flex flex-col overflow-hidden whitespace-nowrap transition-opacity ${etiqueta}`}>
           <span className="truncate text-body-sm font-medium">{name}</span>
-          <span className="text-caption text-ink-faint">Ajustes</span>
+          <span className="text-caption text-ink-faint group-[.is-active]:text-accent-text">Ajustes</span>
         </span>
         <Tooltip className={tip}>Ajustes</Tooltip>
       </NavLink>

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useCallback, useState, useSyncExternalStore } from 'react'
 
 /**
  * Si la pantalla cumple una media query, y se actualiza al cambiar.
@@ -44,4 +44,26 @@ export function useTyping(): boolean {
     () => opensKeyboard(document.activeElement),
     () => false,
   )
+}
+
+/**
+ * El ancho de un elemento, al día cuando cambia. Sirve para elegir el diseño
+ * según el espacio que de verdad hay, no según la ventana: en el escritorio,
+ * el menú lateral abierto o cerrado cambia cuánto le queda al contenido.
+ */
+export function useElementWidth<T extends HTMLElement>(): [(el: T | null) => void, number] {
+  const [width, setWidth] = useState(0)
+  // React 19 llama a la función que devuelve la ref al desmontar el elemento.
+  const ref = useCallback((el: T | null) => {
+    if (!el) return
+    setWidth(el.getBoundingClientRect().width)
+    // Sin ResizeObserver (navegadores muy viejos, pruebas) se queda con la primera medida.
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setWidth(entry.contentRect.width)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+  return [ref, width]
 }

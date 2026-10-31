@@ -132,3 +132,22 @@ export const IconoLapiz = (p: Props) => (
     <path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4" />
   </Base>
 )
+
+export const IconoBuscar = (p: Props) => (
+  <Base {...p}>
+    <path d="M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zM20 20l-4-4" />
+  </Base>
+)
+
+/** Una tarjeta, para «clic derecho en un sobre». */
+export const IconoTarjeta = (p: Props) => (
+  <Base {...p}>
+    <path d="M5 4h14v16H5zM9 9h6M9 13h4" />
+  </Base>
+)
+
+export const IconoTelefono = (p: Props) => (
+  <Base {...p}>
+    <path d="M8 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM11 18h2" />
+  </Base>
+)
