@@ -380,12 +380,16 @@ function Ejercicio({
               value={peso}
               step={weightStep(unit)}
               min={0}
-              max={unit === 'kg' ? 10_000 : 22_000}
+              max={unit === 'kg' ? 9_990 : 22_000}
               format={(v) => (v === 0 && exercise.measure === 'reps' ? 'Corporal' : (v / 10).toLocaleString('es-CL'))}
               decreaseLabel={`Menos ${unit === 'kg' ? '2,5 kg' : '5 lb'}`}
               increaseLabel={`Más ${unit === 'kg' ? '2,5 kg' : '5 lb'}`}
-              // En décimas, como lo guarda la pantalla: «62,5» → 625.
-              parse={(texto) => parseAmount(texto, 1)}
+              // En décimas, como lo guarda la pantalla: «62,5» → 625, redondeado a 0,5.
+              parse={(texto) => {
+                const decimas = parseAmount(texto, 1)
+                return decimas === null ? null : Math.round(decimas / 5) * 5
+              }}
+              invalidMessage={`Escribe un peso entre 0 y ${unit === 'kg' ? '999 kg' : '2.200 lb'}`}
               editFormat={(v) => (v === 0 ? '' : (v / 10).toLocaleString('es-CL'))}
               inputMode="decimal"
               onChange={setPeso}

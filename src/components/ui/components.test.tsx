@@ -81,7 +81,7 @@ describe('Stepper escrito a mano', () => {
     expect(campo).toHaveValue('105')
   })
 
-  it('lo que no es un número vuelve al valor que había; lo que se pasa queda en el máximo', async () => {
+  it('lo que no es un número o se pasa del máximo no se guarda: avisa y vuelve al valor que había', async () => {
     const onChange = vi.fn()
     render(<Escrito onChange={onChange} />)
     const usuario = userEvent.setup()
@@ -93,8 +93,30 @@ describe('Stepper escrito a mano', () => {
     expect(campo).toHaveValue('60')
 
     await usuario.clear(campo)
-    await usuario.type(campo, '5000{Enter}')
-    expect(onChange).toHaveBeenLastCalledWith(10_000)
+    await usuario.type(campo, '5000')
+    expect(campo).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('Escribe un número entre 0 y 1.000')).toBeInTheDocument()
+    await usuario.keyboard('{Enter}')
+    expect(onChange).not.toHaveBeenCalled()
+    expect(campo).toHaveValue('60')
+  })
+
+  it('Esc cancela lo escrito, y ↑ y ↓ suben o bajan un paso sin salir del campo', async () => {
+    const onChange = vi.fn()
+    render(<Escrito onChange={onChange} />)
+    const usuario = userEvent.setup()
+    const campo = screen.getByRole('textbox', { name: 'Peso (kg)' })
+
+    await usuario.clear(campo)
+    await usuario.type(campo, '80{Escape}')
+    expect(onChange).not.toHaveBeenCalled()
+    expect(campo).toHaveValue('60')
+
+    await usuario.click(campo)
+    await usuario.keyboard('{ArrowUp}{ArrowUp}')
+    expect(campo).toHaveValue('65')
+    await usuario.keyboard('{Enter}')
+    expect(onChange).toHaveBeenLastCalledWith(650)
   })
 })
 
