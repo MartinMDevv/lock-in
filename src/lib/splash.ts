@@ -12,7 +12,6 @@ import { LOGO_BAR, LOGO_CORE } from '@/components/ui/LogoMark'
  * - Sale una vez por pestaña (sessionStorage): recargar no la repite.
  * - La fuente es la Geist que viene dentro de la app («Geist Variable»).
  *
- * Con `prefers-reduced-motion` muestra el cuadro final 400 ms y sale.
  * Es DOM directo y no React: tiene que estar encima desde el primer cuadro,
  * antes de que la app termine de armarse.
  */
@@ -45,7 +44,6 @@ export function playSplash(): void {
   const desk = innerWidth >= 900
   const M = desk ? 168 : 120
   const FS = desk ? 96 : 60
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
 
   const root = document.createElement('div')
   root.setAttribute('aria-hidden', 'true')
@@ -112,20 +110,6 @@ export function playSplash(): void {
         transform: 'none',
       }),
     )
-  }
-
-  if (reduce) {
-    css(svg, { opacity: '1' })
-    css(rot, { transform: 'none' })
-    all('.b').forEach((b) => css(b, { transform: 'none' }))
-    css(core, { transform: 'scale(1)', opacity: '1' })
-    requestAnimationFrame(() => {
-      if (fly) fly.style.transition = 'none'
-      landOnDot()
-      if (fly) fly.style.transition = 'none'
-    })
-    at(400, finish)
-    return
   }
 
   // La palabra se mide con la fuente ya cargada (viene dentro de la app, es

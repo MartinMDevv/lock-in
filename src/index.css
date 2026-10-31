@@ -122,16 +122,6 @@
   :focus-visible { outline: 2px solid var(--color-accent-text); outline-offset: 2px; }
 }
 
-/* Con «reducir movimiento»: solo fundidos */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    transition-property: opacity, color, background-color, border-color !important;
-    scroll-behavior: auto !important;
-  }
-}
-
 /* ── Propio de la app (no viene del paquete de diseño) ── */
 
 /* La sombra de los globos del menú lateral cerrado. Viene del archivo
