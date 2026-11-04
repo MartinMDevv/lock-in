@@ -32,7 +32,7 @@ Dos reglas:
 | **F1 · Base de datos definitiva** | Las 15 tablas en producción, con RLS probada | ✅ cerrada el 28-oct-2026: 7 migraciones, *Advisors* limpio, RLS 127/127 y primer respaldo |
 | **F2 · El diseño en el código** | La app se ve como el prototipo | ✅ cerrada el 31-oct-2026. Las animaciones no se desactivan (D35); falta solo mirar el tema claro en el teléfono |
 | **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | 🚧 escrita (29 al 31-oct, con los paquetes de diseño 4, 5 y 6); falta probarla en el teléfono, medir los 5 segundos, Ctrl K y transferir |
-| **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | 🚧 manifest e íconos listos; falta el service worker |
+| **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | 🚧 manifest, íconos y service worker listos (03-nov); faltan las dos semanas de uso |
 | **F5 · Sincronía y sin conexión** | Anotar sin señal sin duplicar nada | ⬜ |
 | **F6 · Importar y exportar** | Un mes de gastos desde un CSV en un minuto | ⬜ |
 | **F7 · Seguridad** | Una cuenta no ve nada de otra, probado en CI | 🚧 RLS probada a mano, topes por cuenta y cabeceras; falta la prueba en CI y borrar la cuenta |
@@ -67,7 +67,7 @@ conexión y la seguridad tienen que estar cerrados antes de envolverlos (D34).
 1. **Probar en el teléfono** lo de F3 (paquetes 4, 5 y 6 incluidos) y el tema claro de F2, y
    medir los 5 segundos con cronómetro. Lo que salga se arregla antes de
    seguir.
-2. **Service worker** (F4). Requiere instalar `vite-plugin-pwa`, con OK.
+2. ✅ **Service worker** (F4), 03-nov. Falta comprobar en el teléfono que abre sin señal y que aparece el aviso de versión nueva.
 3. **Dos semanas de uso real** (F4). Las apps no se adelantan: si la PWA no se
    abre a diario, empaquetarla no lo arregla.
 
@@ -216,7 +216,7 @@ La PWA va aquí y no antes, a propósito: instalar una app que no hace nada es
 una forma rápida de que se desinstale.
 
 - [x] Manifest, íconos (incluido el *maskable*) y color de tema (30-oct-2026, del paquete de marca «Logo final»). El ícono de afuera es **siempre el oscuro**, sea cual sea el tema de la persona; dentro de la app el logo (`LogoMark`) sigue el tema.
-- [ ] Service worker: cachea la cáscara y los recursos. Es para la web y la PWA: dentro de las apps de F10b los archivos ya vienen empaquetados (D34). Requiere instalar `vite-plugin-pwa`, con OK del autor.
+- [x] Service worker: cachea la cáscara y los recursos. Es para la web y la PWA: dentro de las apps de F10b los archivos ya vienen empaquetados (D34). 03-nov: `vite-plugin-pwa` 2.0 con `registerType: 'prompt'` (aviso «Hay una versión nueva · Recargar» en `UpdatePrompt.tsx`, revisa cada hora con la app abierta), 15 archivos guardados (solo el alfabeto latino de las fuentes) y `sw.js` con `no-cache` en Vercel y nginx. Falta verlo en el teléfono. ⚠️ `npm audit` marca 10 avisos (2 bajos, 8 moderados) en `workbox-build`, que solo corre en el build sobre archivos propios: el bundle queda en 0 (`npm audit --omit=dev`). El arreglo que propone npm baja el plugin a la 1.1, que no es compatible con Vite 8; se revisa cuando salga una versión nueva de Workbox.
 - [ ] Instalar en el teléfono y en el computador.
 - [ ] **Dos semanas de uso real.** Anotar cada fricción en un issue, sin arreglar nada en el momento.
 - [ ] Al final: recortar lo que no se usó. **Se recorta, nunca se agrega.**
