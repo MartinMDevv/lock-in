@@ -88,7 +88,7 @@ export function WeekStrip({
       </button>
       <div
         ref={pista}
-        className="flex flex-1 snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none]"
+        className="flex flex-1 snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
       >
         {semanas.map((dias, i) => (
           <div

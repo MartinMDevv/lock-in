@@ -156,10 +156,14 @@
     /* Respeta la barra de gestos y el notch cuando corre como PWA */
     padding-bottom: env(safe-area-inset-bottom);
   }
-  /* Barras de scroll finas y del color de los bordes: la gris del sistema
-     desentona en el escritorio (en el teléfono no se ven). */
+  /* Sin barras de scroll en ninguna parte (pedido del autor, 03-nov): se
+     sigue desplazando con el dedo, la rueda o el teclado, pero la barra no se
+     dibuja. La segunda regla cubre a los navegadores WebKit más viejos, que
+     no entienden scrollbar-width. */
   * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-line-strong) transparent;
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -103,7 +103,7 @@ export function TaskComposer({
         </div>
 
         {/* Los chips están desde el principio: que aparezcan al escribir movía todo bajo el dedo. */}
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           <Chip selected={paraHoy} onClick={() => setParaHoy(!paraHoy)}>
             Hoy
           </Chip>
