@@ -206,7 +206,7 @@ Extiende `auth.users` con las preferencias que hacen genérica a la aplicación.
 | Columna | Tipo | Para qué |
 |---|---|---|
 | `id` | uuid PK → `auth.users` | Es el usuario |
-| `display_name` | text (≤ 60) | Nombre visible. Lo manda el cliente al registrarse, así que el largo se limita en la base |
+| `display_name` | text (≤ 60) | Nombre visible. Parte con el nombre de la cuenta de Google (`full_name`, o si no `name`) y se cambia en Ajustes. Viene de afuera, así que el largo se limita en la base |
 | `currency` | text (`'CLP'`) | Código ISO 4217 |
 | `currency_decimals` | smallint (`0`) | CLP usa 0, USD usa 2 |
 | `timezone` | text (`'America/Santiago'`) | Define qué es "hoy" y cuándo cierra el mes |
@@ -485,6 +485,7 @@ de todos (D32): se revisan dos veces antes del push. Las reglas para no perder d
 | ✅ | `crear_gimnasio` | `exercises`, `routines`, `routine_exercises`, `workouts`, `workout_sets`, `body_measurements` + `schedule_slots.routine_id`. Aplicada el 14-oct |
 | ✅ | `revocar_execute_funciones` | Quita EXECUTE a la API sobre `handle_new_user` y `rls_auto_enable`, y hace que las funciones futuras nazcan sin él (mínimo privilegio, D32). Aplicada el 28-oct
 | ✅ | `topes_por_cuenta` | La función `enforce_row_cap()` y un trigger por tabla con su tope (regla 9). Aplicada el 28-oct
+| ⬜ | `nombre_desde_google` | `handle_new_user` lee `display_name`, `full_name` o `name`, en ese orden, y rellena el nombre de las cuentas que lo tenían vacío sin tocar el que alguien escribió en Ajustes. Probada el 03-nov en un Postgres temporal
 
 Después de cada una: `npm run db:types`. Al final, la prueba de RLS con dos
 cuentas (F7).
