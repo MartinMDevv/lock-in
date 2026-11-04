@@ -1,6 +1,12 @@
 // Extiende las aserciones de Vitest con los matchers de Testing Library
 // (toBeInTheDocument, toHaveTextContent, etc.)
 import '@testing-library/jest-dom/vitest'
+import { beforeEach } from 'vitest'
+import { resetAppStoreForTests } from '@/lib/kv'
+
+// La caché guardada y la cola viven en un almacén (lib/kv.ts). En las pruebas
+// es memoria, y se vacía antes de cada una: nada pasa de una prueba a otra.
+beforeEach(() => resetAppStoreForTests())
 
 // Node 25+ trae su propio localStorage global, que sin --localstorage-file
 // queda vacío y tapa el de jsdom. Se reemplaza por uno en memoria.

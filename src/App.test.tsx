@@ -40,14 +40,20 @@ let escrituras: string[] = []
 // Lo que devuelve cada tabla al leerla. Vacío salvo que la prueba lo llene.
 let filas: Record<string, unknown[]> = {}
 
+// Sin red: los inserts fallan como falla fetch cuando no hay señal.
+let sinRed = false
+
 function consultaSimulada(tabla: string) {
   let leyendo = true
-  const respuesta = () => Promise.resolve({ data: leyendo ? (filas[tabla] ?? []) : null, error: null })
+  const respuesta = () =>
+    sinRed && !leyendo
+      ? Promise.reject(new TypeError('Failed to fetch'))
+      : Promise.resolve({ data: leyendo ? (filas[tabla] ?? []) : null, error: null })
   const consulta = {
     select: () => consulta,
     insert: (fila: unknown) => {
       leyendo = false
-      inserts.push({ tabla, fila })
+      if (!sinRed) inserts.push({ tabla, fila })
       return consulta
     },
     upsert: (fila: unknown) => {
@@ -108,6 +114,9 @@ describe('esqueleto de la aplicación', () => {
     inserts = []
     escrituras = []
     filas = {}
+    sinRed = false
+    // Si una prueba sin señal se corta a la mitad, la siguiente parte con red.
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
     window.history.pushState({}, '', '/')
   })
 
@@ -326,6 +335,9 @@ describe('cáscara', () => {
     inserts = []
     escrituras = []
     filas = {}
+    sinRed = false
+    // Si una prueba sin señal se corta a la mitad, la siguiente parte con red.
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
     window.history.pushState({}, '', '/')
   })
 
@@ -343,10 +355,37 @@ describe('cáscara', () => {
     await usuario.keyboard('Leer cap. 4{Enter}')
 
     expect(inserts).toEqual([
-      { tabla: 'tasks', fila: expect.objectContaining({ title: 'Leer cap. 4', user_id: 'usuario-1', priority: 0 }) },
+      // La cola (lib/outbox.ts) manda siempre una lista, aunque sea de una fila.
+      { tabla: 'tasks', fila: [expect.objectContaining({ title: 'Leer cap. 4', user_id: 'usuario-1', priority: 0 })] },
     ])
     // Sigue en Hoy: la tarea se creó desde donde se estaba.
     expect(await tituloDelArea()).toBe('Hoy')
+  })
+
+  it('sin señal, la tarea se anota igual, avisa que está pendiente y se envía sola al volver la red', async () => {
+    render(<App />)
+    const usuario = userEvent.setup()
+    await screen.findByRole('button', { name: 'Registrar', expanded: false })
+    sinRed = true
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    window.dispatchEvent(new Event('offline'))
+
+    await usuario.click(screen.getByRole('button', { name: 'Registrar', expanded: false }))
+    await usuario.click(await screen.findByRole('button', { name: /^Tarea/ }))
+    await screen.findByRole('textbox', { name: 'Agregar tarea' })
+    await usuario.keyboard('Comprar pan{Enter}')
+
+    // No hubo error: quedó en la cola y el aviso lo dice.
+    expect(await screen.findByText('Sin conexión · 1 pendiente de sincronizar')).toBeInTheDocument()
+    expect(inserts).toEqual([])
+    expect(screen.queryByText(/no se pud(o|ieron) guardar$/)).not.toBeInTheDocument()
+
+    // Vuelve la señal: la cola la envía sola y el aviso desaparece.
+    sinRed = false
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+    window.dispatchEvent(new Event('online'))
+    await waitFor(() => expect(inserts).toEqual([{ tabla: 'tasks', fila: [expect.objectContaining({ title: 'Comprar pan' })] }]))
+    await waitFor(() => expect(screen.queryByText(/de sincronizar|Sincronizando/)).not.toBeInTheDocument())
   })
 
   it('+ → Gasto viene con el último sobre elegido y registra en 4 toques', async () => {
@@ -654,14 +693,16 @@ describe('cáscara', () => {
     expect(inserts).toEqual([
       {
         tabla: 'workout_sets',
-        fila: expect.objectContaining({
-          workout_id: 'w1',
-          exercise_id: 'e1',
-          set_index: 1,
-          reps: 8,
-          weight_grams: 2500,
-          is_warmup: false,
-        }),
+        fila: [
+          expect.objectContaining({
+            workout_id: 'w1',
+            exercise_id: 'e1',
+            set_index: 1,
+            reps: 8,
+            weight_grams: 2500,
+            is_warmup: false,
+          }),
+        ],
       },
     ])
     expect(await screen.findByRole('timer')).toHaveTextContent('2:00')

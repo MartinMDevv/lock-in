@@ -12,6 +12,7 @@ import { TaskEditSheet } from './TaskEditSheet'
 import { TaskRow } from './TaskRow'
 import type { Task } from './tasks'
 import { useTaskCategories, useTasks } from './tasks'
+import { failedEmpty } from '@/lib/query-status'
 
 type Vista = 'today' | 'week' | 'category'
 
@@ -52,7 +53,7 @@ export function TasksPage() {
         </div>
       )}
 
-      {tareas.isError && (
+      {failedEmpty(tareas) && (
         <EmptyState
           title="No pudimos cargar tus tareas"
           detail="Lo que ya anotaste está guardado. Revisa la conexión y vuelve a intentarlo."

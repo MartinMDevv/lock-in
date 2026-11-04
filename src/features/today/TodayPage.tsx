@@ -106,7 +106,7 @@ function TuDia() {
   const horario = useSchedule()
 
   if (horario.isPending) return <Cargando />
-  if (horario.isError) return <ErrorDeCarga que="el horario" onRetry={() => void horario.refetch()} />
+  if (horario.data === undefined) return <ErrorDeCarga que="el horario" onRetry={() => void horario.refetch()} />
 
   const del = occurrencesOn(today, horario.data.blocks, horario.data.slots)
   if (del.length === 0) {
@@ -182,7 +182,7 @@ function QueVence() {
   const [abierta, setAbierta] = useState<Task | null>(null)
 
   if (tareas.isPending) return <Cargando />
-  if (tareas.isError) return <ErrorDeCarga que="tus tareas" onRetry={() => void tareas.refetch()} />
+  if (tareas.data === undefined) return <ErrorDeCarga que="tus tareas" onRetry={() => void tareas.refetch()} />
 
   const vencen = groupForToday(tareas.data, today).flatMap((g) => g.tasks)
   if (vencen.length === 0) {
@@ -237,7 +237,7 @@ function Gimnasio() {
   const empezar = useStartWorkout()
 
   if (rutinas.isPending || sesiones.isPending) return <Cargando />
-  if (rutinas.isError || sesiones.isError) {
+  if (rutinas.data === undefined || sesiones.data === undefined) {
     return <ErrorDeCarga que="el gimnasio" onRetry={() => void Promise.all([rutinas.refetch(), sesiones.refetch()])} />
   }
 
@@ -298,7 +298,7 @@ function Plata() {
   const movimientos = useMovements()
 
   if (sobres.isPending || movimientos.isPending) return <Cargando />
-  if (sobres.isError || movimientos.isError) {
+  if (sobres.data === undefined || movimientos.data === undefined) {
     return <ErrorDeCarga que="tu plata" onRetry={() => void Promise.all([sobres.refetch(), movimientos.refetch()])} />
   }
 

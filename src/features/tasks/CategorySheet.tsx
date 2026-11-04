@@ -8,6 +8,7 @@ import { ColorDot, ColorPicker } from '@/components/ui/TagColor'
 import type { TagColor } from '@/components/ui/tag-colors'
 import { newId } from '@/lib/optimistic'
 import { useCreateCategory, useTaskCategories } from './tasks'
+import { failedEmpty } from '@/lib/query-status'
 
 /**
  * Elegir la categoría de una tarea, o crear una nueva ahí mismo sin perder
@@ -110,7 +111,7 @@ export function CategorySheet({
               {value === c.id && <IconoCheck className="text-lg text-accent-text" />}
             </button>
           ))}
-          {categorias.isError && (
+          {failedEmpty(categorias) && (
             <p role="alert" className="px-3 py-2 text-body-sm text-danger">
               No se pudieron cargar las categorías.
             </p>

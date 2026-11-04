@@ -69,7 +69,7 @@ export function MoneyPage() {
     )
   }
 
-  if (sobres.isError || movimientos.isError) {
+  if (sobres.data === undefined || movimientos.data === undefined) {
     return (
       <EmptyState
         title="No pudimos cargar tu plata"

@@ -12,6 +12,7 @@ import { TasksPage } from '@/features/tasks/TasksPage'
 import { GymPage } from '@/features/gym/GymPage'
 import { MoneyPage } from '@/features/money/MoneyPage'
 import { IconoMas } from '@/components/ui/icons'
+import { SyncStatus } from './SyncStatus'
 import { useAuth } from '@/features/auth/auth-context'
 import { useFirstRunTimezone, useProfile, useProfileTheme } from '@/features/settings/profile'
 
@@ -272,6 +273,8 @@ export function AppShell() {
       </nav>
 
       <RegisterSheet open={registrando} onClose={() => setRegistrando(false)} />
+      {/* Sin señal, lo pendiente de sincronizar y lo que no se pudo guardar (F5). */}
+      <SyncStatus />
     </div>
   )
 }

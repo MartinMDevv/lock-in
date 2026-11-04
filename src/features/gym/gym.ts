@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase'
 import { newId, optimistic } from '@/lib/optimistic'
 import { useUserId } from '@/features/settings/profile'
 import { useSchedule } from '@/features/schedule/schedule'
+import { cancelQueued, queuedDrafts, submit } from '@/lib/outbox'
+import { mergePending } from '@/core/sync/outbox'
 import { missingExercises } from '@/core/gym/presets'
 import type { ExerciseTemplate, RoutinePreset } from '@/core/gym/presets'
 import type { Measure } from '@/core/gym/gym'
@@ -68,7 +70,8 @@ export function useWorkouts() {
         .gte('started_at', since)
         .order('started_at', { ascending: false })
       if (error) throw error
-      return data
+      // Una sesión empezada sin señal, primero: es la más nueva.
+      return mergePending(data, queuedDrafts('workouts'), 'start')
     },
   })
 }
@@ -85,7 +88,8 @@ export function useWorkoutSets(workoutId: string) {
         .eq('workout_id', workoutId)
         .order('created_at')
       if (error) throw error
-      return data
+      const enCola = queuedDrafts('workout_sets').filter((s) => s.workout_id === workoutId)
+      return mergePending(data, enCola, 'end')
     },
   })
 }
@@ -376,12 +380,42 @@ export function useStartWorkout() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, routineId }: { id: string; routineId: string | null }) => {
-      const { error } = await supabase.from('workouts').insert({ id, user_id: userId, routine_id: routineId })
-      if (error) throw error
+    // Empezar a entrenar sin señal (el gimnasio en un subterráneo): la sesión
+    // queda en la cola (lib/outbox.ts) y sus series van detrás de ella.
+    networkMode: 'always',
+    mutationFn: (vars: { id: string; routineId: string | null }) => {
+      const draft = draftWorkout(userId, vars)
+      return submit({
+        table: 'workouts',
+        rows: [{ id: draft.id, user_id: userId, routine_id: draft.routine_id, started_at: draft.started_at }],
+        drafts: [draft],
+      })
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: workoutsKey(userId) }),
+    // La sesión aparece al tiro en la lista: sin señal, la pantalla de la
+    // sesión la busca ahí y no puede esperar a que llegue a la base.
+    ...optimistic<Workout[], { id: string; routineId: string | null }>(
+      queryClient,
+      workoutsKey(userId),
+      (list, vars) => [draftWorkout(userId, vars), ...list],
+    ),
   })
+}
+
+/** La sesión completa, como se ve antes de que llegue a la base. */
+function draftWorkout(userId: string, { id, routineId }: { id: string; routineId: string | null }): Workout {
+  const now = new Date().toISOString()
+  return {
+    id,
+    user_id: userId,
+    routine_id: routineId,
+    // La hora del teléfono: la sesión empezó ahora, no cuando llegue a la base.
+    started_at: now,
+    ended_at: null,
+    notes: null,
+    import_id: null,
+    created_at: now,
+    updated_at: now,
+  }
 }
 
 export function useFinishWorkout() {
@@ -401,7 +435,11 @@ export function useDiscardWorkout() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (id: string) => {
+      // Una sesión que todavía no salió de la cola se descarta ahí mismo.
+      const enLaBase = await cancelQueued('workouts', [id])
+      if (enLaBase.length === 0) return
       const { error } = await supabase.from('workouts').delete().eq('id', id)
       if (error) throw error
     },
@@ -418,21 +456,22 @@ export function useAddSet() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (set: NewSet & { created_at?: string }) => {
-      const { error } = await supabase.from('workout_sets').insert({ ...set, user_id: userId })
-      if (error) throw error
+    // Sin señal queda en la cola detrás de su sesión (lib/outbox.ts).
+    networkMode: 'always',
+    mutationFn: (set: NewSet & { created_at?: string }) => {
+      const draft = draftSet(userId, set)
+      // created_at va siempre: ordena las series y es la hora en que se hizo.
+      return submit({
+        table: 'workout_sets',
+        rows: [{ ...set, user_id: userId, created_at: draft.created_at }],
+        drafts: [draft],
+      })
     },
     onMutate: async (set) => {
       const key = setsKey(userId, set.workout_id)
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<WorkoutSet[]>(key)
-      const now = new Date().toISOString()
-      if (previous) {
-        queryClient.setQueryData<WorkoutSet[]>(key, [
-          ...previous,
-          { rpe: null, created_at: now, updated_at: now, ...set, user_id: userId },
-        ])
-      }
+      if (previous) queryClient.setQueryData<WorkoutSet[]>(key, [...previous, draftSet(userId, set)])
       return { previous }
     },
     onError: (_e, set, context) => {
@@ -445,11 +484,25 @@ export function useAddSet() {
   })
 }
 
+/**
+ * La serie completa, como se ve antes de que responda la base. Con
+ * `created_at` dado (Deshacer un borrado) conserva su hora; si no, es ahora.
+ * La hora queda fija al anotarla: si la cola la envía después, no cambia.
+ */
+function draftSet(userId: string, set: NewSet & { created_at?: string }): WorkoutSet {
+  const now = new Date().toISOString()
+  return { rpe: null, created_at: now, updated_at: now, ...set, user_id: userId }
+}
+
 export function useDeleteSet() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (set: WorkoutSet) => {
+      // Si todavía no salió de la cola, se saca de ahí y no hace falta la base.
+      const enLaBase = await cancelQueued('workout_sets', [set.id])
+      if (enLaBase.length === 0) return
       const { error } = await supabase.from('workout_sets').delete().eq('id', set.id)
       if (error) throw error
     },

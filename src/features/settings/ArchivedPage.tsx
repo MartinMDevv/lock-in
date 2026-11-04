@@ -93,7 +93,7 @@ function Contenido() {
     )
   }
 
-  if (sobres.isError || movimientos.isError || ejercicios.isError) {
+  if (sobres.data === undefined || movimientos.data === undefined || ejercicios.data === undefined) {
     return (
       <EmptyState
         title="No pudimos cargar lo archivado"

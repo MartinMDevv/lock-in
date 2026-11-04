@@ -65,7 +65,7 @@ export function SchedulePage() {
     )
   }
 
-  if (horario.isError) {
+  if (horario.data === undefined) {
     return (
       <EmptyState
         title="No pudimos cargar tu horario"

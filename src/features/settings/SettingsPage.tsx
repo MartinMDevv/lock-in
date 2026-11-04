@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { supabase } from '@/lib/supabase'
+import { useOutbox } from '@/lib/outbox'
+import { signOutAndForget } from '@/features/auth/sign-out'
 import { useAuth } from '@/features/auth/auth-context'
 import { CURRENCIES, useProfile, useUpdateProfile } from './profile'
 import { TimezoneField } from './TimezoneField'
@@ -18,6 +19,7 @@ import { useEnvelopes } from '@/features/money/money'
 import { useExercises } from '@/features/gym/gym'
 import { SettingsFrame } from './SettingsFrame'
 import type { SettingsSection } from './SettingsFrame'
+import { failedEmpty } from '@/lib/query-status'
 
 /**
  * Ajustes: la cuenta y las preferencias que viven en `profiles`.
@@ -41,9 +43,20 @@ export function SettingsPage() {
     if (seccion) document.getElementById(seccion)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }, [seccion])
 
+  // Lo creado sin señal que todavía no llega a la base. Cerrar sesión lo
+  // borra del teléfono (D32: nada de una persona queda para la siguiente),
+  // así que se avisa antes y se pide un segundo toque.
+  const sinEnviar = useOutbox().reduce((n, e) => n + e.rows.length, 0)
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
+
   async function cerrarSesion() {
+    if (sinEnviar > 0 && !confirmarSalida) {
+      setConfirmarSalida(true)
+      return
+    }
     setSaliendo(true)
-    const { error } = await supabase.auth.signOut()
+    // También borra del teléfono la caché guardada y la cola de esta cuenta.
+    const error = await signOutAndForget(session?.user.id ?? '')
     // Si falla, se vuelve a habilitar el botón en vez de dejarlo muerto.
     if (error) setSaliendo(false)
     // Si sale bien, onAuthStateChange devuelve la app al login.
@@ -66,7 +79,7 @@ export function SettingsPage() {
             <EstadoGuardado estado={guardar.status} />
           </div>
           {perfil.isPending && <p className="text-body-sm text-ink-muted">Cargando…</p>}
-          {perfil.isError && (
+          {failedEmpty(perfil) && (
             <p role="alert" className="text-body-sm text-danger">
               No se pudo cargar el perfil. Revisa la conexión y vuelve a abrir Ajustes.
             </p>
@@ -96,8 +109,14 @@ export function SettingsPage() {
           </Link>
         </section>
 
+        {confirmarSalida && (
+          <p role="alert" className="text-body-sm text-danger">
+            {sinEnviar === 1 ? 'Hay 1 cosa' : `Hay ${sinEnviar} cosas`} anotadas sin señal que todavía no llegan a la
+            base. Si cierras sesión ahora, se pierden.
+          </p>
+        )}
         <Button variant="danger" onClick={() => void cerrarSesion()} disabled={saliendo} className="w-full">
-          {saliendo ? 'Cerrando…' : 'Cerrar sesión'}
+          {saliendo ? 'Cerrando…' : confirmarSalida ? 'Cerrar sesión igual' : 'Cerrar sesión'}
         </Button>
       </div>
     </SettingsFrame>

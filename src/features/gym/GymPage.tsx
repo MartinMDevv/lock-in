@@ -38,7 +38,9 @@ export function GymPage() {
     )
   }
 
-  if (rutinas.isError || sesiones.isError || ejercicios.isError) {
+  // Ya no está cargando: si falta algo, es que falló sin nada guardado que
+  // mostrar. Con datos guardados (F5) se sigue aunque el último pedido fallara.
+  if (rutinas.data === undefined || sesiones.data === undefined || ejercicios.data === undefined) {
     return (
       <EmptyState
         title="No pudimos cargar el gimnasio"

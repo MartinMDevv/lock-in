@@ -65,7 +65,7 @@ export function WorkoutPage() {
   }
 
   const sesion = sesiones.data?.find((w) => w.id === workoutId)
-  if (sesiones.isError || rutinas.isError || ejercicios.isError || series.isError || !sesion) {
+  if (sesiones.data === undefined || rutinas.data === undefined || ejercicios.data === undefined || series.data === undefined || !sesion) {
     return (
       <EmptyState
         title="No encontramos esta sesión"

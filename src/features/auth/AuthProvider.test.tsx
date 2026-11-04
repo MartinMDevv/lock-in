@@ -38,7 +38,8 @@ async function montar() {
   )
   // Espera a que se restaure la sesión guardada de la cuenta A.
   await waitFor(() => expect(avisar).toBeTypeOf('function'))
-  await act(() => Promise.resolve())
+  // Abrir la cuenta restaura su caché guardada: se espera a que termine.
+  await act(() => new Promise((r) => setTimeout(r, 0)))
   queryClient.setQueryData(['profile', 'cuenta-a'], { display_name: 'A' })
   return queryClient
 }
@@ -57,7 +58,8 @@ describe('AuthProvider y la caché', () => {
 
     act(() => avisar('SIGNED_OUT', null))
 
-    expect(queryClient.getQueryData(['profile', 'cuenta-a'])).toBeUndefined()
+    // El cambio de cuenta espera a IndexedDB (la caché guardada), así que no es instantáneo.
+    await waitFor(() => expect(queryClient.getQueryData(['profile', 'cuenta-a'])).toBeUndefined())
   })
 
   it('entrar con otra cuenta borra la caché de la anterior', async () => {
@@ -65,6 +67,6 @@ describe('AuthProvider y la caché', () => {
 
     act(() => avisar('SIGNED_IN', sesionDe('cuenta-b')))
 
-    expect(queryClient.getQueryData(['profile', 'cuenta-a'])).toBeUndefined()
+    await waitFor(() => expect(queryClient.getQueryData(['profile', 'cuenta-a'])).toBeUndefined())
   })
 })

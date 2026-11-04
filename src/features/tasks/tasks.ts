@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { newId, optimistic } from '@/lib/optimistic'
 import { useUserId } from '@/features/settings/profile'
+import { cancelQueued, queuedDrafts, submit } from '@/lib/outbox'
+import { mergePending } from '@/core/sync/outbox'
 import type { Database } from '@/types/database'
 
 export type Task = Database['public']['Tables']['tasks']['Row']
@@ -31,7 +33,8 @@ export function useTasks() {
         .order('due_on', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true })
       if (error) throw error
-      return data
+      // Las creadas sin señal, al final, hasta que la cola las envíe.
+      return mergePending(data, queuedDrafts('tasks'), 'end')
     },
   })
 }
@@ -77,16 +80,26 @@ export function useCreateTask() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (input: NewTask & { id: string }) => {
-      const { error } = await supabase.from('tasks').insert({
-        id: input.id,
-        user_id: userId,
-        title: input.title,
-        due_on: input.due_on ?? null,
-        category_id: input.category_id ?? null,
-        priority: input.priority ?? 0,
+    // Sin señal queda en la cola (lib/outbox.ts); ver useAddMovements.
+    networkMode: 'always',
+    mutationFn: (input: NewTask & { id: string }) => {
+      const draft = draftTask(userId, input)
+      return submit({
+        table: 'tasks',
+        rows: [
+          {
+            id: input.id,
+            user_id: userId,
+            title: input.title,
+            due_on: input.due_on ?? null,
+            category_id: input.category_id ?? null,
+            priority: input.priority ?? 0,
+            // La hora del teléfono: ordena la lista igual que se anotó, aunque llegue tarde.
+            created_at: draft.created_at,
+          },
+        ],
+        drafts: [draft],
       })
-      if (error) throw error
     },
     ...optimistic<Task[], NewTask & { id: string }>(queryClient, tasksKey(userId), (list, input) => [
       ...list,
@@ -137,7 +150,11 @@ export function useDeleteTask() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (task: Task) => {
+      // Si todavía no salió de la cola, se saca de ahí y no hace falta la base.
+      const enLaBase = await cancelQueued('tasks', [task.id])
+      if (enLaBase.length === 0) return
       const { error } = await supabase.from('tasks').delete().eq('id', task.id)
       if (error) throw error
     },
@@ -150,21 +167,27 @@ export function useRestoreTask() {
   const queryClient = useQueryClient()
   const userId = useUserId()
   return useMutation({
-    mutationFn: async (task: Task) => {
-      const { error } = await supabase.from('tasks').insert({
-        id: task.id,
-        user_id: userId,
-        title: task.title,
-        notes: task.notes,
-        category_id: task.category_id,
-        schedule_block_id: task.schedule_block_id,
-        due_on: task.due_on,
-        due_time: task.due_time,
-        priority: task.priority,
-        created_at: task.created_at,
-      })
-      if (error) throw error
-    },
+    // Deshacer es volver a crear: también funciona sin señal.
+    networkMode: 'always',
+    mutationFn: (task: Task) =>
+      submit({
+        table: 'tasks',
+        rows: [
+          {
+            id: task.id,
+            user_id: userId,
+            title: task.title,
+            notes: task.notes,
+            category_id: task.category_id,
+            schedule_block_id: task.schedule_block_id,
+            due_on: task.due_on,
+            due_time: task.due_time,
+            priority: task.priority,
+            created_at: task.created_at,
+          },
+        ],
+        drafts: [task],
+      }),
     ...optimistic<Task[], Task>(queryClient, tasksKey(userId), (list, task) => [...list, task]),
   })
 }

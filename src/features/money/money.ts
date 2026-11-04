@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { newId, optimistic } from '@/lib/optimistic'
 import { useUserId } from '@/features/settings/profile'
+import { cancelQueued, queuedDrafts, submit } from '@/lib/outbox'
+import { mergePending } from '@/core/sync/outbox'
 import type { EnvelopeDraft } from '@/core/money/presets'
 import type { Database } from '@/types/database'
 
@@ -68,7 +70,8 @@ export function useMovements() {
           .range(from, from + PAGE - 1)
         if (error) throw error
         all.push(...data)
-        if (data.length < PAGE) return all
+        // Lo anotado sin señal que todavía espera en la cola va primero: es lo más nuevo.
+        if (data.length < PAGE) return mergePending(all, queuedDrafts('movements'), 'start')
       }
     },
   })
@@ -92,9 +95,20 @@ export function useAddMovements() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (rows: NewMovement[]) => {
-      const { error } = await supabase.from('movements').insert(rows.map((m) => ({ ...m, user_id: userId })))
-      if (error) throw error
+    // Corre también sin señal: el envío lo maneja la cola (lib/outbox.ts), que
+    // guarda el gasto si no hay red. Pausarlo, como hace TanStack por defecto,
+    // lo dejaría solo en memoria y se perdería al cerrar la app.
+    networkMode: 'always',
+    mutationFn: (rows: NewMovement[]) => {
+      // La hora la pone el teléfono, no la base: un gasto anotado sin señal a
+      // las 10:00 y enviado a las 18:00 ocurrió a las 10:00 (y en su día).
+      const now = nowIso()
+      const conHora = rows.map((m) => ({ ...m, occurred_at: m.occurred_at ?? now }))
+      return submit({
+        table: 'movements',
+        rows: conHora.map((m) => ({ ...m, user_id: userId })),
+        drafts: conHora.map((m) => draftMovement(userId, m)),
+      })
     },
     ...optimistic<Movement[], NewMovement[]>(queryClient, movementsKey(userId), (list, rows) => [
       ...rows.map((m) => draftMovement(userId, m)),
@@ -108,8 +122,13 @@ export function useDeleteMovements() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.from('movements').delete().in('id', ids)
+      // Lo que todavía no salió de la cola se borra de ahí, sin red. Lo demás
+      // ya está en la base, y borrarlo pide conexión (D24).
+      const enLaBase = await cancelQueued('movements', ids)
+      if (enLaBase.length === 0) return
+      const { error } = await supabase.from('movements').delete().in('id', enLaBase)
       if (error) throw error
     },
     ...optimistic<Movement[], string[]>(queryClient, movementsKey(userId), (list, ids) =>
