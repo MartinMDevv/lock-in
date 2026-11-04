@@ -145,3 +145,27 @@ npm run db:types
 | El push no dispara el CI | El runner está apagado | Levantarlo; el job estaba en cola y arranca solo |
 | El escáner de secretos bloquea el commit | Hay un dato personal o una clave | **Sacar el dato.** Nunca `--no-verify` |
 | Consultas que devuelven `[]` sin error | RLS haciendo su trabajo: la fila es de otro usuario | Revisar que `user_id` se esté guardando |
+
+## 6 · Probar sin conexión
+
+La F5 se da por cerrada cuando estas pruebas pasan **en el teléfono real**,
+con la app instalada (las pruebas automáticas usan un almacén en memoria y
+no reemplazan esto). Antes de cada una, abrir la app una vez con señal.
+
+| # | Pasos | Debe pasar |
+|---|---|---|
+| 1 | Registrar un gasto en el teléfono → mirar el computador | Aparece al volver a la pestaña o recargar |
+| 2 | Modo avión → cerrar la app del todo → abrirla | Abre sin el dinosaurio y **con los datos**: horario, tareas, sobres. Arriba dice «Sin conexión · mostrando lo último guardado» |
+| 3 | Modo avión → anotar un gasto → quitar el modo avión | Mientras tanto dice «1 pendiente de sincronizar» y el gasto se ve en la lista. Al volver la señal el aviso desaparece y en el computador el gasto está **una sola vez**, con la hora en que se anotó |
+| 4 | Modo avión → anotar algo → cerrar la app del todo → quitar el modo avión → abrirla | Se envía solo al abrir |
+| 5 | Modo avión → empezar una sesión del gimnasio y anotar dos series → volver la señal | Llegan la sesión y las dos series, en ese orden |
+| 6 | Modo avión → anotar un gasto → borrarlo antes de volver la señal | Desaparece y no se envía nunca |
+| 7 | Modo avión → anotar algo → Ajustes → Cerrar sesión | Avisa cuántas cosas se perderían y pide «Cerrar sesión igual» |
+
+Para ver lo guardado en el teléfono desde el computador: Chrome →
+`chrome://inspect` → la app → *Application* → *IndexedDB* → `keyval-store`.
+Las llaves son `lockin:cache:<cuenta>` y `lockin:outbox:<cuenta>`.
+
+La prueba de «No se pudo guardar» (la DLQ) no se puede forzar a mano sin
+tocar la base: la cubren `src/lib/outbox.test.ts` y `sync-text.test.ts`.
+

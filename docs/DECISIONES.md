@@ -404,3 +404,35 @@ animación de inicio) y se ve igual para todos. Se quitaron la regla de
 `index.css` que dejaba solo fundidos y la versión quieta de la animación de
 inicio (`lib/splash.ts`). Reemplaza lo que pedía el brief de diseño. Si alguien
 lo pide por accesibilidad, se reabre.
+
+### D36 · La cola sin señal es un outbox en el teléfono, con DLQ a la vista
+Decidida el 03-nov-2026, al construir la F5. Lo creado sin señal (D24) queda en
+una **bandeja de salida guardada en IndexedDB** y se envía sola al volver la
+red, en el orden en que se anotó. **No se usa un broker** (RabbitMQ, Kafka,
+SQS): hay un solo productor (la persona) y un solo destino (Supabase), y el
+tramo que hay que cubrir es el que no tiene red, donde un broker tampoco
+llegaría. Postgres ya es el almacén durable una vez que el dato llega.
+
+Lo que sí se toma de las colas de verdad:
+
+- **Fallas pasajeras y permanentes separadas.** Sin red, servidor caído o
+  sesión vencida se reintentan con esperas que crecen (2 s → 5 min). Lo que la
+  base rechaza por una regla (tope de la cuenta, un sobre que ya no existe,
+  RLS) **no** se reintenta solo: reintentar algo que siempre falla trabaría la
+  cola para siempre (*poison message*).
+- **DLQ visible.** Lo rechazado pasa a «No se pudo guardar», con su dato y su
+  motivo, y la persona decide: Reintentar (*redrive*) o Descartar. Nada se
+  pierde en silencio.
+- **Idempotencia por id.** El id lo pone el teléfono (D23): si un envío llegó
+  pero la respuesta se perdió, el reenvío choca con su propia clave primaria
+  (`23505` sobre `_pkey`) y se toma como enviado.
+- **Orden FIFO.** La sesión del gimnasio llega antes que sus series; lo nuevo
+  no se adelanta a lo que espera.
+- **La hora es la del teléfono.** `occurred_at`, `created_at` y `started_at`
+  se mandan desde el cliente: un gasto enviado horas después ocurrió cuando se
+  anotó.
+
+Una cola y una caché por cuenta. Solo «Cerrar sesión» en Ajustes las borra
+(D32), avisando antes si queda algo sin enviar; un cierre de sesión que no
+pidió nadie no se lleva lo pendiente. Detalle en
+[`ARQUITECTURA.md`](ARQUITECTURA.md#sin-conexión-d24-d36).

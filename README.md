@@ -146,8 +146,9 @@ teléfono y usarlas dos semanas antes de abrirla a todos.
 | ✅ | Diseño | Todas las pantallas diseñadas, en tema oscuro y claro |
 | ✅ | Base de datos | Las 15 tablas en producción, con su seguridad probada con dos cuentas (127 pruebas) y topes por cuenta |
 | ✅ | Diseño en el código | Componentes, menú lateral, tema oscuro y claro, logo y animación de inicio |
-| 🚧 | **Una cosa útil por área** | Hoy, Horario, Tareas, Gimnasio y Plata ya funcionan. Falta probarlas en el teléfono |
-| ⬜ | PWA, sin conexión, importar y exportar | |
+| ✅ | Una cosa útil por área | Hoy, Horario, Tareas, Gimnasio y Plata funcionan, probadas en el teléfono |
+| 🚧 | **PWA y sin conexión** | Se instala, abre sin señal con lo último guardado y lo anotado sin señal se envía solo al volver la red ([D36](docs/DECISIONES.md)). En prueba de uso |
+| ⬜ | Importar y exportar | |
 | ⬜ | Apps | Tauri en el PC y Capacitor en la Play Store ([D34](docs/DECISIONES.md)) |
 | ⬜ | Publicación del servicio | Política de privacidad y apertura a todos |
 

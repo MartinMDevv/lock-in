@@ -33,7 +33,7 @@ Dos reglas:
 | **F2 · El diseño en el código** | La app se ve como el prototipo | ✅ cerrada el 31-oct-2026. Las animaciones no se desactivan (D35); falta solo mirar el tema claro en el teléfono |
 | **F3 · Una cosa útil por área** | Se puede vivir un día dentro de la app | 🚧 escrita (29 al 31-oct, con los paquetes de diseño 4, 5 y 6); falta probarla en el teléfono, medir los 5 segundos, Ctrl K y transferir |
 | **F4 · PWA y uso de prueba** | Instalada y usada dos semanas | 🚧 manifest, íconos y service worker listos (03-nov); faltan las dos semanas de uso |
-| **F5 · Sincronía y sin conexión** | Anotar sin señal sin duplicar nada | ⬜ |
+| **F5 · Sincronía y sin conexión** | Anotar sin señal sin duplicar nada | 🧪 caché guardada y cola con DLQ escritas y probadas en código (03-nov, D36); faltan las pruebas manuales en el teléfono |
 | **F6 · Importar y exportar** | Un mes de gastos desde un CSV en un minuto | ⬜ |
 | **F7 · Seguridad** | Una cuenta no ve nada de otra, probado en CI | 🚧 RLS probada a mano, topes por cuenta y cabeceras; falta la prueba en CI y borrar la cuenta |
 | **F8 · Profundidad** | Lo que pida el uso real | ⬜ |
@@ -68,6 +68,7 @@ conexión y la seguridad tienen que estar cerrados antes de envolverlos (D34).
    medir los 5 segundos con cronómetro. Lo que salga se arregla antes de
    seguir.
 2. ✅ **Service worker** (F4), 03-nov. Falta comprobar en el teléfono que abre sin señal y que aparece el aviso de versión nueva.
+   🧪 **F5 escrita** (03-nov): caché guardada y cola sin señal con DLQ. Pasar las 7 pruebas de [`CORRER.md`](CORRER.md#6--probar-sin-conexión) durante las dos semanas de uso.
 3. **Dos semanas de uso real** (F4). Las apps no se adelantan: si la PWA no se
    abre a diario, empaquetarla no lo arregla.
 
@@ -225,14 +226,11 @@ una forma rápida de que se desinstale.
 
 *Termina cuando las cuatro pruebas manuales pasan en el teléfono real.*
 
-- [ ] Persistir la caché de TanStack Query en IndexedDB: la app abre con los últimos datos sin señal.
-- [ ] Persistir las **creaciones** pendientes y reintentarlas al volver la señal, con el aviso «pendiente de sincronizar». Editar y borrar siguen pidiendo conexión (D24).
+- [ ] 🧪 Persistir la caché de TanStack Query en IndexedDB: la app abre con los últimos datos sin señal. 03-nov: `lib/persist.ts`, una caché por cuenta, vence a los 7 días, se borra al cerrar sesión. 6 pruebas en `persist.test.ts`.
+- [ ] 🧪 Persistir las **creaciones** pendientes y reintentarlas al volver la señal, con el aviso «pendiente de sincronizar». Editar y borrar siguen pidiendo conexión (D24). 03-nov: la cola es un outbox en IndexedDB con DLQ visible «No se pudo guardar» (D36); gastos, tareas, sesiones y series; la hora la pone el teléfono. 29 pruebas en `core/sync`, 21 en `outbox.test.ts`, 11 de textos y una de punta a punta en `App.test.tsx`.
 - [ ] Refrescar al volver a la pestaña; evaluar Supabase Realtime para que el computador vea al instante lo que se anotó en el teléfono.
-- [ ] Pruebas manuales escritas, paso a paso:
-  1. Registrar en el teléfono → aparece en el computador.
-  2. Modo avión → abrir la app → se ven los datos.
-  3. Modo avión → registrar un gasto → volver la señal → llega una sola vez.
-  4. Cerrar la app con algo pendiente → reabrir con señal → se envía.
+- [x] Pruebas manuales escritas, paso a paso: son 7, en [`CORRER.md`](CORRER.md#6--probar-sin-conexión) (03-nov). Las cuatro originales más el orden sesión → series, borrar algo pendiente y el aviso al cerrar sesión.
+- [ ] Pasar las 7 pruebas manuales en el teléfono.
 
 ## F6 · Importar y exportar
 
