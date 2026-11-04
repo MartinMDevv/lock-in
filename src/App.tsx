@@ -2,6 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
 import { Toaster } from '@/components/ui/Toaster'
+import { UpdatePrompt } from '@/components/layout/UpdatePrompt'
 import { createQueryClient } from '@/lib/query-client'
 import { AuthProvider } from '@/features/auth/AuthProvider'
 import { useAuth } from '@/features/auth/auth-context'
@@ -66,6 +67,7 @@ export function App() {
           <Rutas />
         </AuthProvider>
         <Toaster />
+        <UpdatePrompt />
       </BrowserRouter>
     </QueryClientProvider>
   )
