@@ -24,6 +24,8 @@ const perfilSimulado = {
   week_starts_on: 1,
   theme: 'system',
   onboarded_at: '2026-01-01T00:00:00Z',
+  gym_welcome_seen_at: '2026-01-01T00:00:00Z',
+  gym_checklist_hidden_at: null,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
 }
@@ -225,7 +227,7 @@ describe('esqueleto de la aplicación', () => {
 
     const [pestañaGimnasio] = await screen.findAllByRole('link', { name: 'Gimnasio' })
     await usuario.click(pestañaGimnasio!)
-    expect(await screen.findByText('Sin rutinas todavía')).toBeInTheDocument()
+    expect(await screen.findByText('Pendientes para empezar')).toBeInTheDocument()
   })
 
   it('el avatar lleva a Ajustes, que no es una pestaña', async () => {
@@ -605,6 +607,17 @@ describe('cáscara', () => {
     ])
   })
 
+  it('Gimnasio: la primera vez muestra la bienvenida, y «Saltar» la marca vista', async () => {
+    perfilBase = { gym_welcome_seen_at: null }
+    window.history.pushState({}, '', '/gym')
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    expect(await screen.findByRole('heading', { name: 'Arma tu rutina una vez' })).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Saltar' }))
+    expect(await screen.findByText('Pendientes para empezar')).toBeInTheDocument()
+  })
+
   it('Gimnasio: un preset crea los ejercicios, la rutina y sus ejercicios', async () => {
     window.history.pushState({}, '', '/gym')
     render(<App />)
@@ -688,7 +701,7 @@ describe('cáscara', () => {
     expect(navs.filter((n) => n.hasAttribute('inert'))).toHaveLength(1)
 
     await usuario.click(screen.getByRole('button', { name: 'Más 2,5 kg' }))
-    await usuario.click(screen.getByRole('button', { name: 'Listo · serie 1' }))
+    await usuario.click(screen.getByRole('button', { name: 'Listo · serie 1 de 3' }))
 
     expect(inserts).toEqual([
       {
@@ -706,6 +719,43 @@ describe('cáscara', () => {
       },
     ])
     expect(await screen.findByRole('timer')).toHaveTextContent('2:00')
+  })
+
+  it('Sesión: los calentamientos salen del peso de la vez pasada y van antes de las efectivas', async () => {
+    const t = '2026-10-29T19:00:00Z'
+    const antes = '2026-10-25T19:00:00Z'
+    filas = {
+      workouts: [
+        { id: 'w0', user_id: 'usuario-1', routine_id: 'r1', started_at: antes, ended_at: antes, notes: null, import_id: null, created_at: antes, updated_at: antes },
+        { id: 'w1', user_id: 'usuario-1', routine_id: 'r1', started_at: t, ended_at: null, notes: null, import_id: null, created_at: t, updated_at: t },
+      ],
+      routines: [{ id: 'r1', user_id: 'usuario-1', name: 'Torso', sort_order: 0, archived_at: null, import_id: null, created_at: t, updated_at: t }],
+      routine_exercises: [
+        { id: 'ri1', user_id: 'usuario-1', routine_id: 'r1', exercise_id: 'e1', sort_order: 0, warmup_sets: 2, target_sets: 3, target_reps: 8, target_seconds: null, rest_seconds: 120, created_at: t, updated_at: t },
+      ],
+      exercises: [
+        { id: 'e1', user_id: 'usuario-1', name: 'Press banca', muscle_group: 'Pecho', is_custom: false, measure: 'reps_weight', equipment: 'free_weight', archived_at: null, created_at: t, updated_at: t },
+      ],
+      workout_sets: [
+        { id: 's0', user_id: 'usuario-1', workout_id: 'w0', exercise_id: 'e1', set_index: 1, reps: 8, weight_grams: 60_000, duration_seconds: null, rpe: null, is_warmup: false, created_at: antes, updated_at: antes },
+      ],
+    }
+    window.history.pushState({}, '', '/gym/session/w1')
+    render(<App />)
+    const usuario = userEvent.setup()
+
+    expect(await screen.findByRole('heading', { name: 'Press banca' })).toBeInTheDocument()
+    // 60 kg de trabajo: 50 % y 75 % → 30 y 45 kg, con 8 y 5 repeticiones.
+    expect(await screen.findByRole('button', { name: /^C · 50 %: 8 × 30, la que sigue/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^C · 75 %: 5 × 45/ })).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Listo · calentamiento 1' }))
+
+    expect(inserts[0]).toEqual({
+      tabla: 'workout_sets',
+      fila: [expect.objectContaining({ reps: 8, weight_grams: 30_000, is_warmup: true })],
+    })
+    // Después de un calentamiento se descansa 60 s, no lo de la rutina.
+    expect(await screen.findByRole('timer')).toHaveTextContent('1:00')
   })
 
   it('Hoy: lo que vence hoy se completa con un toque y ofrece Deshacer', async () => {

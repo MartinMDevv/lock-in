@@ -17,6 +17,7 @@ import { Picker } from '@/components/ui/Picker'
 import { Segmented } from '@/components/ui/Segmented'
 import { useEnvelopes } from '@/features/money/money'
 import { useExercises } from '@/features/gym/gym'
+import { GymSettings } from './GymSettings'
 import { SettingsFrame } from './SettingsFrame'
 import type { SettingsSection } from './SettingsFrame'
 import { failedEmpty } from '@/lib/query-status'
@@ -38,7 +39,8 @@ export function SettingsPage() {
   // baja hasta ahí, y esa sección queda marcada.
   const { hash } = useLocation()
   const seccion = hash.slice(1)
-  const activa: SettingsSection = seccion === 'preferencias' || seccion === 'apariencia' ? seccion : 'cuenta'
+  const activa: SettingsSection =
+    seccion === 'preferencias' || seccion === 'apariencia' || seccion === 'gimnasio' ? seccion : 'cuenta'
   useEffect(() => {
     if (seccion) document.getElementById(seccion)?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }, [seccion])
@@ -91,6 +93,13 @@ export function SettingsPage() {
           <section id="apariencia" className="scroll-mt-14">
             <Titulo>Apariencia</Titulo>
             <SelectorTema actual={parseTheme(perfil.data.theme)} />
+          </section>
+        )}
+
+        {perfil.data && (
+          <section id="gimnasio" className="scroll-mt-14">
+            <Titulo>Gimnasio</Titulo>
+            <GymSettings perfil={perfil.data} guardar={guardar.mutate} />
           </section>
         )}
 

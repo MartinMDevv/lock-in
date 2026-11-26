@@ -20,7 +20,25 @@ export type ProfileChanges = Pick<
   | 'week_starts_on'
   | 'theme'
   | 'onboarded_at'
+  | GymPrefKey
+  | 'gym_welcome_seen_at'
+  | 'gym_checklist_hidden_at'
 >
+
+/** Los once ajustes de Ajustes › Gimnasio (migración 10). */
+type GymPrefKey =
+  | 'gym_rest_seconds'
+  | 'gym_rest_autostart'
+  | 'gym_rest_alert'
+  | 'gym_rest_warn_10s'
+  | 'gym_keep_awake'
+  | 'gym_preload'
+  | 'gym_show_warmup'
+  | 'gym_show_rpe'
+  | 'gym_weight_step'
+  | 'gym_bar_grams'
+  | 'gym_offer_save_routine'
+
 
 /**
  * Monedas ofrecidas en Ajustes, con sus decimales.
@@ -166,4 +184,33 @@ export function useFirstRunTimezone() {
       ...(valida && zona !== perfil.timezone ? { timezone: zona } : {}),
     })
   }, [perfil, mutate])
+}
+
+export type GymPrefs = Pick<Profile, GymPrefKey>
+
+/** Los mismos valores por defecto que la migración 10. */
+export const DEFAULT_GYM_PREFS: GymPrefs = {
+  gym_rest_seconds: 90,
+  gym_rest_autostart: true,
+  gym_rest_alert: 'vibrate',
+  gym_rest_warn_10s: false,
+  gym_keep_awake: true,
+  gym_preload: 'last',
+  gym_show_warmup: true,
+  gym_show_rpe: false,
+  gym_weight_step: 250,
+  gym_bar_grams: 20_000,
+  gym_offer_save_routine: true,
+}
+
+/** Ajustes › Gimnasio, con los valores por defecto mientras el perfil carga. */
+export function useGymPrefs(): GymPrefs {
+  const p = useProfile().data
+  if (!p) return DEFAULT_GYM_PREFS
+  const out = { ...DEFAULT_GYM_PREFS }
+  for (const k of Object.keys(DEFAULT_GYM_PREFS) as GymPrefKey[]) {
+    // Un perfil guardado sin señal antes de la migración 10 no trae las columnas.
+    if (p[k] !== undefined) Object.assign(out, { [k]: p[k] })
+  }
+  return out
 }

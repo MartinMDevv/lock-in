@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { appStore } from '@/lib/kv'
 import { forgetCache, startCachePersistence } from '@/lib/persist'
 import { closeOutbox, forgetOutbox, openOutbox } from '@/lib/outbox'
+import { forgetPlans } from '@/features/gym/session-plan'
 import { takeForgetRequest } from './sign-out'
 import type { OutboxTable } from '@/lib/outbox'
 import { AuthContext } from './auth-context'
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // cuenta, se borra lo que tenía en el teléfono.
         const olvidar = takeForgetRequest()
         if (olvidar !== null && olvidar === anterior) {
-          await Promise.all([forgetCache(appStore, olvidar), forgetOutbox(olvidar)]).catch(() => {})
+          await Promise.all([forgetCache(appStore, olvidar), forgetOutbox(olvidar), forgetPlans(olvidar)]).catch(() => {})
         }
         if (cuenta !== null) {
           const parar = await abrirCuenta(queryClient, cuenta)

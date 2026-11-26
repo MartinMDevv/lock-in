@@ -1,26 +1,42 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
 import { Link } from 'react-router'
 import { Sheet } from '@/components/ui/Sheet'
 import { Button } from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Field'
-import { Segmented } from '@/components/ui/Segmented'
 import { showToast } from '@/components/ui/toast'
 import { IconoArchivar, IconoMas } from '@/components/ui/icons'
 import type { Measure } from '@/core/gym/gym'
 import { sessionsOf } from '@/core/gym/history'
+import { recentExercises, usuallyAfter } from '@/core/gym/v2'
 import { diaRelativo } from '@/lib/format'
 import { useMediaQuery } from '@/lib/media'
 import { newId } from '@/lib/optimistic'
 import { useToday } from '@/features/settings/profile'
 import type { Exercise } from './gym'
-import { useCreateExercise, useExerciseSets, useExercises, useUpdateExercise } from './gym'
+import { ZONAS } from './labels'
+import { useCreateExercise, useExerciseSets, useExercises, useRecentSets, useUpdateExercise } from './gym'
 
-const MEDIDAS = [
-  { value: 'reps_weight', label: 'Reps y peso' },
-  { value: 'reps', label: 'Solo reps' },
-  { value: 'time', label: 'Tiempo' },
-] as const satisfies readonly { value: Measure; label: string }[]
+
+/** Los cuatro tipos del diseño, y cómo se guardan (measure + equipment). */
+const TIPOS = [
+  { id: 'libre', label: 'Peso libre', sub: 'Barra o mancuernas', measure: 'reps_weight', equipment: 'free_weight' },
+  { id: 'maquina', label: 'Máquina', sub: 'Polea o máquina', measure: 'reps_weight', equipment: 'machine' },
+  { id: 'corporal', label: 'Peso corporal', sub: 'Sin carga extra', measure: 'reps', equipment: null },
+  { id: 'tiempo', label: 'Por tiempo', sub: 'Plancha, isométricos', measure: 'time', equipment: null },
+] as const satisfies readonly { id: string; label: string; sub: string; measure: Measure; equipment: string | null }[]
+
+/** El objetivo elegido al crear: queda en la rutina o en el plan de hoy. */
+export type PickTarget = { reps: number | null; seconds: number | null }
+
+/** De dónde se abre el selector, para ordenar las sugerencias. */
+export interface PickContext {
+  /** El último ejercicio hecho: «sueles hacer después de…». */
+  after?: string
+  /** El que se reemplaza: «parecidos». */
+  similarTo?: string
+  /** Los que ya están (en la rutina o en el plan): no se sugieren. */
+  exclude?: readonly string[]
+}
 
 /** Lo que tarda en cerrarse la fila de un ejercicio que se archiva. */
 const CIERRE_MS = 280
@@ -40,12 +56,17 @@ export function ExercisePicker({
   open,
   onClose,
   onPick,
+  context = {},
+  title = 'Ejercicio',
 }: {
   open: boolean
   onClose: () => void
-  onPick: (exerciseId: string) => void
+  onPick: (exerciseId: string, target?: PickTarget) => void
+  context?: PickContext
+  title?: string
 }) {
   const ejercicios = useExercises()
+  const recientes = useRecentSets()
   const crear = useCreateExercise()
   const actualizar = useUpdateExercise()
   const escritorio = useMediaQuery('(min-width: 1024px)')
@@ -54,7 +75,6 @@ export function ExercisePicker({
   const [cerrando, setCerrando] = useState<ReadonlySet<string>>(new Set())
   const [creando, setCreando] = useState(false)
   const [nombre, setNombre] = useState('')
-  const [medida, setMedida] = useState<Measure>('reps_weight')
 
   const q = busqueda.trim().toLowerCase()
   const lista = (ejercicios.data ?? []).filter((e) => e.archived_at === null && e.name.toLowerCase().includes(q))
@@ -78,22 +98,37 @@ export function ExercisePicker({
     }, CIERRE_MS)
   }
 
-  function elegir(id: string) {
-    onPick(id)
+  function elegir(id: string, target?: PickTarget) {
+    onPick(id, target)
     setBusqueda('')
     onClose()
   }
 
-  function crearEjercicio(e: FormEvent) {
-    e.preventDefault()
-    const limpio = nombre.trim()
-    if (limpio === '') return
-    const id = newId()
-    crear.mutate({ id, name: limpio, measure: medida, muscle_group: null })
-    setNombre('')
-    setCreando(false)
-    elegir(id)
+  // Sin búsqueda: primero lo que más probablemente sigue.
+  const activos = new Map((ejercicios.data ?? []).filter((e) => e.archived_at === null).map((e) => [e.id, e]))
+  const fuera = new Set(context.exclude ?? [])
+  const usar = (ids: readonly string[]) =>
+    ids.filter((id) => activos.has(id) && !fuera.has(id)).map((id) => activos.get(id)!)
+  const series = recientes.data ?? []
+  const base = context.similarTo ? activos.get(context.similarTo) : undefined
+  const grupos: { titulo: string; lista: Exercise[] }[] = []
+  if (base?.muscle_group) {
+    grupos.push({
+      titulo: `Parecidos a ${base.name}`,
+      lista: usar([...activos.values()].filter((e) => e.muscle_group === base.muscle_group && e.id !== base.id).map((e) => e.id)),
+    })
   }
+  const antes = context.after ? activos.get(context.after) : undefined
+  if (antes) grupos.push({ titulo: `Sueles hacer después de ${antes.name}`, lista: usar(usuallyAfter(series, antes.id)) })
+  grupos.push({ titulo: 'Recientes', lista: usar(recentExercises(series)) })
+  const yaSugeridos = new Set<string>()
+  const sugerencias = grupos
+    .map((g) => {
+      const lista = g.lista.filter((e) => !yaSugeridos.has(e.id)).slice(0, 5)
+      for (const e of lista) yaSugeridos.add(e.id)
+      return { ...g, lista }
+    })
+    .filter((g) => g.lista.length > 0)
 
   return (
     <Sheet
@@ -102,34 +137,20 @@ export function ExercisePicker({
         setCreando(false)
         onClose()
       }}
-      title={creando ? 'Nuevo ejercicio' : 'Ejercicio'}
+      title={creando ? 'Crear ejercicio' : title}
     >
       {creando ? (
-        <form onSubmit={crearEjercicio} className="space-y-4">
-          <Field label="Nombre">
-            {(id) => (
-              <Input
-                id={id}
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                maxLength={60}
-                autoComplete="off"
-              />
-            )}
-          </Field>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-caption text-ink-muted">Se mide en</span>
-            <Segmented label="Se mide en" options={MEDIDAS} value={medida} onChange={setMedida} />
-          </div>
-          <div className="flex gap-2">
-            <Button type="button" variant="secondary" className="flex-1" onClick={() => setCreando(false)}>
-              Volver
-            </Button>
-            <Button type="submit" variant="primary" className="flex-1" disabled={nombre.trim() === ''}>
-              Crear
-            </Button>
-          </div>
-        </form>
+        <CrearEjercicio
+          inicial={nombre}
+          onVolver={() => setCreando(false)}
+          onCrear={(input, target) => {
+            const id = newId()
+            crear.mutate({ id, ...input })
+            setNombre('')
+            setCreando(false)
+            elegir(id, target)
+          }}
+        />
       ) : (
         <div className="space-y-2">
           <div className="pb-1">
@@ -141,8 +162,27 @@ export function ExercisePicker({
               onChange={(e) => setBusqueda(e.target.value)}
             />
           </div>
+          {q === '' &&
+            sugerencias.map((g) => (
+              <div key={g.titulo} className="pb-1">
+                <h3 className="px-3 pt-2 pb-1 text-caption text-ink-faint">{g.titulo}</h3>
+                <div className="flex flex-wrap gap-2 px-3">
+                  {g.lista.map((e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => elegir(e.id)}
+                      className="h-10 rounded-full border border-line px-4 text-body-sm active:bg-surface-raised lg:hover:border-line-strong"
+                    >
+                      {e.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          {q === '' && sugerencias.length > 0 && <h3 className="px-3 pt-3 pb-1 text-caption text-ink-faint">Todos</h3>}
           <ul className="-mx-1 flex max-h-[min(50dvh,400px)] flex-col overflow-y-auto overscroll-contain px-1">
-            {lista.map((e) => {
+            {lista.filter((e) => !fuera.has(e.id)).map((e) => {
               const cerrandose = cerrando.has(e.id)
               return (
                 // Al archivar, la fila se cierra con grid-template-rows (1fr → 0fr) y se apaga.
@@ -201,7 +241,7 @@ export function ExercisePicker({
             className="flex min-h-12 w-full items-center gap-3 rounded-md px-3 text-body-sm font-medium text-ink-muted active:bg-surface-raised"
           >
             <IconoMas className="text-lg" />
-            Nuevo ejercicio
+            {q === '' ? 'Crear ejercicio nuevo' : `Crear «${busqueda.trim()}»`}
           </button>
           {archivados > 0 && (
             <Link
@@ -338,5 +378,128 @@ function Acciones({
         Cancelar
       </Button>
     </div>
+  )
+}
+
+/**
+ * Un ejercicio nuevo en 10 segundos: nombre, zona del cuerpo, tipo y el
+ * objetivo por serie. Queda agregado donde se estaba.
+ */
+function CrearEjercicio({
+  inicial,
+  onVolver,
+  onCrear,
+}: {
+  inicial: string
+  onVolver: () => void
+  onCrear: (
+    input: { name: string; measure: Measure; muscle_group: string | null; equipment: 'free_weight' | 'machine' | null },
+    target: PickTarget,
+  ) => void
+}) {
+  const [nombre, setNombre] = useState(inicial)
+  const [zona, setZona] = useState<string | null>(null)
+  const [tipo, setTipo] = useState<(typeof TIPOS)[number]>(TIPOS[0])
+  const porTiempo = tipo.measure === 'time'
+  const [objetivo, setObjetivo] = useState(10)
+  const [segundos, setSegundos] = useState(45)
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        const limpio = nombre.trim()
+        if (limpio === '') return
+        onCrear(
+          { name: limpio, measure: tipo.measure, muscle_group: zona, equipment: tipo.equipment },
+          porTiempo ? { reps: null, seconds: segundos } : { reps: objetivo, seconds: null },
+        )
+      }}
+      className="space-y-5"
+    >
+      <Field label="Nombre">
+        {(id) => (
+          <Input
+            id={id}
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            maxLength={60}
+            autoComplete="off"
+            placeholder="Remo con mancuerna"
+          />
+        )}
+      </Field>
+
+      <div className="space-y-2">
+        <span className="text-caption text-ink-muted">Zona del cuerpo</span>
+        <div className="flex flex-wrap gap-2">
+          {ZONAS.map((z) => (
+            <button
+              key={z}
+              type="button"
+              aria-pressed={zona === z}
+              onClick={() => setZona(zona === z ? null : z)}
+              className={`h-10 rounded-full border px-4 text-body-sm transition-colors duration-(--duration-fast) ${
+                zona === z ? 'border-ink bg-ink text-bg' : 'border-line text-ink-muted'
+              }`}
+            >
+              {z}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <span className="text-caption text-ink-muted">Tipo</span>
+        <div className="grid grid-cols-2 gap-2">
+          {TIPOS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              aria-pressed={tipo.id === t.id}
+              onClick={() => setTipo(t)}
+              className={`flex flex-col items-start rounded-xl border p-3 text-left transition-colors duration-(--duration-fast) ${
+                tipo.id === t.id ? 'border-accent-line bg-accent-soft' : 'border-line'
+              }`}
+            >
+              <span className="text-body-sm font-medium">{t.label}</span>
+              <span className="text-caption text-ink-faint">{t.sub}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3">
+        <span className="text-body-sm">{porTiempo ? 'Segundos por serie' : 'Repeticiones por serie'}</span>
+        <span className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Menos"
+            onClick={() => (porTiempo ? setSegundos(Math.max(5, segundos - 5)) : setObjetivo(Math.max(1, objetivo - 1)))}
+            className="grid size-10 place-items-center rounded-full border border-line text-ink-muted"
+          >
+            −
+          </button>
+          <span className="w-10 text-center text-title font-semibold tabular-nums">{porTiempo ? segundos : objetivo}</span>
+          <button
+            type="button"
+            aria-label="Más"
+            onClick={() => (porTiempo ? setSegundos(Math.min(3600, segundos + 5)) : setObjetivo(Math.min(100, objetivo + 1)))}
+            className="grid size-10 place-items-center rounded-full border border-line text-ink-muted"
+          >
+            +
+          </button>
+        </span>
+      </div>
+
+      <div className="flex gap-2">
+        <Button type="button" variant="secondary" className="flex-1" onClick={onVolver}>
+          Volver
+        </Button>
+        <Button type="submit" variant="primary" className="flex-2" disabled={nombre.trim() === ''}>
+          Crear y agregar
+        </Button>
+      </div>
+    </form>
   )
 }

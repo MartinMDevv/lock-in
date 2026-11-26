@@ -211,7 +211,13 @@ export function useCreateExercise() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (input: { id: string; name: string; measure: Measure; muscle_group: string | null }) => {
+    mutationFn: async (input: {
+      id: string
+      name: string
+      measure: Measure
+      muscle_group: string | null
+      equipment?: 'free_weight' | 'machine' | null
+    }) => {
       const { error } = await supabase.from('exercises').insert({ ...input, user_id: userId, is_custom: true })
       if (error) throw error
     },
@@ -268,7 +274,14 @@ export function useExerciseSets(exerciseIds: readonly string[]) {
 
 export type RoutineItemInput = Pick<
   RoutineItem,
-  'id' | 'exercise_id' | 'sort_order' | 'target_sets' | 'target_reps' | 'target_seconds' | 'rest_seconds'
+  | 'id'
+  | 'exercise_id'
+  | 'sort_order'
+  | 'target_sets'
+  | 'target_reps'
+  | 'target_seconds'
+  | 'rest_seconds'
+  | 'warmup_sets'
 >
 
 /** Guardar una rutina con sus ejercicios: los que siguen conservan su id, los que se sacaron se borran. */
@@ -450,7 +463,7 @@ export function useDiscardWorkout() {
 export type NewSet = Pick<
   WorkoutSet,
   'id' | 'workout_id' | 'exercise_id' | 'set_index' | 'reps' | 'weight_grams' | 'duration_seconds' | 'is_warmup'
->
+> & { rpe?: number | null }
 
 export function useAddSet() {
   const userId = useUserId()
@@ -525,4 +538,132 @@ export function useDeleteSet() {
       void queryClient.invalidateQueries({ queryKey: historyKey(userId, set.exercise_id) })
     },
   })
+}
+
+// ─── Gimnasio v2 ─────────────────────────────────────────────────────────
+
+const bodyKey = (u: string) => ['body_measurements', u] as const
+const recentSetsKey = (u: string) => ['recent_sets', u] as const
+
+/** Corregir una serie ya anotada (tocar su casilla). */
+export function useUpdateSet() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+  type Cambios = Partial<Pick<WorkoutSet, 'reps' | 'weight_grams' | 'duration_seconds' | 'rpe'>>
+  return useMutation({
+    mutationFn: async ({ set, changes }: { set: WorkoutSet; changes: Cambios }) => {
+      const { error } = await supabase.from('workout_sets').update(changes).eq('id', set.id)
+      if (error) throw error
+    },
+    onMutate: async ({ set, changes }) => {
+      const key = setsKey(userId, set.workout_id)
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<WorkoutSet[]>(key)
+      if (previous)
+        queryClient.setQueryData<WorkoutSet[]>(
+          key,
+          previous.map((s) => (s.id === set.id ? { ...s, ...changes } : s)),
+        )
+      return { previous }
+    },
+    onError: (_e, { set }, context) => {
+      if (context?.previous) queryClient.setQueryData(setsKey(userId, set.workout_id), context.previous)
+    },
+    onSettled: (_d, _e, { set }) => {
+      void queryClient.invalidateQueries({ queryKey: setsKey(userId, set.workout_id) })
+      void queryClient.invalidateQueries({ queryKey: historyKey(userId, set.exercise_id) })
+      void queryClient.invalidateQueries({ queryKey: recentSetsKey(userId) })
+    },
+  })
+}
+
+/** La nota de una línea del resumen («cómo te sentiste»). */
+export function useWorkoutNote() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, notes }: { id: string; notes: string | null }) => {
+      const { error } = await supabase.from('workouts').update({ notes }).eq('id', id)
+      if (error) throw error
+    },
+    ...optimistic<Workout[], { id: string; notes: string | null }>(queryClient, workoutsKey(userId), (list, v) =>
+      list.map((w) => (w.id === v.id ? { ...w, notes: v.notes } : w)),
+    ),
+  })
+}
+
+/**
+ * Las series de los últimos 120 días (como las sesiones), para lo que mira
+ * varias sesiones a la vez: el resumen, el historial, el progreso, los
+ * recientes del selector. Hasta 1000 filas: lo que entrega Supabase por
+ * llamada, años de uso normal en ese rango.
+ */
+export function useRecentSets() {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: recentSetsKey(userId),
+    enabled: userId !== '',
+    queryFn: async () => {
+      const since = new Date(Date.now() - WORKOUT_DAYS * 86_400_000).toISOString()
+      const { data, error } = await supabase
+        .from('workout_sets')
+        .select('*')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(HISTORY_SETS)
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export type BodyMeasurement = Database['public']['Tables']['body_measurements']['Row']
+
+/** El peso corporal anotado, el más nuevo primero (últimos 120 días). */
+export function useBodyWeights() {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: bodyKey(userId),
+    enabled: userId !== '',
+    queryFn: async () => {
+      const since = new Date(Date.now() - WORKOUT_DAYS * 86_400_000).toISOString().slice(0, 10)
+      const { data, error } = await supabase
+        .from('body_measurements')
+        .select('*')
+        .not('weight_grams', 'is', null)
+        .gte('measured_on', since)
+        .order('measured_on', { ascending: false })
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+/**
+ * Anotar el peso de un día. Uno por día: si ese día ya tiene, se corrige en
+ * vez de sumar otra fila (la tabla no lo exige, así que se decide aquí).
+ */
+export function useLogBodyWeight() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ day, grams, existingId }: { day: string; grams: number; existingId: string | null }) => {
+      const { error } = existingId
+        ? await supabase.from('body_measurements').update({ weight_grams: grams }).eq('id', existingId)
+        : await supabase.from('body_measurements').insert({ id: newId(), user_id: userId, measured_on: day, weight_grams: grams })
+      if (error) throw error
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: bodyKey(userId) }),
+  })
+}
+
+/** Lo que cambia la caché de series al terminar (resumen, historial, progreso). */
+export function useRefreshGymHistory() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: recentSetsKey(userId) })
+    void queryClient.invalidateQueries({ queryKey: workoutsKey(userId) })
+  }
 }

@@ -9,6 +9,7 @@ const SECCIONES = [
   { id: 'cuenta', label: 'Cuenta', to: '/settings#cuenta' },
   { id: 'preferencias', label: 'Preferencias', to: '/settings#preferencias' },
   { id: 'apariencia', label: 'Apariencia', to: '/settings#apariencia' },
+  { id: 'gimnasio', label: 'Gimnasio', to: '/settings#gimnasio' },
   { id: 'archivados', label: 'Archivados', to: '/settings/archived' },
 ] as const
 

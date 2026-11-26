@@ -123,6 +123,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           created_at: string
+          equipment: string | null
           id: string
           is_custom: boolean
           measure: Database["public"]["Enums"]["exercise_measure"]
@@ -134,6 +135,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           created_at?: string
+          equipment?: string | null
           id?: string
           is_custom?: boolean
           measure?: Database["public"]["Enums"]["exercise_measure"]
@@ -145,6 +147,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           created_at?: string
+          equipment?: string | null
           id?: string
           is_custom?: boolean
           measure?: Database["public"]["Enums"]["exercise_measure"]
@@ -302,6 +305,19 @@ export type Database = {
           currency: string
           currency_decimals: number
           display_name: string | null
+          gym_bar_grams: number
+          gym_checklist_hidden_at: string | null
+          gym_keep_awake: boolean
+          gym_offer_save_routine: boolean
+          gym_preload: string
+          gym_rest_alert: string
+          gym_rest_autostart: boolean
+          gym_rest_seconds: number
+          gym_rest_warn_10s: boolean
+          gym_show_rpe: boolean
+          gym_show_warmup: boolean
+          gym_weight_step: number
+          gym_welcome_seen_at: string | null
           id: string
           onboarded_at: string | null
           theme: string
@@ -315,6 +331,19 @@ export type Database = {
           currency?: string
           currency_decimals?: number
           display_name?: string | null
+          gym_bar_grams?: number
+          gym_checklist_hidden_at?: string | null
+          gym_keep_awake?: boolean
+          gym_offer_save_routine?: boolean
+          gym_preload?: string
+          gym_rest_alert?: string
+          gym_rest_autostart?: boolean
+          gym_rest_seconds?: number
+          gym_rest_warn_10s?: boolean
+          gym_show_rpe?: boolean
+          gym_show_warmup?: boolean
+          gym_weight_step?: number
+          gym_welcome_seen_at?: string | null
           id: string
           onboarded_at?: string | null
           theme?: string
@@ -328,6 +357,19 @@ export type Database = {
           currency?: string
           currency_decimals?: number
           display_name?: string | null
+          gym_bar_grams?: number
+          gym_checklist_hidden_at?: string | null
+          gym_keep_awake?: boolean
+          gym_offer_save_routine?: boolean
+          gym_preload?: string
+          gym_rest_alert?: string
+          gym_rest_autostart?: boolean
+          gym_rest_seconds?: number
+          gym_rest_warn_10s?: boolean
+          gym_show_rpe?: boolean
+          gym_show_warmup?: boolean
+          gym_weight_step?: number
+          gym_welcome_seen_at?: string | null
           id?: string
           onboarded_at?: string | null
           theme?: string
@@ -351,6 +393,7 @@ export type Database = {
           target_sets: number | null
           updated_at: string
           user_id: string
+          warmup_sets: number
         }
         Insert: {
           created_at?: string
@@ -364,6 +407,7 @@ export type Database = {
           target_sets?: number | null
           updated_at?: string
           user_id: string
+          warmup_sets?: number
         }
         Update: {
           created_at?: string
@@ -377,6 +421,7 @@ export type Database = {
           target_sets?: number | null
           updated_at?: string
           user_id?: string
+          warmup_sets?: number
         }
         Relationships: [
           {

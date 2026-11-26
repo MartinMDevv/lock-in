@@ -12,6 +12,10 @@ import { SchedulePage } from '@/features/schedule/SchedulePage'
 import { TasksPage } from '@/features/tasks/TasksPage'
 import { GymPage } from '@/features/gym/GymPage'
 import { WorkoutPage } from '@/features/gym/WorkoutPage'
+import { WorkoutSummary } from '@/features/gym/WorkoutSummary'
+import { RoutinesPage } from '@/features/gym/RoutinesPage'
+import { HistoryPage, SessionDetailPage } from '@/features/gym/HistoryPage'
+import { ProgressPage } from '@/features/gym/ProgressPage'
 import { MoneyPage } from '@/features/money/MoneyPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { ArchivedPage } from '@/features/settings/ArchivedPage'
@@ -48,6 +52,11 @@ function Rutas() {
         <Route path="tasks" element={<TasksPage />} />
         <Route path="gym" element={<GymPage />} />
         <Route path="gym/session/:workoutId" element={<WorkoutPage />} />
+        <Route path="gym/session/:workoutId/summary" element={<WorkoutSummary />} />
+        <Route path="gym/routines" element={<RoutinesPage />} />
+        <Route path="gym/history" element={<HistoryPage />} />
+        <Route path="gym/history/:workoutId" element={<SessionDetailPage />} />
+        <Route path="gym/progress" element={<ProgressPage />} />
         <Route path="money" element={<MoneyPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="settings/archived" element={<ArchivedPage />} />
