@@ -429,3 +429,47 @@ export function usuallyAfter(sets: readonly TimedSet[], exerciseId: string, limi
   }
   return [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([id]) => id)
 }
+
+// ─── Tablero de escritorio ───────────────────────────────────────────────
+
+/**
+ * Cuántas semanas seguidas, hacia atrás, se entrenó al menos `goal` días.
+ * La semana en curso solo suma si ya cumplió: todavía hay tiempo.
+ */
+export function weeksMeetingGoal(
+  workoutDays: ReadonlySet<IsoDate>,
+  today: IsoDate,
+  weekStartsOn: number,
+  goal: number,
+  maxWeeks = 52,
+): number {
+  if (goal <= 0) return 0
+  const days = [...workoutDays]
+  const countIn = (start: IsoDate) => {
+    const end = addDays(start, 7)
+    return days.filter((d) => d >= start && d < end).length
+  }
+  let start = startOfWeek(today, weekStartsOn)
+  let n = countIn(start) >= goal ? 1 : 0
+  for (let i = 0; i < maxWeeks; i++) {
+    start = addDays(start, -7)
+    if (countIn(start) < goal) break
+    n++
+  }
+  return n
+}
+
+/** Series efectivas por semana, las últimas `weeks` (la más vieja primero, la actual al final). */
+export function setsPerWeek(
+  setDays: readonly IsoDate[],
+  today: IsoDate,
+  weekStartsOn: number,
+  weeks = 8,
+): { start: IsoDate; count: number }[] {
+  const current = startOfWeek(today, weekStartsOn)
+  return Array.from({ length: weeks }, (_, i) => {
+    const start = addDays(current, -7 * (weeks - 1 - i))
+    const end = addDays(start, 7)
+    return { start, count: setDays.filter((d) => d >= start && d < end).length }
+  })
+}

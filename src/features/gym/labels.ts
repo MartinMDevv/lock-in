@@ -1,3 +1,5 @@
+import type { Measure } from '@/core/gym/gym'
+
 /** Textos y listas que comparten las pantallas del gimnasio. */
 
 export const DIAS = [
@@ -24,3 +26,12 @@ export const textoDescanso = (s: number) =>
 
 /** Las zonas del cuerpo que ofrece «Crear ejercicio» (una por ejercicio). */
 export const ZONAS = ['Pecho', 'Espalda', 'Piernas', 'Hombros', 'Brazos', 'Core', 'Cuerpo completo'] as const
+
+/** Los cuatro tipos del diseño, y cómo se guardan (measure + equipment). */
+export const TIPOS = [
+  { id: 'libre', label: 'Peso libre', sub: 'Barra o mancuernas', measure: 'reps_weight', equipment: 'free_weight' },
+  { id: 'maquina', label: 'Máquina', sub: 'Polea o máquina', measure: 'reps_weight', equipment: 'machine' },
+  { id: 'corporal', label: 'Peso corporal', sub: 'Sin carga extra', measure: 'reps', equipment: null },
+  { id: 'tiempo', label: 'Por tiempo', sub: 'Plancha, isométricos', measure: 'time', equipment: null },
+] as const satisfies readonly { id: string; label: string; sub: string; measure: Measure; equipment: string | null }[]
+

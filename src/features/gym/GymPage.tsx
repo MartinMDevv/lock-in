@@ -16,6 +16,8 @@ import { BodyWeightSheet } from './BodyWeightSheet'
 import { useBodyWeightSummary } from './body-weight'
 import { RoutineSheet } from './RoutineSheet'
 import { GymWelcome } from './GymWelcome'
+import { GymDesktop } from './GymDesktop'
+import { useMediaQuery } from '@/lib/media'
 import type { Routine, RoutineItem, Workout } from './gym'
 import {
   useApplyRoutinePreset,
@@ -52,6 +54,8 @@ export function GymPage() {
   const [creando, setCreando] = useState(false)
   const [otro, setOtro] = useState(false)
   const [pesoAbierto, setPesoAbierto] = useState(false)
+  // En el escritorio no se entrena: tablero y rutinas (diseño v2, escritorio).
+  const escritorio = useMediaQuery('(min-width: 1024px)')
 
   if (rutinas.isPending || sesiones.isPending || ejercicios.isPending) {
     return (
@@ -89,6 +93,8 @@ export function GymPage() {
   if (p && p.gym_welcome_seen_at == null && rutinas.data.routines.length === 0 && sesiones.data.length === 0) {
     return <GymWelcome onDone={() => actualizarPerfil.mutate({ gym_welcome_seen_at: new Date().toISOString() })} />
   }
+
+  if (escritorio) return <GymDesktop />
 
   const activas = rutinas.data.routines.filter((r) => r.archived_at === null)
   const itemsDe = (id: string) => rutinas.data.items.filter((i) => i.routine_id === id)

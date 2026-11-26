@@ -758,6 +758,49 @@ describe('cáscara', () => {
     expect(await screen.findByRole('timer')).toHaveTextContent('1:00')
   })
 
+  it('Gimnasio en el escritorio: tablero sin empezar sesiones, y rutinas en tabla que se edita', async () => {
+    const ancho = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query.includes('min-width: 1024px'),
+          media: query,
+          onchange: null,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          addListener: () => {},
+          removeListener: () => {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    )
+    try {
+      const t = '2026-10-29T19:00:00Z'
+      filas = {
+        routines: [{ id: 'r1', user_id: 'usuario-1', name: 'Torso A', sort_order: 0, archived_at: null, import_id: null, created_at: t, updated_at: t }],
+        routine_exercises: [
+          { id: 'ri1', user_id: 'usuario-1', routine_id: 'r1', exercise_id: 'e1', sort_order: 0, warmup_sets: 2, target_sets: 3, target_reps: 8, target_seconds: null, rest_seconds: 120, created_at: t, updated_at: t },
+        ],
+        exercises: [
+          { id: 'e1', user_id: 'usuario-1', name: 'Press banca', muscle_group: 'Pecho', is_custom: false, measure: 'reps_weight', equipment: 'free_weight', archived_at: null, created_at: t, updated_at: t },
+        ],
+      }
+      window.history.pushState({}, '', '/gym')
+      render(<App />)
+      const usuario = userEvent.setup()
+
+      expect(await screen.findByText('Semanas cumpliendo')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Empezar sesión' })).not.toBeInTheDocument()
+
+      await usuario.click(screen.getByRole('radio', { name: 'Rutinas' }))
+      expect(await screen.findByText('Series efectivas')).toBeInTheDocument()
+      expect(screen.getByText('Press banca')).toBeInTheDocument()
+      await usuario.click(screen.getByRole('button', { name: 'Editar' }))
+      expect(screen.getByRole('textbox', { name: 'Nombre de la rutina' })).toHaveValue('Torso A')
+      expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeInTheDocument()
+    } finally {
+      ancho.mockRestore()
+    }
+  })
+
   it('Hoy: lo que vence hoy se completa con un toque y ofrece Deshacer', async () => {
     const hoy = dayOf(new Date(), 'America/Santiago')
     const t = '2026-10-01T00:00:00Z'

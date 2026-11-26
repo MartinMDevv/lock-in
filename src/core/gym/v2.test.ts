@@ -20,6 +20,8 @@ import {
   usuallyAfter,
   warmupSets,
   weekStrip,
+  weeksMeetingGoal,
+  setsPerWeek,
 } from './v2'
 import type { PlanEntry, TimedSet } from './v2'
 
@@ -198,5 +200,22 @@ describe('sugerencias del selector', () => {
   })
   it('lo que viene después', () => {
     expect(usuallyAfter(sets, 'sentadilla')).toEqual(['prensa', 'femoral'])
+  })
+})
+
+describe('tablero de escritorio', () => {
+  // 2026-11-26 es jueves; semanas desde el lunes.
+  const dias = new Set(['2026-11-23', '2026-11-25', '2026-11-16', '2026-11-18', '2026-11-09'])
+  it('semanas seguidas cumpliendo', () => {
+    expect(weeksMeetingGoal(dias, '2026-11-26', 1, 2)).toBe(2)
+    expect(weeksMeetingGoal(dias, '2026-11-26', 1, 3)).toBe(0)
+  })
+  it('series por semana, la actual al final', () => {
+    const r = setsPerWeek(['2026-11-23', '2026-11-23', '2026-11-17'], '2026-11-26', 1, 3)
+    expect(r).toEqual([
+      { start: '2026-11-09', count: 0 },
+      { start: '2026-11-16', count: 1 },
+      { start: '2026-11-23', count: 2 },
+    ])
   })
 })

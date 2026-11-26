@@ -13,17 +13,9 @@ import { useMediaQuery } from '@/lib/media'
 import { newId } from '@/lib/optimistic'
 import { useToday } from '@/features/settings/profile'
 import type { Exercise } from './gym'
-import { ZONAS } from './labels'
+import { TIPOS, ZONAS } from './labels'
 import { useCreateExercise, useExerciseSets, useExercises, useRecentSets, useUpdateExercise } from './gym'
 
-
-/** Los cuatro tipos del diseño, y cómo se guardan (measure + equipment). */
-const TIPOS = [
-  { id: 'libre', label: 'Peso libre', sub: 'Barra o mancuernas', measure: 'reps_weight', equipment: 'free_weight' },
-  { id: 'maquina', label: 'Máquina', sub: 'Polea o máquina', measure: 'reps_weight', equipment: 'machine' },
-  { id: 'corporal', label: 'Peso corporal', sub: 'Sin carga extra', measure: 'reps', equipment: null },
-  { id: 'tiempo', label: 'Por tiempo', sub: 'Plancha, isométricos', measure: 'time', equipment: null },
-] as const satisfies readonly { id: string; label: string; sub: string; measure: Measure; equipment: string | null }[]
 
 /** El objetivo elegido al crear: queda en la rutina o en el plan de hoy. */
 export type PickTarget = { reps: number | null; seconds: number | null }

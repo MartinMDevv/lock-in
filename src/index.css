@@ -225,3 +225,4 @@
 @keyframes gym-plate-in { from { transform: scaleY(0); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes gym-plate-flash { 0%, 100% { fill: var(--color-accent); } 50% { fill: oklch(0.97 0.08 128); } }
 @keyframes gym-ray { 0% { transform: translateY(-118px) scaleY(0.2); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-162px) scaleY(1); opacity: 0; } }
+@keyframes gym-bar { from { transform: scaleY(0); } to { transform: none; } }
