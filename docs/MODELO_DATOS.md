@@ -497,7 +497,7 @@ de todos (D32): se revisan dos veces antes del push. Las reglas para no perder d
 | ✅ | `revocar_execute_funciones` | Quita EXECUTE a la API sobre `handle_new_user` y `rls_auto_enable`, y hace que las funciones futuras nazcan sin él (mínimo privilegio, D32). Aplicada el 28-oct
 | ✅ | `topes_por_cuenta` | La función `enforce_row_cap()` y un trigger por tabla con su tope (regla 9). Aplicada el 28-oct
 | ✅ | `nombre_desde_google` | `handle_new_user` lee `display_name`, `full_name` o `name`, en ese orden, y rellena el nombre de las cuentas que lo tenían vacío sin tocar el que alguien escribió en Ajustes. Probada el 03-nov en un Postgres temporal y aplicada el mismo día
-| ⏳ | `gimnasio_v2` | `routine_exercises.warmup_sets`, `exercises.equipment` y los ajustes `gym_*` de `profiles`. Solo columnas con default: ninguna tabla nueva, RLS y grants no cambian. Probada el 26-nov en un Postgres temporal (las 10 en orden); **falta el push** y después `npm run db:types` (los tipos se escribieron a mano igual al generador, hay que confirmarlo)
+| ✅ | `gimnasio_v2` | `routine_exercises.warmup_sets`, `exercises.equipment` y los ajustes `gym_*` de `profiles`. Solo columnas con default: ninguna tabla nueva, RLS y grants no cambian. Probada el 26-nov en un Postgres temporal (las 10 en orden) y aplicada el mismo día; `db:types` confirmó los tipos
 
 Después de cada una: `npm run db:types`. Al final, la prueba de RLS con dos
 cuentas (F7).
