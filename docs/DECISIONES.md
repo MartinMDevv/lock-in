@@ -436,3 +436,24 @@ Una cola y una caché por cuenta. Solo «Cerrar sesión» en Ajustes las borra
 (D32), avisando antes si queda algo sin enviar; un cierre de sesión que no
 pidió nadie no se lleva lo pendiente. Detalle en
 [`ARQUITECTURA.md`](ARQUITECTURA.md#sin-conexión-d24-d36).
+
+### D37 · Gimnasio v2: ajustes en el perfil, plan de la sesión en el teléfono
+Decidida el 26-nov-2026, al implementar el paquete de diseño «Gimnasio v2».
+
+- **Los ajustes del gimnasio van en `profiles`** (columnas `gym_*`) y no en
+  una tabla `gym_settings`: son once valores por cuenta, igual que el tema o
+  la unidad de peso, y así viajan entre el teléfono y el computador sin una
+  tabla más con su RLS. Cada uno con su check.
+- **El plan de la sesión en curso (orden de hoy, saltados, reemplazos) no va a
+  la base.** No es historia —las series sí lo son— y se borra al cerrar el
+  resumen. Vive en IndexedDB con el id de la cuenta en la llave, para
+  sobrevivir a cerrar la app en medio del gimnasio.
+- **Los calentamientos se guardan como cantidad** (`warmup_sets`), no como
+  series planificadas: su peso sale del peso de trabajo, así que se recalculan
+  solos si sube.
+- **Récord = 1RM estimado (Epley)**, no el peso más alto: 60 kg × 8 le gana a
+  62,5 kg × 3. La sugerencia de progresión solo aparece si la vez pasada fue
+  récord.
+- **«Reducir movimiento» no apaga las animaciones** del paquete, aunque el
+  traspaso lo pedía: manda D35.
+

@@ -214,6 +214,8 @@ Extiende `auth.users` con las preferencias que hacen genérica a la aplicación.
 | `week_starts_on` | smallint (`1`) | 1 = lunes. Cambia la vista semana |
 | `theme` | text `'system'` \| `'dark'` \| `'light'` | Ajustes. En la base, para que el teléfono y el computador muestren lo mismo |
 | `onboarded_at` | timestamptz | Cuándo la cuenta abrió la app por primera vez. Si es null, la app toma la zona horaria del dispositivo y lo marca (los presets se ofrecen dentro de cada área, cuando está vacía) |
+| `gym_*` (11 columnas) | migración 10 | Ajustes › Gimnasio, cada uno con su check: descanso por defecto (`gym_rest_seconds`, 15–600), si arranca solo, aviso (`vibrate`/`sound`/`both`/`none`), aviso 10 s antes, pantalla encendida, precargar con (`last`/`target`), mostrar calentamiento y RPE, salto del peso (`gym_weight_step` en **centésimas de la unidad**: 100, 125, 250 o 500), peso de la barra (`gym_bar_grams`) y si ofrece guardar la sesión libre como rutina |
+| `gym_welcome_seen_at`, `gym_checklist_hidden_at` | timestamptz | La primera vez en Gimnasio: bienvenida vista y pendientes escondidos con «Ahora no». Lo que se completó (rutina, primera sesión, peso) se calcula de los datos |
 
 ---
 
@@ -369,7 +371,9 @@ la vista "por categoría" necesita colores estables y una lista cerrada.
 ## Área: Gimnasio
 
 ### `exercises` — catálogo
-`name`, `muscle_group`, `is_custom`, `measure`, `archived_at`.
+`name`, `muscle_group`, `is_custom`, `measure`, `equipment`, `archived_at`.
+`equipment` (migración 10) es `free_weight` o `machine`, y solo puede ir con
+`measure = 'reps_weight'`: «Peso corporal» y «Por tiempo» ya los dice `measure`.
 La semilla trae un catálogo genérico; cada persona agrega los suyos.
 
 `measure` dice **cómo se mide** el ejercicio, y con eso qué campos pide la
@@ -395,7 +399,14 @@ Las rutinas recomendadas (full body, upper/lower, push/pull/legs) son
 usa las edita o las borra. Ninguna rutina vive en el código.
 `routine_exercises`: `routine_id`, `exercise_id`, `sort_order`,
 `target_sets`, `target_reps`, `target_seconds` (para los de tiempo),
-`rest_seconds`.
+`rest_seconds`, `warmup_sets` (0–4, migración 10). Los calentamientos guardan
+solo **cuántos** son: su peso y sus reps se calculan del peso de trabajo
+(`core/gym/v2.ts`), así que cambian solos si el peso sube.
+
+El plan de una sesión en curso (orden de hoy, saltados, reemplazos) **no va a
+la base**: vive en el teléfono con el id de la cuenta en la llave
+(`features/gym/session-plan.ts`) y se borra al cerrar el resumen. Lo que es
+historia son las series.
 
 ### `workouts` — una sesión
 `routine_id` (null = sesión libre), `started_at`, `ended_at`, `notes`.
@@ -486,6 +497,7 @@ de todos (D32): se revisan dos veces antes del push. Las reglas para no perder d
 | ✅ | `revocar_execute_funciones` | Quita EXECUTE a la API sobre `handle_new_user` y `rls_auto_enable`, y hace que las funciones futuras nazcan sin él (mínimo privilegio, D32). Aplicada el 28-oct
 | ✅ | `topes_por_cuenta` | La función `enforce_row_cap()` y un trigger por tabla con su tope (regla 9). Aplicada el 28-oct
 | ✅ | `nombre_desde_google` | `handle_new_user` lee `display_name`, `full_name` o `name`, en ese orden, y rellena el nombre de las cuentas que lo tenían vacío sin tocar el que alguien escribió en Ajustes. Probada el 03-nov en un Postgres temporal y aplicada el mismo día
+| ⏳ | `gimnasio_v2` | `routine_exercises.warmup_sets`, `exercises.equipment` y los ajustes `gym_*` de `profiles`. Solo columnas con default: ninguna tabla nueva, RLS y grants no cambian. Probada el 26-nov en un Postgres temporal (las 10 en orden); **falta el push** y después `npm run db:types` (los tipos se escribieron a mano igual al generador, hay que confirmarlo)
 
 Después de cada una: `npm run db:types`. Al final, la prueba de RLS con dos
 cuentas (F7).
